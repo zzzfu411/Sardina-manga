@@ -7,7 +7,7 @@ const size = bytes => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
   const store = createDownloadStore();
-  let context = null, refreshId = 0;
+  let context = null, refreshId = 0, refreshTimer = null;
   const dialog = node('dialog', 'download-dialog'); dialog.id = 'downloads-dialog'; dialog.setAttribute('aria-labelledby', 'downloads-title');
   const head = node('header', 'download-head'), title = node('h2', '', '章节下载'); title.id = 'downloads-title';
   const close = button('关闭', () => dialog.close()); close.setAttribute('aria-label', '关闭下载管理'); head.append(title, close);
@@ -18,9 +18,18 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
   for (const value of [1, 3, 5]) {const option = node('option', '', `${value} 章`); option.value = value; count.append(option);} countLabel.append(count);
   const submit = button('下载', () => {}); submit.type = 'submit'; submit.className = 'primary'; picker.append(bookName, startLabel, countLabel, submit);
   const summary = node('p', 'muted download-summary'); summary.setAttribute('role', 'status');
-  const list = node('div', 'download-list'); dialog.append(head, note, picker, summary, list); document.body.append(dialog);
-  const manager = createDownloadManager({store, api, imageUrl, loadImage: imageLoader.load, onChange: () => {if (dialog.open) refresh();}});
+  const storageNote = node('p', 'muted download-note');
+  const list = node('div', 'download-list'); dialog.append(head, note, picker, summary, storageNote, list); document.body.append(dialog);
+  const scheduleRefresh = () => {if (dialog.open && !refreshTimer) refreshTimer = setTimeout(() => {refreshTimer = null; refresh();}, 120);};
+  const manager = createDownloadManager({store, api, imageUrl, loadImage: imageLoader.load, onChange: scheduleRefresh});
+  store.subscribe(scheduleRefresh);
+  async function showStorage() {
+    const storage = globalThis.navigator?.storage;
+    const [estimate, persistent] = await Promise.all([storage?.estimate?.().catch(() => null), storage?.persisted?.().catch(() => false)]);
+    storageNote.textContent = [estimate?.quota ? `浏览器空间 ${size(estimate.usage || 0)} / ${size(estimate.quota)}` : '', persistent ? '已获持久保存许可' : '浏览器可能在空间紧张时清理缓存'].filter(Boolean).join(' · ');
+  }
   function render(records) {
+    manager.reconcile(records);
     const focus = document.activeElement, focusId = focus?.dataset.downloadId, focusAction = focus?.dataset.action;
     const merged = new Map(records.map(record => [record.id, {id: record.id, book: record.book, chapter: record.chapter, chapters: record.chapters, record, status: record.complete ? 'complete' : 'paused'}]));
     for (const job of manager.jobs()) merged.set(job.id, {...merged.get(job.id), ...job});
@@ -32,8 +41,11 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
     for (const job of values) {
       const row = node('article', 'download-row'), copy = node('div', 'download-copy');
       copy.append(node('strong', '', job.book.title), node('span', '', job.chapter.name));
-      const record = job.record, total = record?.urls.length || 0, done = record?.count || 0;
-      const labels = {saving: '正在保存任务', loading: '正在获取图片列表', queued: '等待下载', downloading: '下载中', complete: '已下载', paused: '已暂停', error: '下载失败'};
+      const persisted = records.find(row => row.id === job.id);
+      const record = persisted && persisted.updatedAt >= (job.record?.updatedAt || 0) ? persisted : job.record;
+      const total = record?.total || record?.urls?.length || 0, done = record?.count || 0;
+      if (record?.complete) job.status = 'complete';
+      const labels = {saving: '正在保存任务', loading: '正在获取图片列表', waiting: '等待其他标签页', queued: '等待下载', downloading: '下载中', complete: '已下载', paused: '已暂停', error: '下载失败'};
       const status = node('span', 'muted', `${labels[job.status]}${total ? ` · ${done} / ${total} 页 · ${size(record.bytes)}` : ''}`);
       copy.append(status);
       if (job.error) copy.append(node('p', 'download-error', job.error));
@@ -43,10 +55,12 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
         const control = button(text, () => Promise.resolve().then(handler).catch(error => toast(error.message)));
         control.dataset.downloadId = job.id; control.dataset.action = action; actions.append(control); return control;
       }
-      if (job.status === 'complete') add('阅读', 'read', () => {dialog.close(); onOpen(record);});
+      const openRecord = async () => {const saved = await store.getChapter(job.book, job.chapter); if (saved) {dialog.close(); onOpen(saved);}};
+      if (job.status === 'complete') add('阅读', 'read', openRecord);
       else if (job.running || ['saving', 'queued'].includes(job.status)) {
         const control = add('暂停', 'pause', () => manager.pause(job.id)); control.disabled = job.controller?.signal.aborted === true;
       } else add(job.status === 'error' ? '重试' : '继续下载', 'resume', () => manager.add(job));
+      if (!job.running && (record?.retainedVersions || record?.backups?.length)) add('恢复旧缓存', 'restore', async () => {await store.restorePrevious(job.id); await openRecord();});
       add('删除', 'delete', async () => {await manager.remove(job.id); await refresh();});
       row.append(copy, actions); list.append(row);
     }
@@ -61,7 +75,7 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
     event.preventDefault(); if (!context) return;
     try {
       for (const chapter of downloadSelection(context.chapters, Number(start.value), Number(count.value))) manager.add({...context, chapter});
-      globalThis.navigator?.storage?.persist?.().catch(() => {});
+      globalThis.navigator?.storage?.persist?.().then(showStorage).catch(() => {});
       refresh();
     } catch (error) {toast(error.message);}
   };
@@ -73,7 +87,7 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
       for (const [index, chapter] of context.chapters.entries()) {const option = node('option', '', chapter.name); option.value = index; start.append(option);}
       start.value = String(Math.max(0, context.chapters.findIndex(chapter => chapter.url === context.chapter?.url))); count.value = '1';
     }
-    if (!dialog.open) dialog.showModal(); close.focus(); refresh();
+    if (!dialog.open) dialog.showModal(); close.focus(); refresh(); showStorage();
   }
   dialog.addEventListener('close', () => {refreshId++;});
   window.addEventListener('pagehide', () => manager.pauseAll());

@@ -55,7 +55,6 @@ def _ssl_context() -> ssl.SSLContext:
 
 
 _SSL_CTX = _ssl_context()
-_SSL_INSECURE = ssl._create_unverified_context()
 
 
 def _urlopen(req: urllib.request.Request, timeout: float):
@@ -64,7 +63,7 @@ def _urlopen(req: urllib.request.Request, timeout: float):
     except urllib.error.URLError as e:
         if "CERTIFICATE_VERIFY_FAILED" not in str(e.reason if e.reason else e):
             raise
-        return urllib.request.urlopen(req, timeout=timeout, context=_SSL_INSECURE)
+        raise urllib.error.URLError("源站证书校验失败，请检查系统时间或 CA 证书后重试") from e
 
 
 def _get(url: str, headers: dict[str, str] | None = None, timeout: float = 25.0) -> bytes:

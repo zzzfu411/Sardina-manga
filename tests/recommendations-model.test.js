@@ -133,14 +133,17 @@ test('explicit favorite and content evidence alter ordering; trial reads have a 
   assert.equal(rankRecommendations(candidates, {profile: authorProfile, feedback})[0].book.title, '作品neutral');
 });
 
-test('unseen items precede previously exposed favorites and exposure survives reload', () => {
+test('exposure is a bounded penalty that preserves strong relevance and survives reload', () => {
   const storage = memoryStorage(), feedback = createRecommendationFeedback({storage});
   const favorite = book('favorite', {author: '同作者'}), other = book('new');
   feedback.markExposed(favorite);
   const restored = createRecommendationFeedback({storage});
   const ranked = rankRecommendations(normalizeRecommendations(payload([favorite, other])).candidates,
     {feedback: restored, profile: buildRecommendationProfile([book('saved', {author: '同作者', favorite: true})])});
-  assert.equal(ranked[0].book.title, '作品new');
+  assert.equal(ranked[0].book.title, '作品favorite');
+  assert.ok(ranked[0].exposurePenalty > 0 && ranked[0].exposurePenalty <= 3);
+  const cold = rankRecommendations(normalizeRecommendations(payload([favorite, other])).candidates, {feedback: restored});
+  assert.equal(cold[0].book.title, '作品new');
   assert.equal(restored.snapshot().metrics.impressions, 1);
 });
 
@@ -240,4 +243,37 @@ test('soft TTL revalidates without replacing current cards or losing the remaini
   h.model.nextBatch(); const supplement = h.model.nextBatch();
   assert.equal(h.calls.at(-1).path, '/api/recommendations?batch=2');
   h.calls.at(-1).resolve(payload(books(48, 24))); await supplement;
+});
+
+test('exposure decays and a recent source failure is a temporary soft penalty', () => {
+  const now = 2000000000000, candidates = normalizeRecommendations(payload([book('a'),book('b')])).candidates;
+  const feedback = {snapshot:()=>({personalization:true}),exposure:b=>b.title==='作品a'?{at:now}:null};
+  const recent=rankRecommendations(candidates,{feedback,now}),later=rankRecommendations(candidates,{feedback,now:now+7*86400000});
+  assert.equal(recent[0].book.title,'作品b');
+  assert.ok(later.find(c=>c.book.title==='作品a').exposurePenalty < recent.find(c=>c.book.title==='作品a').exposurePenalty);
+  const degraded=normalizeRecommendations(payload([book('a',{readingHealth:{chapter:{status:'error',checkedAt:new Date(now).toISOString()}}}),book('b')])).candidates;
+  assert.equal(rankRecommendations(degraded,{now})[0].book.title,'作品b');
+  assert.equal(rankRecommendations(degraded,{now:now+16*60000})[0].book.title,'作品a');
+  assert.ok(preferenceWeight({favorite:true,readingState:'finished'}) > preferenceWeight({favorite:true,readingState:'later',stateChangedAt:now}));
+});
+
+test('reading quality counts decoded progress only after a recommendation was opened and is bounded per open', () => {
+  const feedback=createRecommendationFeedback({storage:memoryStorage(),now:()=>2000000000000}),target=book('quality');
+  feedback.recordRead(target,{chapterUrl:'chapter',page:0}); assert.equal(feedback.snapshot().metrics.readingStarts,0);
+  feedback.opened(target);
+  for(const page of [0,0,1,2,3,0,1,2,3])feedback.recordRead(target,{chapterUrl:'chapter',page});
+  feedback.recordFailure(target);feedback.recordFailure(target);
+  assert.deepEqual(feedback.snapshot().metrics,{impressions:0,opens:1,dismissals:0,readingStarts:1,continuedReads:1,openFailures:1});
+  feedback.clear();assert.equal(feedback.snapshot().metrics.readingStarts,0);
+});
+
+test('metadata supplementation starts after cards, is limited to two, and ignores replies after hiding', async () => {
+  const h=await ready(payload(books(0,24).map(b=>({...b,metadataAvailable:true}))));
+  assert.equal(h.model.getState().cards.length,12);assert.equal(h.model.getState().phase,'ready');
+  assert.equal(h.calls.filter(call=>call.path==='/api/book-metadata').length,2);
+  h.calls[1].resolve({author:'证据作者',description:'日常青春'});await tick();
+  assert.ok(h.model.getState().cards.some(card=>card.book.author==='证据作者'));
+  h.model.hide();assert.equal(h.calls[2].signal.aborted,true);
+  h.calls[2].resolve({author:'过时响应'});await tick();
+  assert.ok(!h.model.getState().cards.some(card=>card.book.author==='过时响应'));
 });

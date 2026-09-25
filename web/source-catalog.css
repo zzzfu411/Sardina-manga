@@ -34,3 +34,4 @@
 .catalog-empty{padding:35px 0;text-align:center;color:var(--muted);font-size:13px}
 @media(max-width:800px){.header-actions{gap:8px}#source-catalog-open{padding:9px 12px;font-size:12px}}
 @media(max-width:540px){.header-actions{gap:6px}#source-catalog-open{padding:9px 10px;font-size:11px;border-radius:9px}.source-catalog-dialog{width:calc(100% - 16px);max-height:94svh;border-radius:18px}.catalog-body{padding:18px}.catalog-tools{grid-template-columns:minmax(0,1fr) 108px}.catalog-summary{font-size:13px}.catalog-note{font-size:11px}.catalog-row-heading strong{font-size:13px}}
+.catalog-source-health{font-size:10px;line-height:1.5;color:var(--muted);font-weight:400}

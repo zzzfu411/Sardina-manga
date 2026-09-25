@@ -12,6 +12,9 @@ export function sourceEntryKey(book) {
   try {
     const url = new URL(raw);
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return `${site}::${raw}`;
+    if (site === 'cocoecar' && url.hostname === 'keke2026.com' && /^\/comic\/\d+\/?$/.test(url.pathname) && !url.search && !url.hash) {
+      return `${site}::https://www.cocoecar.com${url.pathname.replace(/\/$/, '')}`;
+    }
     if (site === 'hipmh' && ['m.hipmh.com', 'reader.hipmh.top'].includes(url.hostname)) {
       const supplied = new URLSearchParams(url.hash.slice(1)).getAll('mid');
       const query = url.searchParams.getAll('mid');

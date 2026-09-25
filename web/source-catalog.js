@@ -51,6 +51,15 @@ export function createSourceCatalog({root, api, onPreferencesChange = () => {}})
         const labels = site.discoveryModes.map(kind => ({popular: '排行榜', latest: '最近更新'})[kind]).filter(Boolean);
         info.append(node('span', 'catalog-source-capabilities', labels.join(' · ') || '发现列表待接入'));
       }
+      const labels = {search: '搜索', details: '目录', chapter: '章节', image: '图片'};
+      const observed = Object.entries(site.health || {}).filter(([key]) => labels[key]);
+      const latest = observed.sort((a, b) => String(b[1].checkedAt).localeCompare(String(a[1].checkedAt)))[0];
+      const health = node('span', 'catalog-source-health');
+      const states = {ok: '成功', empty: '无匹配', limited: '部分可用', error: '失败'};
+      health.textContent = latest ? `最近${labels[latest[0]]}${states[latest[1].status] || '已检查'} · ${(latest[1].elapsedMs / 1000).toFixed(1)} 秒` : '暂无实际请求记录';
+      health.title = observed.map(([key, row]) => `${labels[key]}：${states[row.status]} · ${row.checkedAt}${row.error ? ' · ' + row.error : ''}`).join('\n') || '状态会根据实际搜索和阅读更新';
+      if (latest?.[1]?.checkedAt) health.textContent += ' · ' + new Date(latest[1].checkedAt).toLocaleString('zh-CN', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+      info.append(health);
       button.append(star, info);
       button.setAttribute('aria-pressed', String(favorites.has(site.siteId)));
       button.setAttribute('aria-label', `${favorites.has(site.siteId) ? '取消常用源' : '设为常用源'}：${site.siteName}`);
@@ -95,19 +104,19 @@ export function createSourceCatalog({root, api, onPreferencesChange = () => {}})
   async function open() {
     if (!root.open) root.showModal();
     preferences = loadSourcePreferences();
-    if (data) {renderActive(); render(); query.focus(); return;}
+    if (data) {renderActive(); render(); query.focus();}
     request?.abort();
     const controller = new AbortController(); request = controller;
     const turn = ++generation;
-    summary.textContent = '正在读取源目录…';
-    count.textContent = ''; list.replaceChildren();
+    if (!data) {summary.textContent = '正在读取源目录…'; count.textContent = ''; list.replaceChildren();}
     try {
       const result = await api('/api/source-catalog', null, controller.signal);
       if (controller.signal.aborted || turn !== generation || !root.open) return;
       data = result;
       summary.textContent = `${data.activeSourceCount} 个搜索源 · ${data.ruleEntryCount} 条新规则 · 核对日期 ${data.updatedAt}`;
-      renderActive();
-      render(); query.focus();
+      const focusedSite = active.contains(document.activeElement) ? document.activeElement.dataset.siteId : null;
+      renderActive(focusedSite);
+      render();
     } catch (error) {
       if (controller.signal.aborted || turn !== generation) return;
       summary.textContent = `源目录加载失败：${error.message}`;

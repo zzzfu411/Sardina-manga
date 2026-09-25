@@ -197,6 +197,38 @@ def copy_chapters_all(slug):
     return rows, detail.get("comic", {})
 
 
+METADATA_SITES = frozenset({*dm.SITES, "hipmh", "komiic", "baozimh", "manhuagui"})
+
+
+def metadata(site, url):
+    """One bounded book request; never fetch or paginate chapter directories."""
+    validate_url(site, url)
+    if site not in METADATA_SITES:
+        raise ValueError("此源暂不支持轻量作品资料")
+    if site == "hipmh":
+        value = hipmh_metadata.metadata(hip_manga_id(url))
+    elif site == "komiic":
+        comic_id = komiic._id(urlparse(url).path.rstrip("/").rsplit("/", 1)[-1])
+        data = komiic._query("query comicMetadata($comicId: ID!) { comicById(comicId: $comicId) { id title description authors { name } } }", {"comicId": comic_id})
+        comic = data.get("comicById")
+        if not isinstance(comic, dict) or str(comic.get("id")) != comic_id:
+            raise RuntimeError("作品资料身份不匹配")
+        value = {"title": comic.get("title"), "description": comic.get("description"), "author": " / ".join(_text(row.get("name")) for row in comic.get("authors", []) if isinstance(row, dict))}
+    else:
+        if site in dm.SITES:
+            body, _, status = dm.Session().get(url, headers={"Referer": dm.SITES[site]["origin"] + "/"})
+            if status >= 400:
+                raise RuntimeError(f"源站返回 HTTP {status}")
+            page = body.decode("utf-8", "replace")
+        else:
+            page = gui._get(url) if site == "manhuagui" else n._page(url, "https://" + SOURCES[site][1] + "/")
+        value = detail_metadata(site, page, url)
+    result = {field: _text(value.get(field))[:4000] for field in ("title", "author", "description", "status")}
+    for field in ("tags", "genres"):
+        result[field] = [tag[:80] for tag in value.get(field, [])[:20] if isinstance(tag, str)] if isinstance(value.get(field), list) else []
+    return result
+
+
 def details(site, url):
     validate_url(site, url)
     if site == "comicbox":
@@ -257,7 +289,7 @@ def details(site, url):
             rows = order_chapters(rows)
     chapters = [dict(id=r["url"], name=r.get("name") or r.get("title") or f"第{i+1}话", url=r["url"], order=i, group=r.get("group", "")) for i,r in enumerate(rows)]
     return {**dict.fromkeys(("title", "author", "description", "coverUrl", "status"), ""),
-            **{field: _text(value) for field, value in meta.items()}, "chapters": chapters, "sourceUrl": url}
+            **{field: ([tag[:80] for tag in value[:20] if isinstance(tag, str)] if field in {"tags", "genres"} and isinstance(value, list) else _text(value)) for field, value in meta.items()}, "chapters": chapters, "sourceUrl": url}
 
 
 def images(site, url):

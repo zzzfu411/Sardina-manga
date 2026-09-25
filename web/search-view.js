@@ -162,9 +162,10 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     card.meta = node('div', 'search-work-meta');
     card.description = node('p', 'search-description');
     card.sources = node('div', 'search-source-list'); card.sources.setAttribute('aria-label', '选择漫画源');
+    card.sourceFold = node('details', 'search-source-fold'); card.sourceLabel = node('summary'); card.sourceFold.append(card.sourceLabel, card.sources);
     card.chapterArea = node('section', 'search-chapter-area');
     summary.append(heading, card.meta, card.description);
-    content.append(summary, card.sources, card.chapterArea);
+    content.append(summary, card.sourceFold, card.chapterArea);
     article.append(card.cover, content);
     return card;
   }
@@ -179,6 +180,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     card.renderedDetail = null; card.renderedReverse = null;
   }
   function renderSources(card) {
+    card.sourceLabel.textContent = `${selectedBook(card).siteName} · 更换来源（${card.work.books.length}）`;
     const seen = new Map(), totals = new Map(), live = new Set();
     for (const book of card.work.books) totals.set(book.siteId, (totals.get(book.siteId) || 0) + 1);
     let cursor = card.sources.firstChild;

@@ -20,7 +20,6 @@ import json
 import os
 import re
 import ssl
-import subprocess
 import sys
 import threading
 import urllib.error
@@ -63,7 +62,6 @@ def _ssl_context() -> ssl.SSLContext:
 
 
 _SSL_CTX = _ssl_context()
-_SSL_INSECURE = ssl._create_unverified_context()
 _CHAPTER_LOOKUP_SLOTS = threading.BoundedSemaphore(4)
 
 SITES: dict[str, dict[str, Any]] = {
@@ -192,6 +190,8 @@ def unpack_packer(source: str) -> str:
     payload = _js_unesc(m.group(1))
     radix = int(m.group(2))
     count = int(m.group(3))
+    if not 2 <= radix <= 62 or not 0 <= count <= 100000:
+        raise Dm5FamilyError("章节编码参数超出支持范围")
     words = _js_unesc(m.group(4)).split("|")
     if len(words) < count:
         words.extend([""] * (count - len(words)))
@@ -203,21 +203,20 @@ def unpack_packer(source: str) -> str:
             return tok
         return words[idx] or tok
 
-    return re.sub(r"\b\w+\b", lookup, payload)
-
-
-def unpack_packer_node(source: str) -> str:
-    script = (
-        "const s=" + json.dumps(source) + ";"
-        "const m=s.match(/^\\s*eval\\(([\\s\\S]*)\\)\\s*;?\\s*$/);"
-        "if(!m){process.stderr.write('no eval wrapper'); process.exit(2);}"
-        "process.stdout.write(String(eval(m[1])));"
-    )
-    out = subprocess.check_output(["node", "-e", script], timeout=15)
-    return out.decode()
+    size = len(payload)
+    def bounded_lookup(match):
+        nonlocal size
+        value = lookup(match)
+        size += len(value) - (match.end() - match.start())
+        if size > 8 * 1024 * 1024:
+            raise Dm5FamilyError("章节解码结果过大")
+        return value
+    return re.sub(r"\b\w+\b", bounded_lookup, payload)
 
 
 def unpack(source: str) -> str:
+    if len(source) > 4 * 1024 * 1024:
+        raise Dm5FamilyError("章节编码数据过大")
     source = source.strip()
     if not source:
         raise Dm5FamilyError("empty packer body")
@@ -225,11 +224,8 @@ def unpack(source: str) -> str:
         return source
     try:
         return unpack_packer(source)
-    except Exception:
-        try:
-            return unpack_packer_node(source)
-        except Exception as exc:
-            raise Dm5FamilyError(f"unpack failed: {exc}") from exc
+    except (ValueError, Dm5FamilyError) as exc:
+        raise Dm5FamilyError("章节编码格式暂不支持，请更换漫画源或稍后重试") from exc
 
 
 def images_from_unpacked(js: str) -> list[str]:
@@ -313,10 +309,7 @@ class Session:
             reason = str(exc.reason if exc.reason else exc)
             if "CERTIFICATE_VERIFY_FAILED" not in reason:
                 raise
-            insecure = _https_opener(self.jar, _SSL_INSECURE)
-            with insecure.open(req, timeout=timeout) as resp:
-                self.opener = insecure
-                return resp.read(), resp.geturl(), getattr(resp, "status", 200)
+            raise Dm5FamilyError("源站证书校验失败，请检查系统时间或 CA 证书后重试") from exc
 
 
 # --- chapter ---

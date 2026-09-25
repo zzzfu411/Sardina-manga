@@ -3,3 +3,13 @@ __pycache__/
 *.pyc
 .uv/
 .playwright-cli/
+node_modules/
+output/
+work/
+漫画类软件合集/
+*.apk
+*.apks
+*.xapk
+.DS_Store
+.env
+.env.*

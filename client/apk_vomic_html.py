@@ -23,10 +23,10 @@ SOURCES = {
     "guazimanhua": ("瓜子漫画", "www.guazimanhua.com"),
     "manhua6": ("6漫画", "www.hzxidou.com"),
 }
-HOST_ALIASES = {"manhua1234": ("reader.hqread.cc",)}
+HOST_ALIASES = {"manhua1234": ("reader.hqread.cc",), "cocoecar": ("keke2026.com",)}
 IMAGE_REFERERS = {
     "manhua1234": "https://reader.hqread.cc/",
-    "cocoecar": "https://www.cocoecar.com/",
+    "cocoecar": "https://keke2026.com/",
     "guazimanhua": "https://www.guazimanhua.com/",
     "manhua6": "https://www.hzxidou.com/",
 }
@@ -62,7 +62,15 @@ def _page_url(site, url):
     if (parsed.scheme not in {"http", "https"} or parsed.hostname not in hosts
             or parsed.username or parsed.password or parsed.port not in (None, 80, 443)):
         raise ValueError("漫画地址与所选源不匹配")
-    return parsed._replace(scheme="https", netloc=parsed.hostname, fragment="").geturl()
+    # Keep existing shelf/chapter identities while changing only the verified
+    # transport host. URLs from the new site normalize to the same old IDs.
+    host = SOURCES[site][1] if site == 'cocoecar' else parsed.hostname
+    return parsed._replace(scheme="https", netloc=host, fragment="").geturl()
+
+
+def _network_url(site, url):
+    parsed = urlparse(_page_url(site, url))
+    return parsed._replace(netloc='keke2026.com').geturl() if site == 'cocoecar' else parsed.geturl()
 
 
 def _book_url(site, url):
@@ -120,10 +128,10 @@ def _get(site, url):
 
     class Redirect(HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
-            return super().redirect_request(req, fp, code, msg, headers, _check_redirect(site, url, newurl))
+            return super().redirect_request(req, fp, code, msg, headers, _network_url(site, _check_redirect(site, url, newurl)))
 
     opener = build_opener(Redirect(), HTTPSHandler(context=_SSL_CTX))
-    request = Request(url, headers={"User-Agent": UA, "Referer": _origin(site) + "/", "Accept": "text/html"})
+    request = Request(_network_url(site, url), headers={"User-Agent": UA, "Referer": IMAGE_REFERERS.get(site, _origin(site) + "/"), "Accept": "text/html"})
     with opener.open(request, timeout=20) as response:
         _check_redirect(site, url, response.geturl())
         body = response.read(_MAX_HTML + 1)

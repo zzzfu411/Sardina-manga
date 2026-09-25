@@ -101,6 +101,7 @@ export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf
     next.title = state.canNext ? '继续查看未浏览的作品' : '本轮候选已看完，稍后刷新看看更新';
     personalization.checked = state.personalization;
     feedbackCount.textContent = state.dismissedCount ? `已忽略 ${state.dismissedCount} 本。记录保存在本机。` : '推荐记录保存在本机。';
+    if (state.metrics.opens) feedbackCount.textContent += ` 已打开 ${state.metrics.opens} 本，开始阅读 ${state.metrics.readingStarts} 次，阅读至少 3 页 ${state.metrics.continuedReads} 次，打开失败 ${state.metrics.openFailures} 次。`;
     undoPanel.hidden = !state.canUndo;
     undoMessage.textContent = state.canUndo ? `已忽略《${state.dismissedTitle}》` : '';
     grid.setAttribute('aria-busy', String(busy));
@@ -159,5 +160,5 @@ export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf
       }, 500));
     }
   }, {threshold: [.5]}) : null;
-  return {show: () => model.show(), hide: () => model.hide(), shelfChanged: () => model.shelfChanged()};
+  return {show: () => model.show(), hide: () => model.hide(), shelfChanged: () => model.shelfChanged(), rememberMetadata: (book, value) => model.rememberMetadata(book, value), recordRead: (book, progress) => model.recordRead(book, progress), recordFailure: book => model.recordFailure(book)};
 }

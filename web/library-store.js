@@ -48,7 +48,8 @@ export function createLibraryStore({storage, locks = globalThis.navigator?.locks
   // Keep v1 as an immutable base and only persist changed records on top. A
   // full duplicate migration would consume quota before a user could remove a
   // book. Existing fully-migrated records (marker 1) remain supported by read().
-  function writePending() {
+  function writePending(readAll = true) {
+    const updated = new Map();
     for (const operation of [...pending.values()].sort((a, b) => Number(b.deleted === true) - Number(a.deleted === true))) {
       const {key, book, stamp: writtenAt, deleted} = operation;
       const latest = entry(key);
@@ -57,16 +58,29 @@ export function createLibraryStore({storage, locks = globalThis.navigator?.locks
       } else if (!latest?.deleted || latest.writtenAt < writtenAt) {
         const merged = latest && !latest.deleted ? mergeShelfBackup([latest.book], [book])[0] : book;
         storage.setItem(recordKey(key), JSON.stringify({writtenAt: Math.max(writtenAt, latest?.writtenAt || 0), book: merged}));
+        updated.set(key, merged);
       }
       if (pending.get(key) === operation) pending.delete(key);
     }
-    return read();
+    return readAll ? read() : updated;
   }
   function locked(action) {return locks?.request ? locks.request('revyunman-library-v2', async () => action()) : Promise.resolve().then(action);}
   baseline = read();
   return {
     get books() {return clone(baseline);},
     get issues() {return [...issues];},
+    updateBook(book) {
+      const normalized = parseShelfBackup({version: 2, books: [book]})[0], key = bookKey(normalized);
+      const stamp = clock = Math.max(now(), clock + 1), turn = ++generation;
+      pending.set(key, {key, book: normalized, stamp});
+      baseline = [normalized, ...baseline.filter(item => bookKey(item) !== key)];
+      queue = queue.catch(() => {}).then(() => locked(() => {
+        const updated = writePending(false), result = updated.get(key) || entry(key)?.book;
+        if (turn === generation && result) baseline = [result, ...baseline.filter(item => bookKey(item) !== key)];
+        return result ? clone(result) : null;
+      }));
+      return queue;
+    },
     save(books) {
       const next = mergeShelfBackup([], books), before = new Map(baseline.map(book => [bookKey(book), book]));
       const after = new Map(next.map(book => [bookKey(book), book]));

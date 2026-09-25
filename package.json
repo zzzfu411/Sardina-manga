@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.js"
-  }
+    "test": "node --test tests/*.test.js",
+    "check": "python3 scripts/check.py",
+    "test:all": "python3 scripts/check.py --browser",
+    "test:browser": "python3 scripts/check.py --browser-only"
+  },
+  "version": "0.3.0"
 }

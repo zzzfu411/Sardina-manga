@@ -74,3 +74,12 @@
   .search-fold>summary{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){.search-detail-loading:before{animation:none}}
+/* Keep source choices available without pushing the work below the fold. */
+.source-filter-panel{margin:0 0 22px;border-block:1px solid var(--line)}
+.source-filter-panel>summary,.search-source-fold>summary{min-height:44px;padding:12px 3px;cursor:pointer;font-size:13px;color:var(--ink)}
+.source-filter-panel>summary:focus-visible,.search-source-fold>summary:focus-visible{outline:3px solid #b58332;outline-offset:2px}
+.source-filter-panel .source-tabs{margin:0;padding:8px 0 16px;border:0}
+.source-filter-panel button,.search-source{min-height:44px}
+.search-source-fold{grid-column:1/-1;min-width:0;margin:4px 0 10px;border-bottom:1px solid var(--line)}
+.search-source-fold .search-source-list{margin:4px 0 12px}
+@media(max-width:560px){.source-filter-panel{margin-bottom:20px}.search-source-fold{margin:0}.search-source-fold>summary{font-size:12px}.search-chapter,.search-all-chapters,.search-order{min-height:44px}}

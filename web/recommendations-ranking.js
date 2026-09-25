@@ -19,7 +19,7 @@ export function contentFeatures(book) {
 const authors = book => normalizeAuthor(book?.author).split('+').filter(Boolean);
 
 export function preferenceWeight(book) {
-  if (book?.favorite === true) return book.readingState === 'later' && book.stateChangedAt ? 4 : 3;
+  if (book?.favorite === true) return book.readingState === 'finished' ? 4.5 : book.readAt ? 4 : 3;
   // Auto-shelved trial reads are weaker than an intentional collection action.
   return book?.favorite === false ? .2 : .6;
 }
@@ -54,7 +54,7 @@ export function originReason(book) {
 }
 
 /** Transparent initial rules, deliberately not a trained recommendation model. */
-export function rankRecommendations(candidates, {profile = buildRecommendationProfile(), feedback, limit = 12} = {}) {
+export function rankRecommendations(candidates, {profile = buildRecommendationProfile(), feedback, limit = 12, now = Date.now()} = {}) {
   const personalization = feedback?.snapshot().personalization !== false;
   const available = candidates.map((candidate, index) => {
     const book = candidate.book;
@@ -64,13 +64,16 @@ export function rankRecommendations(candidates, {profile = buildRecommendationPr
     const affinity = Math.min(6, author?.weight || 0) * 3 + Math.min(4, theme?.match.weight || 0) * 1.2;
     const preference = author ? `与${author.evidence.explicit ? '收藏' : '读过'}的《${author.evidence.title}》作者相同` :
       theme ? `与你的书架同含“${theme.theme}”线索` : '';
-    return {...candidate, score: affinity + (book.recommendationKind === 'popular' ? 1 : .8),
+    const exposure = feedback?.exposure(book);
+    const exposurePenalty = exposure ? 3 * Math.exp(-Math.max(0, now - exposure.at) / (7 * 86400000)) : 0;
+    const recentFailure = Object.values(book.readingHealth || {}).some(row => row?.status === 'error' && now - Date.parse(row.checkedAt) >= 0 && now - Date.parse(row.checkedAt) < 15 * 60000);
+    return {...candidate, score: affinity + (book.recommendationKind === 'popular' ? 1 : .8) - exposurePenalty - (recentFailure ? 1.5 : 0), exposurePenalty,
       preferenceReason: preference, reason: [preference, originReason(book)].filter(Boolean).join(' · '),
-      exposed: Boolean(feedback?.exposure(book)), index, author: authors(book)[0] || ''};
+      exposed: Boolean(exposure), index, author: authors(book)[0] || ''};
   });
   const selected = [], sourceCounts = new Map(), authorCounts = new Map();
   while (available.length && selected.length < limit) {
-    available.sort((a, b) => Number(a.exposed) - Number(b.exposed) ||
+    available.sort((a, b) =>
       (b.score - (sourceCounts.get(b.book.siteId) || 0) * 2 - (authorCounts.get(b.author) || 0) * 3) -
       (a.score - (sourceCounts.get(a.book.siteId) || 0) * 2 - (authorCounts.get(a.author) || 0) * 3) || a.index - b.index);
     const candidate = available.shift();

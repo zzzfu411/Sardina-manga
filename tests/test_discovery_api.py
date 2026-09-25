@@ -108,17 +108,7 @@ class DiscoveryApplicationTests(unittest.TestCase):
         app = server.Application()
         condition, release = threading.Condition(), threading.Event()
         active = peak = 0
-        # Distinct cache stripes let this test reach the source concurrency
-        # limit, independently of accidental hash collisions in the cache.
-        urls, stripes = [], set()
-        for number in range(1, 1000):
-            url = f'https://www.manhuagui.com/comic/{number}/'
-            stripe = hash(('manhuagui', url)) % len(app.cover_cache.stripes)
-            if stripe not in stripes:
-                urls.append(url); stripes.add(stripe)
-            if len(urls) == 8:
-                break
-        self.assertEqual(len(urls), 8)
+        urls = [f'https://www.manhuagui.com/comic/{number}/' for number in range(1, 9)]
         def load(site, url):
             nonlocal active, peak
             with condition:
@@ -153,10 +143,10 @@ class DiscoveryApplicationTests(unittest.TestCase):
         thread.start()
         base = f'http://127.0.0.1:{http.server_port}/api/recommendations'
         try:
-            with patch.object(server.recommendations, 'fetch', side_effect=[{'items': ['first']}, {'items': ['new']}]) as fetch:
+            with patch.object(server.recommendations, 'fetch', side_effect=[{'items': [{'siteId': 'manben', 'title': title}]} for title in ['first', 'new']]) as fetch:
                 for suffix, expected in [('', 'first'), ('', 'first'), ('?refresh=1', 'new'), ('', 'new')]:
                     with urlopen(base + suffix) as response:
-                        self.assertEqual(json.load(response)['data']['items'], [expected])
+                        self.assertEqual([row['title'] for row in json.load(response)['data']['items']], [expected])
                 self.assertEqual(fetch.call_count, 2)
                 for suffix in ['?refresh=true', '?refresh=', '?refresh=1&refresh=1', '?url=https://other.test']:
                     with self.subTest(suffix=suffix), self.assertRaises(HTTPError) as error:

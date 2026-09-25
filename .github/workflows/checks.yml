@@ -1,0 +1,30 @@
+name: Sardina checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: '3.12'
+      - run: uv sync --locked
+      - run: npm install --global @playwright/cli@0.1.21
+      - run: playwright-cli install-browser chrome
+      - run: uv run python scripts/check.py --browser --output output/ci
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: regression-evidence
+          path: output/ci/
+          retention-days: 7

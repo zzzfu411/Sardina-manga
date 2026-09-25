@@ -2,6 +2,7 @@ import {MAX_IMAGE_REQUESTS, clampPage, clampOffset, restorePosition, normalizeRa
 import {prefetchPageCount} from './reader-model.js';
 import {createImageLoader} from './image-loader.js';
 import {sourceEntryKey} from './book-identity.js';
+import {imageIdentity} from './download-store.js';
 
 const PREFS_KEY = 'revyunman.reader.preferences.v2';
 const BOOK_PREFS_KEY = 'revyunman.reader.books.v1';
@@ -24,7 +25,7 @@ const stored = (name, fallback) => {
 const editable = target => target instanceof Element && !!target.closest('input, select, textarea, [contenteditable="true"]');
 
 /** The application owns routing and the shelf. This module owns one reader session. */
-export function createReader({root, api, imageUrl, imageLoader = createImageLoader(), downloads = null, getProgress, onProgress, onNavigate, onExit, isChapterRead = () => false, onChapterRead, toast = () => {}}) {
+export function createReader({root, api, imageUrl, imageLoader = createImageLoader(), downloads = null, getProgress, onProgress, onNavigate, onExit, isChapterRead = () => false, onChapterRead, onRefreshCatalog, onFailure = () => {}, toast = () => {}}) {
   if (!root) throw new Error('缺少阅读器容器');
   let preferences = normalizeReaderPreferences(stored(PREFS_KEY, null), {
     light: stored('revyunman.reader.light', false),
@@ -130,7 +131,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const catalogTools = make('div', 'ry-reader-catalog-tools');
   const catalogSearch = make('input'); catalogSearch.id = 'reader-chapter-search'; catalogSearch.type = 'search'; catalogSearch.placeholder = '输入章节名称或数字'; catalogSearch.setAttribute('aria-label', '查找章节');
   const catalogSort = action('reader-catalog-sort', '倒序', () => {catalogReverse = !catalogReverse; catalogSort.textContent = catalogReverse ? '正序' : '倒序'; renderCatalog();});
-  catalogTools.append(catalogSearch, catalogSort);
+  const catalogRefresh = action('reader-catalog-refresh', '更新目录', async () => {catalogRefresh.disabled = true; try {await onRefreshCatalog?.();} catch (error) {toast(error.message);} finally {catalogRefresh.disabled = false;}}, '从漫画源更新目录');
+  catalogRefresh.hidden = !onRefreshCatalog; catalogTools.append(catalogSearch, catalogSort, catalogRefresh);
   const catalogCount = make('p', 'ry-reader-catalog-count'); catalogCount.id = 'reader-catalog-count'; catalogCount.setAttribute('role', 'status');
   const catalogList = make('div', 'ry-reader-catalog-list'); catalogList.id = 'reader-chapter-list';
   catalog.append(catalogHead, catalogTools, catalogCount, catalogList);
@@ -293,7 +295,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   }
   function widthForPage(page, viewportWidth = scroll.clientWidth, viewportHeight = scroll.clientHeight) {
     // Undecoded long-strip placeholders must leave enough room for retry text.
-    const ratio = page.state === 'loaded' ? page.ratio : fit === 'page' ? 1.42 : page.ratio;
+    const ratio = page.decoded ? page.ratio : fit === 'page' ? 1.42 : page.ratio;
     return readerPageWidth({ratio, viewportWidth, viewportHeight, preferredWidth: width, fit, zoom});
   }
   function layoutPages(current) {
@@ -316,7 +318,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       const page = current.pages[index];
       // A cached long-strip ratio must not squeeze its error and retry controls
       // into an unreadably thin column before the image has actually decoded.
-      const ratio = page.state === 'loaded' ? page.ratio : 1.42;
+      const ratio = page.decoded ? page.ratio : 1.42;
       page.figure.style.aspectRatio = `1 / ${ratio}`;
       const pageWidth = widthForPage(page, viewportWidth, viewportHeight);
       page.figure.style.width = `${pageWidth}px`;
@@ -366,7 +368,13 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const ahead = prefetchPageCount({mode, prefetch, siteId: current.book.siteId, saveData: globalThis.navigator?.connection?.saveData});
     const candidates = imageCandidates({total: current.pages.length, page: first, first, last, mode, ahead});
     const desired = new Set(candidates);
-    for (const page of current.pages) if (page.state === 'loading' && !desired.has(page.index)) stopImage(current, page);
+    for (const page of current.pages) {
+      if (page.state === 'loading' && !desired.has(page.index)) stopImage(current, page);
+      if (page.state === 'loaded' && (page.index < first - 3 || page.index > last + Math.max(3, ahead))) {
+        releaseImage(page, true); page.state = 'idle'; page.figure.dataset.state = 'idle';
+        page.placeholder.hidden = false; page.status.textContent = '等待阅读';
+      }
+    }
     for (let index = first; index <= last; index++) if (current.pages[index]?.requestUrl) imageLoader.promote(current.pages[index].requestUrl);
     for (const index of candidates) {
       if (current.inflight >= MAX_IMAGE_REQUESTS) break;
@@ -397,6 +405,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       // can be released without retaining the downloaded buffer for the chapter.
       releaseImage(page, !ok);
       if (ok) {
+        page.decoded = true;
         page.ratio = normalizeRatio(page.image.naturalHeight / page.image.naturalWidth, page.ratio);
         page.figure.style.aspectRatio = `1 / ${page.ratio}`;
         if (mode === 'continuous') page.figure.style.width = `${widthForPage(page)}px`;
@@ -414,11 +423,13 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       updateProgress(current); requestFrame(current);
     }
     page.image.onload = () => settle(true);
-    page.image.onerror = () => settle(false);
+    page.image.onerror = () => {if (page.fromLocal) page.localInvalid = true; settle(false);};
     const url = imageUrl(page.url, current.book.siteId) + (page.attempt ? `&retry=${Date.now()}-${page.attempt}` : '');
     page.requestUrl = url;
     const load = async () => {
-      const local = !page.attempt && current.download ? await downloads.getPage(current.download, page.index) : null;
+      const samePage = current.download && imageIdentity(current.book.siteId, current.download.urls[page.index]) === imageIdentity(current.book.siteId, page.url);
+      const local = samePage && !page.localInvalid ? await downloads.getPage(current.download, page.index) : null;
+      page.fromLocal = !!local;
       if (!valid()) throw new DOMException('图片请求已取消', 'AbortError');
       return local || imageLoader.load(url, {signal: controller.signal, priority});
     };
@@ -431,10 +442,43 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       // must never decrement a new request or replace its status/progress.
       if (!valid() || controller.signal.aborted || error?.name === 'AbortError') return;
       settle(false, error.message || '图片请求失败，请重试');
+      if (!current.manifestRefreshed && !current.download?.complete && globalThis.navigator?.onLine !== false) refreshManifest(current).catch(() => {});
     });
   }
-  function retryImage(current, page) {
+  async function refreshManifest(current, force = false) {
+    if (!active(current)) return false;
+    if (current.manifestRequest) return current.manifestRequest;
+    if (current.manifestRefreshed && !force) return false;
+    current.manifestRefreshed = true;
+    current.manifestRequest = (async () => {
+      const data = await api('/api/chapter-images', {siteId: current.book.siteId, chapterUrl: current.chapter.url, refresh: true}, current.scope.controller.signal);
+      if (!active(current)) return false;
+      const urls = data?.images;
+      if (!Array.isArray(urls) || !urls.length || urls.some(url => typeof url !== 'string' || !/^https?:\/\//i.test(url))) throw new Error('漫画源未返回有效图片');
+      if (urls.length !== current.pages.length) {
+        flush(); await open({book: current.book, chapters: current.chapters, index: current.index, resume: true, push: false, fresh: true}); return true;
+      }
+      for (const page of current.pages) {
+        const changed = imageIdentity(current.book.siteId, page.url) !== imageIdentity(current.book.siteId, urls[page.index]);
+        if (page.state === 'loading') stopImage(current, page);
+        if (changed || page.state === 'error') {
+          releaseImage(page, true); page.state = 'idle'; page.figure.dataset.state = 'idle';
+          page.retry.hidden = true; page.placeholder.hidden = false;
+        }
+        page.url = urls[page.index];
+      }
+      queueImages(current); return true;
+    })();
+    try {return await current.manifestRequest;}
+    finally {current.manifestRequest = null;}
+  }
+  async function retryImage(current, page) {
     if (!active(current) || page.state !== 'error') return;
+    if (!current.download?.complete && !page.localInvalid) {
+      page.retry.disabled = true;
+      try {await refreshManifest(current, true);} catch (error) {toast('图片地址更新失败：' + error.message);} finally {page.retry.disabled = false;}
+      if (!active(current) || page.state !== 'error') return;
+    }
     page.attempt++; page.state = 'idle';
     // The retry target is already visible; the same bounded queue owns its request.
     queueImages(current);
@@ -533,9 +577,21 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       if (focusedIndex !== null) catalogList.querySelector(`[data-chapter-index="${focusedIndex}"]`)?.focus({preventScroll: true});
     }
   }
+  function updateCatalog(book, chapters) {
+    const current = session;
+    if (!active(current) || sourceEntryKey(book) !== sourceEntryKey(current.book)) return;
+    const index = chapters.findIndex(row => row.url === current.chapter.url);
+    if (index < 0) return;
+    current.chapters = [...chapters]; current.index = index;
+    const navigation = chapterNavigation(chapters, index);
+    prev.disabled = navigation.previous === null; next.disabled = navigation.next === null; nextEnd.hidden = navigation.next === null;
+    endLabel.textContent = nextEnd.hidden ? '已经读到当前源的最后一章' : '已到本章末尾，可继续下一章';
+    if (catalogOpen) renderCatalog(true);
+  }
   function refreshReadingState() {updateChapterRead(); if (catalogOpen) renderCatalog(true);}
   function chapterError(current, error) {
     if (!active(current)) return;
+    onFailure(current.book);
     canvas.replaceChildren(); ending.hidden = true; loadStatus.textContent = '本章加载失败，可重试';
     const panel = make('div', 'ry-chapter-message ry-chapter-error'); panel.setAttribute('role', 'alert');
     panel.append(make('h2', '', '这一章暂时无法打开'), make('p', '', error.message || '漫画源暂时没有返回图片。'));
@@ -545,13 +601,13 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     retry.classList.add('ry-reader-primary');
     panel.append(retry, action('reader-error-back', '返回目录', requestExit)); canvas.append(panel);
   }
-  async function open({book, chapters, index, resume = false, push = true}) {
+  async function open({book, chapters, index, resume = false, push = true, fresh = false}) {
     const chapter = chapters?.[index];
     if (!chapter?.url) return;
     flush(); const previous = session; const request = scope.start(); clean(previous);
     loadPreferences(book);
     const current = {scope: request, book: {...book}, chapters: [...chapters], chapter: {...chapter}, index, pages: [], inflight: 0, frame: 0, position: {page: 0, pageOffset: 0}, pageOffsets: new Map(), restoring: false};
-    session = current; setCatalog(false, false); setSettings(false, false); catalogSearch.value = '';
+    current.manifestRefreshed = fresh; session = current; setCatalog(false, false); setSettings(false, false); catalogSearch.value = '';
     title.textContent = book.title || '漫画'; chapterLabel.textContent = [book.siteName || book.siteId || '', chapter.name || `第 ${index + 1} 章`, chapter.language].filter(Boolean).join(' · ');
     const navigation = chapterNavigation(chapters, index);
     prev.disabled = navigation.previous === null; next.disabled = navigation.next === null;
@@ -570,7 +626,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       current.download = await downloads?.getChapter(book, chapter);
       if (!current.download?.urls.length) current.download = null;
       if (!active(current)) return;
-      const data = current.download ? {images: current.download.urls} : await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url}, request.controller.signal);
+      const data = current.download && !fresh ? {images: current.download.urls} : await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url, ...(fresh ? {refresh: true} : {})}, request.controller.signal);
       if (!active(current)) return;
       const urls = (Array.isArray(data?.images) ? data.images : []).filter(url => typeof url === 'string' && /^https?:\/\//i.test(url));
       if (!urls.length) throw new Error('这个漫画源没有返回可用图片，请重试或返回详情换源。');
@@ -697,5 +753,5 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   document.addEventListener('visibilitychange', () => {if (document.visibilityState === 'hidden') flush();});
   window.addEventListener('pagehide', flush);
   applyPreferences();
-  return {open, close, flush, refreshReadingState, isOpen: () => !!root.open};
+  return {open, close, flush, updateCatalog, refreshReadingState, isOpen: () => !!root.open};
 }

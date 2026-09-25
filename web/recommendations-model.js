@@ -1,4 +1,5 @@
 import {sameWork, sourceEntryKey, workIdentity} from './book-identity.js';
+import {createRecommendationMetadata} from './recommendations-metadata.js';
 import {createRecommendationFeedback} from './recommendations-feedback.js';
 import {buildRecommendationProfile, originReason, rankRecommendations} from './recommendations-ranking.js';
 
@@ -54,10 +55,11 @@ export function normalizeRecommendations(payload) {
 }
 
 export function createRecommendationsModel({api, getShelf = () => [], onChange = () => {}, now = Date.now,
-  feedback = createRecommendationFeedback({now})}) {
+  feedback = createRecommendationFeedback({now}), metadata = createRecommendationMetadata({now})}) {
   let state = {visible: false, phase: 'idle', cards: [], fetchedAt: '', origins: [], warnings: [], error: ''};
   let pool = [], loaded = false, loadedAt = 0, nextBatch = null, revision = 0, request = null, generation = 0;
-  let shelfCache = null, undo = null;
+  let shelfCache = null, undo = null, enrichment = null;
+  const metadataTried = new Set();
   const failed = new Set(), served = new Set(), fetchedBatches = new Set();
   function shelfData() {
     let books;
@@ -80,7 +82,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     });
   }
   function select(count = RECOMMENDATION_BATCH_SIZE, excluded = new Set()) {
-    return rankRecommendations(available().filter(candidate => !excluded.has(candidate.key)), {profile: shelfData().profile, feedback, limit: count});
+    return rankRecommendations(available().filter(candidate => !excluded.has(candidate.key)), {profile: shelfData().profile, feedback, now: now(), limit: count});
   }
   function snapshot() {
     const choices = available(), shown = new Set(state.cards.map(card => card.key));
@@ -96,7 +98,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
         failed.size && !available(pool, false).length ? 'covers' : 'pool'};
   }
   const notify = () => onChange(snapshot());
-  function cancel() {generation++; request?.abort(); request = null;}
+  function cancel() {enrichment?.abort(); enrichment = null; generation++; request?.abort(); request = null;}
   function makeCard(candidate, id, replacements = 0, retry = 0) {
     served.add(candidate.key);
     for (const book of candidate.variants) served.add(sourceEntryKey(book));
@@ -120,7 +122,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     return [...values.filter(candidate => useful.has(candidate.key)), ...values.filter(candidate => !useful.has(candidate.key))].slice(0, RECOMMENDATION_POOL_LIMIT);
   }
   function updateReasons() {
-    const ranked = rankRecommendations(state.cards, {profile: shelfData().profile, feedback, limit: state.cards.length});
+    const ranked = rankRecommendations(state.cards, {profile: shelfData().profile, feedback, now: now(), limit: state.cards.length});
     const reasons = new Map(ranked.map(card => [card.key, card]));
     state = {...state, cards: state.cards.map(card => ({...card, preferenceReason: reasons.get(card.key)?.preferenceReason || '',
       reason: reasons.get(card.key)?.reason || originReason(card.book)}))};
@@ -142,7 +144,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
         if (mode === 'refresh' && count === 0) query.set('refresh', '1');
         const payload = await api(`/api/recommendations${query.size ? '?' + query : ''}`, null, controller.signal);
         if (!current()) return;
-        const result = normalizeRecommendations(payload);
+        const result = normalizeRecommendations({...payload, items: payload.items?.map(book => metadata.apply(book))});
         received.add(batch); successes++;
         stagedPool = merge(stagedPool, result.candidates);
         stagedNext = result.nextBatch;
@@ -171,14 +173,36 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     if (mode !== 'soft' || !state.cards.length) {
       let candidates = select();
       if (!candidates.length && mode === 'refresh') {
-        candidates = rankRecommendations(available(pool, false), {profile: shelfData().profile, feedback, limit: RECOMMENDATION_BATCH_SIZE});
+        candidates = rankRecommendations(available(pool, false), {profile: shelfData().profile, feedback, now: now(), limit: RECOMMENDATION_BATCH_SIZE});
       }
       if (candidates.length) showSelection(candidates);
       else if (!state.cards.length || state.cards.every(card => onShelf(card.book) || feedback.isDismissed(card.book) || failed.has(sourceEntryKey(card.book)))) showSelection([]);
     }
-    updateReasons(); notify();
+    updateReasons(); notify(); void enrich();
+  }
+  function rememberMetadata(book, value) {
+    metadata.remember(book, value);
+    const apply = candidate => ({...candidate, book: metadata.apply(candidate.book), variants: candidate.variants.map(item => metadata.apply(item))});
+    pool = pool.map(apply); state = {...state, cards: state.cards.map(apply)};
+    if (state.visible) {updateReasons(); notify();}
+  }
+  async function enrich() {
+    if (!state.visible) return;
+    enrichment?.abort(); const controller = new AbortController(); enrichment = controller;
+    const selected = state.cards.filter(card => card.book.metadataAvailable === true && !metadata.has(card.book) && !metadataTried.has(sourceEntryKey(card.book))).slice(0, 2);
+    await Promise.all(selected.map(async ({book}) => {
+      metadataTried.add(sourceEntryKey(book));
+      try {
+        const data = await api('/api/book-metadata', {siteId: book.siteId, detailUrl: book.detailUrl}, controller.signal);
+        if (!controller.signal.aborted) rememberMetadata(book, data);
+      } catch { /* Optional enrichment never delays the first cards or reading. */ }
+    }));
+    if (enrichment === controller) enrichment = null;
   }
   return {
+    rememberMetadata,
+    recordRead: (book, progress) => feedback.recordRead(book, progress),
+    recordFailure: book => feedback.recordFailure(book),
     show() {
       if (state.visible) return;
       state = {...state, visible: true};
@@ -197,7 +221,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
       if (candidates.length < RECOMMENDATION_BATCH_SIZE && nextBatch !== null) return load('more');
       if (candidates.length) showSelection(candidates);
       else if (state.cards.every(card => onShelf(card.book) || feedback.isDismissed(card.book) || failed.has(sourceEntryKey(card.book)))) showSelection([]);
-      state = {...state, phase: 'ready', error: ''}; notify();
+      state = {...state, phase: 'ready', error: ''}; notify(); void enrich();
     },
     shelfChanged() {shelfCache = null; updateReasons(); notify();},
     dismiss(id) {
@@ -217,7 +241,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
       if (index >= 0) cards[index] = restored; else cards.splice(Math.min(previous.index, cards.length), 0, restored);
       state = {...state, cards}; updateReasons(); notify();
     },
-    clearFeedback() {feedback.clear(); served.clear(); undo = null; updateReasons(); notify();},
+    clearFeedback() {feedback.clear(); metadata.clear(); metadataTried.clear(); served.clear(); undo = null; updateReasons(); notify();},
     setPersonalization(value) {feedback.setPersonalization(value); updateReasons(); notify();},
     markExposed(id, token) {
       const card = state.cards.find(item => item.id === id && item.revision === token);

@@ -38,6 +38,18 @@ function saveShelf() {
     .catch(error => {toast(`${error.message || '保存失败'}；当前记录仍可导出备份`); return false;});
 }
 function remember(book, extra = {}) {const old = shelf.find(b => key(b) === key(book)); const saved = rememberBook(old, old ? book : {...book, favorite: false}, extra); shelf = [saved, ...shelf.filter(b => key(b) !== key(book))]; saveShelf(); return saved;}
+function rememberProgress(book, progress) {
+  const id = key(book), old = shelf.find(item => key(item) === id);
+  const saved = rememberBook(old, old ? book : {...book, favorite: false}, progress);
+  shelf = [saved, ...shelf.filter(item => key(item) !== id)];
+  const generation = ++shelfSaveGeneration;
+  $('#shelf-count').textContent = shelf.length; renderContinueReading();
+  recommendations.recordRead?.(book, progress);
+  if (!libraryStore.updateBook) {saveShelf(); return;}
+  libraryStore.updateBook(saved).then(merged => {
+    if (merged && generation === shelfSaveGeneration) {shelf = [merged, ...shelf.filter(item => key(item) !== id)]; renderContinueReading();}
+  }).catch(error => toast(`${error.message || '保存失败'}；当前记录仍可导出备份`));
+}
 async function api(path, body, signal) {
   const controller = new AbortController(); let timedOut = false;
   const abort = () => controller.abort();
@@ -109,7 +121,9 @@ const downloads = createDownloads({api, imageUrl, imageLoader, toast,
 });
 const reader = createReader({root: $('#reader-dialog'), api, imageUrl, imageLoader, downloads, toast,
   getProgress: book => shelf.find(b => key(b) === key(book)),
-  onProgress: (book, progress) => remember(book, progress),
+  onProgress: rememberProgress,
+  onRefreshCatalog: () => refreshBookCatalog(),
+  onFailure: book => recommendations.recordFailure?.(book),
   isChapterRead: (book, chapter) => isChapterRead(shelf.find(item => key(item) === key(book)), chapter),
   onChapterRead: (book, chapter, read) => {
     const old = shelf.find(item => key(item) === key(book)) || remember(book);
@@ -214,7 +228,7 @@ function renderHistory() {
 function showError(root, message, retry) { const box = el('div', 'error-panel'); box.append(el('p', '', message)); if (retry) box.append(button('重试', 'quiet', retry)); root.replaceChildren(box); }
 function updateSearchStatus(metrics) {
   const groups = state.groups, complete = groups.filter(g => !g.loading).length, count = groups.reduce((n, g) => n + g.results.length, 0);
-  $('#search-status').textContent = `${metrics.workCount} 部匹配作品 · ${count} 条源站候选 · ${complete} / ${groups.length} 个源已完成` + (state.filter ? ' · 正在筛选单个源' : '') + (groups.some(g => g.error) ? ' · 部分源未完成，点击对应源可重试' : '');
+  $('#search-status').textContent = `${metrics.workCount} 部匹配作品 · ${count} 条候选 · ${complete} / ${groups.length} 个源已响应` + (state.filter ? ' · 正在筛选单个源' : '') + (groups.some(g => g.error) ? ` · ${groups.filter(g => g.error).length} 个源失败，可展开筛选重试` : '');
 }
 function renderResults() {
   const groups = state.groups, count = groups.reduce((n, g) => n + g.results.length, 0);
@@ -222,6 +236,7 @@ function renderResults() {
   $('#results-title').textContent = `“${state.keyword}” 的搜索结果`;
   updateSearchStatus(metrics);
   $('#stop-search').hidden = !state.search && !state.retries.size;
+  $('#source-filter-label').textContent = state.filter ? `当前：${groups.find(g => g.siteId === state.filter)?.siteName || state.filter} · 更换漫画源` : `全部漫画源 · 筛选（${groups.length}）`;
   const tabs = $('#source-tabs');
   const tab = (label, id, error) => { let b = [...tabs.children].find(b => b.dataset.site === id); if (!b) {b = button('', '', () => {state.filter = id; renderResults();}); b.dataset.site = id; tabs.append(b);} b.textContent = label; b.className = `${state.filter === id ? 'active' : ''} ${error ? 'failed' : ''}`; b.setAttribute('aria-pressed', String(state.filter === id)); };
   tab(`全部 ${count} 条`, ''); groups.forEach(g => tab(`${g.siteName} · ${g.loading ? '…' : g.error ? '!' : `${g.results.length} 条`}`, g.siteId, g.error));
@@ -282,9 +297,9 @@ async function retrySource(id) {
   finally {if (state.retries.get(id) === controller) state.retries.delete(id); if (state.groups === groups) renderResults();}
 }
 function pageTitle() {return state.page === 'discover' ? '发现 · Sardina' : state.page === 'search' && state.keyword ? `${state.keyword} · 搜索 · Sardina` : 'Sardina';}
-function closeDetail(push = true) { state.detailSeq++; state.detailRequest?.abort(); state.detailRequest = null; $('#detail-dialog').close(); if (push) {route(resultRoute()); document.title = pageTitle();} }
+function closeDetail(push = true) { state.catalogRequest?.abort(); state.detailSeq++; state.detailRequest?.abort(); state.detailRequest = null; $('#detail-dialog').close(); if (push) {route(resultRoute()); document.title = pageTitle();} }
 async function openBook(book, {resume = false, push = true, chapterUrl = null, detail: prefetchedDetail = null} = {}) {
-  closeReader(false); $('#shelf-dialog').close(); state.detailSeq++; const seq = state.detailSeq;
+  state.catalogRequest?.abort(); closeReader(false); $('#shelf-dialog').close(); state.detailSeq++; const seq = state.detailSeq;
   state.detailRequest?.abort(); const controller = new AbortController(); state.detailRequest = controller;
   const old = shelf.find(b => key(b) === key(book)); state.book = {...old, ...book}; state.chapters = [];
   const catalogStartedAt = Date.now(), catalogBase = old?.catalogState;
@@ -301,9 +316,11 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
     if (seq !== state.detailSeq) return;
     const detail = localDetail || !refreshCatalog && prefetchedDetail || await api('/api/details', {siteId: book.siteId, detailUrl: book.detailUrl, ...(refreshCatalog ? {refresh: true} : {})}, controller.signal);
     if (seq !== state.detailSeq) return;
-    for (const field of ['title', 'coverUrl', 'description', 'author', 'status']) if (detail[field]) state.book[field] = detail[field];
+    for (const field of ['title', 'coverUrl', 'description', 'author', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
     state.book.unavailableReason = detail.unavailableReason || '';
     state.chapters = detail.chapters || [];
+    if (!state.chapters.length) recommendations.recordFailure?.(state.book);
+    if (!detail.savedOffline) recommendations.rememberMetadata?.(state.book, detail);
     const saved = shelf.find(item => key(item) === key(state.book));
     const catalogState = detail.savedOffline ? null : acknowledgeCatalog(saved?.catalogState, detail, {fresh: refreshCatalog, startedAt: catalogStartedAt, baseState: catalogBase});
     if (catalogState) state.book.catalogState = catalogState;
@@ -318,11 +335,35 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
     renderDetail();
     const target = chapterUrl || (resume && shelf.find(item => key(item) === key(state.book))?.chapterUrl);
     if (target) { const index = state.chapters.findIndex(c => c.url === target); if (index >= 0) await readChapter(index, {resume: resume || !push, push}); else toast('原章节已不在当前目录中，请重新选择'); }
+    if (localDetail && seq === state.detailSeq && navigator.onLine !== false) void refreshBookCatalog({quiet: true}).catch(() => {});
   } catch (e) {
     if (seq !== state.detailSeq) return;
+    recommendations.recordFailure?.(book);
     const error = el('div'); showError(error, `目录加载失败：${e.message}`, () => openBook(book, {resume, push: false, chapterUrl}));
     error.firstChild.append(button('搜索其他源', 'quiet', () => search(book.title))); root.replaceChildren(header, error);
   } finally {if (state.detailRequest === controller) state.detailRequest = null;}
+}
+async function refreshBookCatalog({quiet = false} = {}) {
+  if (!state.book) return;
+  state.catalogRequest?.abort();
+  const controller = new AbortController(), book = {...state.book}, seq = state.detailSeq, startedAt = Date.now();
+  state.catalogRequest = controller;
+  try {
+    const detail = await api('/api/details', {siteId: book.siteId, detailUrl: book.detailUrl, refresh: true}, controller.signal);
+    if (controller.signal.aborted || seq !== state.detailSeq || key(book) !== key(state.book)) return;
+    if (!Array.isArray(detail?.chapters) || !detail.chapters.length) throw new Error(detail?.unavailableReason || '暂未获取到新目录，已保留本地目录');
+    const previousCount = state.chapters.length;
+    for (const field of ['title', 'coverUrl', 'description', 'author', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
+    state.chapters = detail.chapters; state.book.unavailableReason = detail.unavailableReason || '';
+    recommendations.rememberMetadata?.(state.book, detail);
+    reader.updateCatalog(state.book, state.chapters);
+    await downloads.store.putCatalog(state.book, state.chapters);
+    if (seq !== state.detailSeq) return;
+    const saved = shelf.find(item => key(item) === key(book));
+    if (saved) {state.book.catalogState = acknowledgeCatalog(saved.catalogState, detail, {fresh: true, startedAt, baseState: saved.catalogState}); remember(state.book);}
+    if (!reader.isOpen() && $('#detail-dialog').open) renderDetail();
+    if (!quiet || state.chapters.length > previousCount) toast(state.chapters.length > previousCount ? `目录已更新，共 ${state.chapters.length} 章` : '目录已更新');
+  } finally {if (state.catalogRequest === controller) state.catalogRequest = null;}
 }
 function renderDetail() {
   const root = $('#detail-content'); const header = root.firstChild; root.replaceChildren(header); const b = state.book;
@@ -339,7 +380,8 @@ function renderDetail() {
     remember(state.book, {favorite: true}); collect.textContent = '已收藏'; collect.setAttribute('aria-disabled', 'true'); toast('已加入收藏');
   }); collect.setAttribute('aria-disabled', String(!!collected));
   const download = button('下载章节', 'quiet', () => downloads.open({book: b, chapters: state.chapters, chapter: state.chapters[Math.max(0, resumeIndex)]})); download.disabled = !state.chapters.length;
-  actions.append(start, collect, download, button('换源查找', 'quiet', () => search(b.title))); text.append(actions); info.append(cover(b), text); body.append(info);
+  const update = button('更新目录', 'quiet', async () => {update.disabled = true; try {await refreshBookCatalog();} catch (error) {toast(error.message);} finally {update.disabled = false;}});
+  actions.append(start, collect, download, update, button('换源查找', 'quiet', () => search(b.title))); text.append(actions); info.append(cover(b), text); body.append(info);
   const tools = el('div', 'chapter-tools'), chapters = el('div', 'chapters'), filter = el('input'); filter.placeholder = '查找章节'; filter.setAttribute('aria-label', '查找章节'); let reverse = false;
   const sort = button('倒序排列', 'quiet', () => {reverse = !reverse; sort.textContent = reverse ? '正序排列' : '倒序排列'; renderChapters();});
   tools.append(el('strong', '', '章节目录'), filter, sort); body.append(tools, chapters);

@@ -361,8 +361,10 @@ class HTTPTests(unittest.TestCase):
                 self.assertEqual(response.read(), b'synthetic-jpeg')
             get.assert_called_once_with(logical)
         with patch('server.comicbox_images.fetch_image', side_effect=RuntimeError('图片分片缺失')):
+            with urllib.request.urlopen(self.base + path) as response:
+                self.assertEqual(response.read(), b'synthetic-jpeg')
             with self.assertRaises(urllib.error.HTTPError) as error:
-                urllib.request.urlopen(self.base + path)
+                urllib.request.urlopen(self.base + path + '&retry=1')
             self.assertEqual(error.exception.code, 502)
             self.assertIn('分片缺失', json.load(error.exception)['error'])
         with patch('server.comicbox_images.fetch_image') as get:

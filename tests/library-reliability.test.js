@@ -147,3 +147,25 @@ test('auto-update checks only stale started ongoing books and backs off failed a
   assert.equal(dueUpdateBooks([book(2), {...started, status: '已完结'}, {...started, readingState: 'finished'}], {now}).length, 0);
   assert.equal(dueUpdateBooks([started], {now, availableSites: ['other']}).length, 0);
 });
+
+test('progress updates one record without scanning a thousand-book shelf and preserves another tab favorite', async () => {
+  const storage = new Storage(), a = createLibraryStore({storage, locks: null, now: () => 2000});
+  await a.save(Array.from({length: 1000}, (_, i) => book(i + 1)));
+  const current = a.books.find(row => row.title === '漫画1');
+  const b = createLibraryStore({storage, locks: null, now: () => 3000});
+  await b.updateBook({...current, favorite: true, favoriteChangedAt: 3000});
+  let scans = 0, writes = 0;
+  const originalKey = storage.key.bind(storage), originalWrite = storage.setItem.bind(storage);
+  storage.key = index => {scans++; return originalKey(index);};
+  storage.setItem = (...args) => {writes++; return originalWrite(...args);};
+  const saved = await a.updateBook({...current, chapterUrl: chapter(1).url, page: 8, readAt: 4000});
+  assert.equal(scans, 0); assert.equal(writes, 1); assert.equal(saved.page, 8); assert.equal(saved.favorite, true);
+  assert.equal(a.books.length, 1000);
+});
+
+test('verified Coco new-host URLs reuse the original book identity', () => {
+  const old = {siteId: 'cocoecar', detailUrl: 'https://www.cocoecar.com/comic/12686'};
+  assert.equal(sourceEntryKey(old), sourceEntryKey({...old, detailUrl: 'https://keke2026.com/comic/12686'}));
+  assert.notEqual(sourceEntryKey(old), sourceEntryKey({...old, detailUrl: 'https://keke2026.com.evil.test/comic/12686'}));
+  assert.notEqual(sourceEntryKey(old), sourceEntryKey({...old, detailUrl: 'https://keke2026.com/comic/12687'}));
+});

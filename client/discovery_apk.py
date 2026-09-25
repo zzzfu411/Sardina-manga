@@ -21,6 +21,7 @@ _NAMES = {**{k: v[0] for k, v in apk_wap.SOURCES.items()},
 _ORIGINS = {**{k: 'https://' + v[1] for k, v in apk_wap.SOURCES.items()},
             **{k: 'https://' + v[1] for k, v in apk_vomic_html.SOURCES.items()},
             'zaimanhua': apk_dmzj.WEB_BASE, 'kuaikan': apk_kuaikan.ORIGIN}
+_ORIGINS['cocoecar'] = 'https://keke2026.com'
 _PERIODS = [('total', '总榜'), ('month', '月榜'), ('week', '周榜'), ('day', '日榜')]
 _CDN = {**apk_vomic_html._IMAGE_HOSTS, **{k: apk_wap.IMAGE_DOMAINS for k in apk_wap.SOURCES},
         'zaimanhua': apk_dmzj.IMAGE_DOMAINS, 'kuaikan': apk_kuaikan.IMAGE_DOMAINS}

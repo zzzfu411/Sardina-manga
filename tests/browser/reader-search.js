@@ -1,0 +1,94 @@
+async page => {
+  const base='__BASE_URL__', screenshotDir='__OUTPUT_DIR__';
+  const assert=(ok,message)=>{if(!ok)throw new Error(message);};
+  const errors=[],images=[];page.on('pageerror',error=>errors.push(error.message));
+  const book={siteId:'mangabz',siteName:'漫画巴士',title:'隔离阅读测试',detailUrl:'https://www.mangabz.com/990025bz/',coverUrl:''};
+  const chapter={name:'第1话',url:'https://www.mangabz.com/m990025/'}, nextChapter={name:'第2话',url:'https://www.mangabz.com/m990026/'};
+  const oldUrls=[0,1].map(i=>'https://image.mangabz.com/repair-page-'+i+'.png?cid=990025&key=expired');
+  const longPageCount=240;
+  let chapterCalls=0,detailsCalls=0,longChapter=false;
+  const json=(route,data)=>route.fulfill({contentType:'application/json',body:JSON.stringify({data})});
+  await page.route('**/api/details',route=>{detailsCalls++;return json(route,{...book,author:'测试作者',chapters:[chapter,nextChapter],catalogCompleteness:'complete'});});
+  await page.route('**/api/chapter-images',route=>{chapterCalls++;return json(route,{images:longChapter?Array.from({length:longPageCount},(_,i)=>'https://image.mangabz.com/repair-long-'+i+'.png'):oldUrls.map(u=>u.replace('expired','fresh'))});});
+  await page.route('**/api/recommendations**',route=>json(route,{items:[],origins:[],warnings:[],nextBatch:null}));
+  await page.route('**/api/book-metadata',route=>json(route,{}));
+  await page.route('**/api/image?**',route=>{
+    const url=decodeURIComponent((route.request().url().match(/[?&]url=([^&]+)/)||[])[1]||'');
+    if(url.includes('repair-'))images.push(url);
+    if(url.includes('expired'))return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'expired image URL'})});
+    return route.fulfill({contentType:'image/png',path:'__ROOT__/tests/fixtures/reader-page.png'});
+  });
+  await page.addInitScript(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>!sessionStorage.getItem('offline-fixture')}));
+  await page.goto(base+'/');
+  const readPath=await page.evaluate(async({book,chapter,oldUrls})=>{
+    const {createDownloadStore,downloadKey}=await import('/download-store.js');const store=createDownloadStore();
+    await store.remove(downloadKey(book,chapter)); sessionStorage.removeItem('offline-fixture');
+    const {sourceEntryKey}=await import('/book-identity.js');localStorage.removeItem('revyunman.library.v2.book.'+encodeURIComponent(sourceEntryKey(book)));
+    const canvas=document.createElement('canvas');canvas.width=80;canvas.height=120;canvas.getContext('2d').fillRect(0,0,80,120);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve));
+    const record=await store.prepare({book,chapter,chapters:[chapter],urls:oldUrls});await store.putPage(record,0,blob);await store.close();
+    localStorage.setItem('revyunman.reader.preferences.v2',JSON.stringify({mode:'paged',prefetch:'off'}));
+    const encode=value=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+    return '/read/'+encode([book.siteId,book.detailUrl,{title:book.title}])+'/'+encode(chapter.url);
+  },{book,chapter,oldUrls});
+  await page.goto(base+readPath);
+  await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
+  await page.locator('#reader-next-page').click();
+  await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="1"]')?.dataset.state==='loaded');
+  assert(chapterCalls===1,'expired partial download did not refresh once');
+  assert(images.some(u=>u.includes('expired'))&&images.some(u=>u.includes('fresh')),'expired image recovery was not exercised');
+  assert(!images.some(u=>u.includes('repair-page-0')),'saved first page was downloaded again');
+  const recovery={chapterRefreshes:chapterCalls,requests:images.length,firstPageStayedLocal:true};
+  await page.evaluate(async({book,chapter,oldUrls})=>{
+    const {createDownloadStore}=await import('/download-store.js');const store=createDownloadStore();
+    const record=await store.prepare({book,chapter,chapters:[chapter],urls:oldUrls.map(u=>u.replace('expired','fresh'))});
+    const canvas=document.createElement('canvas');canvas.width=80;canvas.height=120;const blob=await new Promise(resolve=>canvas.toBlob(resolve));
+    await store.putPage(record,1,blob);await store.putCatalog(book,[chapter]);await store.close();
+  },{book,chapter,oldUrls});
+  const previousDetails=detailsCalls,previousImages=images.length;await page.reload();
+  await page.waitForFunction(()=>document.querySelector('#reader-load-status')?.textContent.includes('本地阅读'));
+  await page.waitForFunction(()=>document.querySelector('#next-chapter')?.disabled===false);
+  assert(detailsCalls>previousDetails,'local catalog never revalidated');
+  assert(images.length===previousImages,'complete local download fetched remote images');
+  await page.evaluate(()=>sessionStorage.setItem('offline-fixture','1'));
+  const beforeOffline={details:detailsCalls,images:images.length,chapters:chapterCalls};await page.reload();
+  await page.waitForSelector('.ry-reader-page[data-state="loaded"]');
+  await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
+  await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
+  await page.locator('#reader-next-page').click();await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="1"]')?.dataset.state==='loaded');
+  assert(detailsCalls===beforeOffline.details&&images.length===beforeOffline.images&&chapterCalls===beforeOffline.chapters,'offline reader attempted external data');
+  await page.evaluate(async({book,chapter})=>{sessionStorage.removeItem('offline-fixture');const {createDownloadStore,downloadKey}=await import('/download-store.js');const store=createDownloadStore();await store.remove(downloadKey(book,chapter));await store.close();},{book,chapter});
+  longChapter=true;await page.reload();
+  await page.waitForSelector('.ry-reader-page[data-state="loaded"]');
+  await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
+  await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
+  for(let i=1;i<longPageCount;i++) {await page.locator('#reader-next-page').click();await page.waitForFunction(index=>document.querySelector('.ry-reader-page[data-page="'+index+'"]')?.dataset.state==='loaded',i);}
+  const retained=await page.locator('.ry-reader-page img[src]').count();assert(retained<=14,'reader retains all decoded images: '+retained);
+  await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
+  await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
+  assert(await page.locator('.ry-reader-page').count()===longPageCount,'image eviction changed page geometry');
+  await page.locator('#reader-settings-open').click();
+  for(let i=0;i<30;i++){await page.keyboard.press('Tab');assert(await page.evaluate(()=>!!document.activeElement.closest('#reader-settings')),'settings focus escaped');}
+  await page.keyboard.press('Escape');
+  const readerSizes=[];
+  for(const width of [393,320]){
+    await page.setViewportSize({width,height:852});
+    const overflow=await page.locator('#reader-dialog').evaluate(root=>root.scrollWidth-root.clientWidth);assert(overflow<=1,'reader horizontal overflow');readerSizes.push({width,overflow});
+  }
+  await page.screenshot({path:screenshotDir+'/reader-320.png'});
+  await page.goto(base+'/');
+  const siteResponse=await page.request.get(base+'/api/sites'),sites=(await siteResponse.json()).data;
+  await page.route('**/api/search',route=>{const body=route.request().postDataJSON(),source=sites.find(site=>site.siteId===body.siteId);return json(route,[{...source,results:source===sites.at(-1)?[]:[{...source,title:'三月的狮子',author:'羽海野千花',detailUrl:'https://www.mangabz.com/990025bz/',coverUrl:'https://image.mangabz.com/repair-cover.png'}],...(source===sites.at(-1)?{error:'合成失败样本'}:{})}]);});
+  await page.setViewportSize({width:393,height:852});await page.goto(base+'/s/'+encodeURIComponent('三月的狮子'));
+  await page.waitForFunction(()=>document.querySelector('#search-status')?.textContent.includes('25 / 25'));
+  await page.waitForSelector('.search-chapter');
+  const geometry=await page.evaluate(()=>({firstChapter:Math.round(document.querySelector('.search-chapter').getBoundingClientRect().top),firstBook:Math.round(document.querySelector('.search-work').getBoundingClientRect().top),overflow:document.documentElement.scrollWidth-innerWidth,status:document.querySelector('#search-status').textContent,sourceButtons:document.querySelectorAll('#source-tabs button').length}));
+  assert(geometry.firstChapter<800,'mobile first chapter remains below screen: '+geometry.firstChapter);
+  assert(geometry.overflow<=1,'mobile search overflows');assert(geometry.sourceButtons===26,'source filters disappeared');assert(geometry.status.includes('1 个源失败')&&!geometry.status.includes('部分源未完成'),'contradictory completion message');
+  await page.screenshot({path:screenshotDir+'/search-393.png'});
+  await page.locator('#source-filter-label').click();assert(await page.locator('#source-tabs button').last().isVisible(),'last source is unreachable');
+  await page.locator('.search-source-fold summary').first().click();assert(await page.locator('.search-source-fold').first().locator('.search-source').last().isVisible(),'alternative book sources are unreachable');
+  await page.setViewportSize({width:320,height:852});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'expanded search overflows at 320px');
+  assert(!errors.length,'browser errors: '+errors.join('; '));
+  return {recovery,offline:true,newCatalog:true,longChapter:{visited:longPageCount,residentImages:retained,backscroll:true},readerSizes,focusContained:true,search:geometry,errors};
+}

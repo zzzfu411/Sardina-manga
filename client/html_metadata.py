@@ -171,4 +171,6 @@ def detail_metadata(site, page, url):
     if cover:
         cover = urljoin(url, cover)
     description = re.sub(r"^(?:简介|簡介)\s*[：:]\s*", "", description)
-    return {"title": title, "author": author, "description": description, "coverUrl": cover, "status": status}
+    raw_tags = label_value(scope, r"(?:题材|題材|类别|類別|类型|類型)") or metas.get("og:novel:category", "")
+    tags = [tag.strip() for tag in re.split(r"[/,，、\s]+", raw_tags) if 0 < len(tag.strip()) <= 20][:12]
+    return {"title": title, "author": author, "description": description, "coverUrl": cover, "status": status, **({"tags": tags} if tags else {})}

@@ -13,7 +13,8 @@ const count = value => Number.isSafeInteger(value) && value >= 0 ? Math.min(valu
 /** Local-only, bounded feedback. Failed writes remain visible and in memory. */
 export function createRecommendationFeedback({storage, now = Date.now} = {}) {
   let warning = '', corrupt = false;
-  let state = {version: 1, personalization: true, dismissed: [], exposures: [], metrics: {impressions: 0, opens: 0, dismissals: 0}};
+  const openedBooks = new Map();
+  let state = {version: 1, personalization: true, dismissed: [], exposures: [], metrics: {impressions: 0, opens: 0, dismissals: 0, readingStarts: 0, continuedReads: 0, openFailures: 0}};
   try {
     if (storage === undefined) storage = globalThis.localStorage;
     const raw = storage?.getItem(RECOMMENDATION_FEEDBACK_KEY);
@@ -26,7 +27,7 @@ export function createRecommendationFeedback({storage, now = Date.now} = {}) {
         exposures: value.exposures.filter(row => text(row?.key) && text(row.entryKey) && time(row.at) && row.at > now() - FEEDBACK_LIMITS.exposureDays * DAY)
           .sort((a, b) => b.at - a.at).slice(0, FEEDBACK_LIMITS.exposures)
           .map(row => ({key: row.key, entryKey: row.entryKey, at: row.at})),
-        metrics: Object.fromEntries(['impressions', 'opens', 'dismissals'].map(key => [key, count(value.metrics?.[key])]))};
+        metrics: Object.fromEntries(['impressions', 'opens', 'dismissals', 'readingStarts', 'continuedReads', 'openFailures'].map(key => [key, count(value.metrics?.[key])]))};
     }
   } catch {
     corrupt = true;
@@ -59,10 +60,29 @@ export function createRecommendationFeedback({storage, now = Date.now} = {}) {
         ...state.exposures.filter(row => row !== previous && row.at > now() - FEEDBACK_LIMITS.exposureDays * DAY)].slice(0, FEEDBACK_LIMITS.exposures);
       state.metrics.impressions = count(state.metrics.impressions + 1); persist();
     },
-    opened(book) {if (validBook(book)) {state.metrics.opens = count(state.metrics.opens + 1); persist();}},
+    opened(book) {if (validBook(book)) {
+      const key = sourceEntryKey(book); openedBooks.delete(key); openedBooks.set(key, {at: now(), pages: new Set()});
+      while (openedBooks.size > 30) openedBooks.delete(openedBooks.keys().next().value);
+      state.metrics.opens = count(state.metrics.opens + 1); persist();
+    }},
+    recordRead(book, progress) {
+      const row = openedBooks.get(sourceEntryKey(book));
+      if (!row || now() - row.at > 6 * 3600000 || !progress?.chapterUrl || !Number.isInteger(progress.page)) return;
+      const page = progress.chapterUrl + ':' + progress.page; if (row.pages.has(page)) return;
+      row.pages.add(page); let changed = false;
+      if (row.pages.size === 1) {state.metrics.readingStarts = count(state.metrics.readingStarts + 1); changed = true;}
+      if (row.pages.size === 3 && !row.continued) {row.continued = true; state.metrics.continuedReads = count(state.metrics.continuedReads + 1); changed = true;}
+      if (row.pages.size > 3) row.pages.delete(row.pages.values().next().value);
+      if (changed) persist();
+    },
+    recordFailure(book) {
+      const row = openedBooks.get(sourceEntryKey(book));
+      if (!row || row.failed || now() - row.at > 6 * 3600000) return;
+      row.failed = true; state.metrics.openFailures = count(state.metrics.openFailures + 1); persist();
+    },
     setPersonalization(value) {state.personalization = value === true; persist();},
     clear() {
-      state = {...state, dismissed: [], exposures: [], metrics: {impressions: 0, opens: 0, dismissals: 0}};
+      openedBooks.clear(); state = {...state, dismissed: [], exposures: [], metrics: {impressions: 0, opens: 0, dismissals: 0, readingStarts: 0, continuedReads: 0, openFailures: 0}};
       corrupt = false; persist();
     },
     snapshot() {return {...state, dismissed: state.dismissed.map(row => ({...row, book: {...row.book}})),

@@ -24,7 +24,7 @@ export async function validateDownloadedImage(blob) {
 }
 
 /** Explicit downloads survive chapter changes. Only one chapter and two pages run at once. */
-export function createDownloadManager({store, api, imageUrl, loadImage, validateImage = validateDownloadedImage, onChange = () => {}}) {
+export function createDownloadManager({store, api, imageUrl, loadImage, validateImage = validateDownloadedImage, locks = globalThis.navigator?.locks, onChange = () => {}}) {
   const jobs = new Map();
   let running = null;
   const notify = () => onChange();
@@ -33,11 +33,14 @@ export function createDownloadManager({store, api, imageUrl, loadImage, validate
     const signal = job.controller.signal;
     const check = () => {if (signal.aborted) throw new DOMException('下载已暂停', 'AbortError');};
     notify();
-    try {
+    async function transfer() {
+      check(); job.status = 'loading'; notify();
       let record = await store.getChapter(job.book, job.chapter); check();
-      if (!record?.urls.length || (!record.complete && job.refresh)) {
+      if (!record || (job.record?.token && record.token !== job.record.token)) throw new Error('此下载已删除或变更，请重新选择章节');
+      if (!record.complete) {
+        job.refresh ||= !!record.urls.length;
         const data = await api('/api/chapter-images', {siteId: job.book.siteId, chapterUrl: job.chapter.url, ...(job.refresh ? {refresh: true} : {})}, signal); check();
-        record = await store.prepare({...job, urls: data?.images || []}); check();
+        record = await store.prepare({...job, expectedGeneration: record.generation, urls: data?.images || []}); check();
       }
       job.record = record; job.status = 'downloading'; notify();
       if (!record.complete) {
@@ -65,6 +68,13 @@ export function createDownloadManager({store, api, imageUrl, loadImage, validate
         check();
       }
       job.status = 'complete';
+    }
+    try {
+      if (locks?.request) {job.status = 'waiting'; notify(); await locks.request('sardina.download.' + job.id, {signal}, transfer);}
+      else {
+        if (typeof window !== 'undefined') throw new Error('此浏览器不支持协调下载，请使用新版浏览器和 localhost 或 HTTPS');
+        await transfer();
+      }
     } catch (error) {
       job.status = job.record?.complete ? 'complete' : error?.name === 'AbortError' ? 'paused' : 'error';
       if (job.status === 'error') job.error = error?.message || '下载失败，请重试';
@@ -79,7 +89,7 @@ export function createDownloadManager({store, api, imageUrl, loadImage, validate
   }
   function add(context) {
     const id = downloadKey(context.book, context.chapter), old = jobs.get(id);
-    if (old?.running || ['saving', 'queued', 'complete'].includes(old?.status)) return;
+    if (old?.running || ['saving', 'queued'].includes(old?.status)) return;
     if ([...jobs.values()].filter(job => job.running || ['saving', 'queued'].includes(job.status)).length >= 20) throw new Error('请等待当前下载完成，最多同时排队 20 章');
     const job = old || {...context, id};
     job.refresh = old?.status === 'error'; job.status = 'saving'; job.error = ''; jobs.set(id, job); notify();
@@ -99,6 +109,7 @@ export function createDownloadManager({store, api, imageUrl, loadImage, validate
   return {
     add, pause, jobs: () => [...jobs.values()],
     pauseAll() {for (const job of jobs.values()) if (job.status !== 'complete') {job.status = 'paused'; job.controller?.abort();} notify();},
-    async remove(id) {await pause(id); await store.remove(id); jobs.delete(id); notify();},
+    async remove(id) {const pending = pause(id); await jobs.get(id)?.enqueued; await store.remove(id); await pending; jobs.delete(id); notify();},
+    reconcile(records) {const rows = new Map(records.map(row => [row.id, row])); for (const [id, job] of jobs) if (!job.running && !['saving', 'queued'].includes(job.status)) {const record = rows.get(id); if (!record) jobs.delete(id); else if (record.updatedAt >= (job.record?.updatedAt || 0)) {job.record = record; if (record.complete) job.status = 'complete'; else if (job.status === 'complete') job.status = 'paused';}}},
   };
 }
