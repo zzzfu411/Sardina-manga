@@ -1,0 +1,52 @@
+{
+  "manhua1234": {
+    "book": "https://m.wmh1234.com/comic/10.html",
+    "chapter": "https://m.wmh1234.com/go/MTAtMTAtZml4dHVyZQ",
+    "search": "<aside><article><h3>推荐广告</h3></article></aside><div class=\"comic-grid\"><article><a class=\"comic-card__link\" href=\"/comic/10.html\"><img data-src=\"https://wmh1234.wszwhg.net/cover.webp\"><h3 class=\"comic-card__title\">普通作品</h3><span class=\"comic-card__author\">作者：普通作者</span></a></article><article><a class=\"comic-card__link\" href=\"/comic/10.html\"><h3 class=\"comic-card__title\">重复目录</h3></a></article><article><a class=\"comic-card__link\" href=\"https://outside.invalid/comic/10.html\"><h3 class=\"comic-card__title\">外站广告</h3></a></article></div>",
+    "detail": "<link rel=\"canonical\" href=\"https://m.wmh1234.com/comic/10.html\"><div class=\"mint-detail\" data-comic-id=\"10\"><meta name=\"author\" content=\"网站管理员\"><h1>作品详情</h1><img id=\"mintWorkCover\" src=\"https://wmh1234.wszwhg.net/cover.webp\"><div class=\"mint-work-info\"><h2 id=\"mintWorkTitle\">普通作品</h2><p>普通作者 著</p><span class=\"mint-tag\">连载</span></div><section class=\"mint-intro\"><h2>作品简介</h2><p>合成作品简介</p></section><div class=\"mint-chapter-grid\"><a data-chapter-id=\"12\" href=\"/go/MTAtMTItZml4dHVyZQ\">番外篇</a><a data-chapter-id=\"11\" href=\"/go/MTAtMTEtZml4dHVyZQ\">第2话</a><a data-chapter-id=\"10\" href=\"/go/MTAtMTAtZml4dHVyZQ\">第1话</a><a data-chapter-id=\"10\" href=\"/go/MTAtMTAtZml4dHVyZQ\">第1话</a><a href=\"/boluoyuedu.html\">在 APP 中阅读更多章节</a></div><aside><a data-chapter-id=\"99\" href=\"/go/MTAtOTktZml4dHVyZQ\">其他作品</a></aside></div>",
+    "read": "<link rel=\"canonical\" href=\"https://reader.hqread.cc/r/MTAtMTAtZml4dHVyZQ\"><img class=\"reader-image\" src=\"https://wmh1234.wszwhg.net/outside.webp\"><main class=\"reader-content\" data-comic-id=\"10\" data-chapter-id=\"10\" data-chapter-url=\"https://reader.hqread.cc/r/MTAtMTAtZml4dHVyZQ\"><div class=\"mint-reader-metadata\"><img src=\"https://wmh1234.wszwhg.net/cover.webp\"></div><img class=\"reader-image lazy\" data-src=\"https://wmh1234.wszwhg.net/page1.webp?st=synthetic&amp;e=123\"><img class=\"reader-image\" data-src=\"https://wmh1234.wszwhg.net/page2.webp\"><img class=\"reader-image\" data-src=\"https://wmh1234.wszwhg.net/page2.webp\"></main>",
+    "names": [
+      "第1话",
+      "第2话",
+      "番外篇"
+    ],
+    "image1": "https://wmh1234.wszwhg.net/page1.webp?st=synthetic&e=123"
+  },
+  "cocoecar": {
+    "book": "https://www.cocoecar.com/comic/10",
+    "chapter": "https://www.cocoecar.com/chapter/10",
+    "search": "<div class=\"cy_list_mh\"><ul><li><img src=\"/placeholder.png\" data-original=\"https://cocoimg.caiji2029.com/cover.jpg\"></li><li class=\"title\"><a href=\"/comic/10\">普通作品</a></li><li class=\"author\">普通作者</li></ul><ul><li class=\"title\"><a href=\"/comic/10\">重复目录</a></li></ul></div><aside><ul><li class=\"title\"><a href=\"/comic/99\">推荐广告</a></li></ul></aside>",
+    "detail": "<a class=\"j-user-collect\" data-id=\"10\"></a><meta name=\"author\" content=\"网站管理员\"><div class=\"cy_intro_l\"><img data-original=\"https://cocoimg.caiji2029.com/cover.jpg\"><h1>普通作品</h1><div class=\"cy_xinxi\"><span>作者： 普通作者</span><span>状态： 连载</span></div><div class=\"cy_xinxi cy_desc\">合成作品简介</div></div><ul id=\"mh-chapter-list-ol-0\"><li><a href=\"/chapter/11\">第2拳</a></li><li><a href=\"/chapter/10\">第1拳</a></li><li><a href=\"/chapter/10\">第1拳</a></li></ul><aside><a href=\"/chapter/99\">其他作品</a></aside>",
+    "read": "<h1 class=\"comic-title\"><a class=\"last-crumb\" href=\"/chapter/10\">第1话</a></h1><div class=\"page-index__btn\"><span class=\"count\">2</span></div><aside><span class=\"count\">999</span></aside><img class=\"lazy-read\" src=\"https://cocoimg.caiji2029.com/ad.jpg\"><div class=\"rd-article-wr clearfix\"><div class=\"rd-article__pic hide\"><img class=\"lazy-read lazy\" src=\"/placeholder.png\" data-original=\"https://cocoimg.caiji2029.com/page1.jpg\"></div><div class=\"rd-article__pic\"><img class=\"lazy-read\" data-original=\"https://cocoimg.caiji2029.com/page2.jpg\"></div><div class=\"rd-article__pic\"><img class=\"lazy-read\" data-original=\"https://cocoimg.caiji2029.com/page2.jpg\"></div></div>",
+    "names": [
+      "第1拳",
+      "第2拳"
+    ],
+    "image1": "https://cocoimg.caiji2029.com/page1.jpg"
+  },
+  "guazimanhua": {
+    "book": "https://www.guazimanhua.com/comic.php?id=10",
+    "chapter": "https://www.guazimanhua.com/chapter.php?id=10",
+    "search": "<section class=\"grid\"><article class=\"card\"><img class=\"cover\" src=\"https://img.guazicdn.com/cover.jpg\"><h3><a href=\"/comic.php?id=10\">普通作品</a></h3></article><article class=\"card\"><h3><a href=\"/comic.php?id=10&amp;tracking=1\">重复目录</a></h3></article></section><aside><article class=\"card\"><h3><a href=\"/comic.php?id=99\">推荐广告</a></h3></article></aside>",
+    "detail": "<link rel=\"canonical\" href=\"https://www.guazimanhua.com/comic.php?id=10\"><script type=\"application/ld+json\">{\"@graph\": [{\"@type\": \"ItemList\", \"name\": \"普通作品章节目录\", \"numberOfItems\": 3}]}</script><meta name=\"author\" content=\"网站管理员\"><div class=\"mobile-comic-title\">普通作品</div><img class=\"mobile-comic-cover cover\" src=\"https://img.guazicdn.com/cover.jpg\"><p class=\"mobile-comic-meta\">连载 · 3话</p><p class=\"mobile-comic-desc\">合成作品简介</p><div class=\"cinema-strip\"><div><span>作者</span> 普通作者</div></div><div class=\"mobile-chapter-grid is-collapsed\"><a href=\"/chapter.php?id=12\">番外篇</a><a href=\"/chapter.php?id=11\">第2话</a><a href=\"/chapter.php?id=10\">第1话</a><a href=\"/chapter.php?id=10\">第1话</a></div><div class=\"all-chapter-grid\"><a href=\"/chapter.php?id=99\">不属于移动目录的推荐</a></div>",
+    "read": "<link rel=\"canonical\" href=\"https://www.guazimanhua.com/chapter.php?id=10\"><script type=\"application/ld+json\">{\"@graph\": [{\"@type\": \"ItemList\", \"name\": \"普通作品图片列表\", \"numberOfItems\": 2}]}</script><aside><img class=\"reading-image\" src=\"https://img.guazicdn.com/ad.jpg\"></aside><section class=\"reader-images\"><img class=\"reading-image is-active\" src=\"https://img.guazicdn.com/page1.jpg\"><img class=\"reading-image\" src=\"https://img.guazicdn.com/page2.jpg\"><img class=\"reading-image\" src=\"https://img.guazicdn.com/page2.jpg\"></section><script>var chapterId = \"10\";</script>",
+    "names": [
+      "第1话",
+      "第2话",
+      "番外篇"
+    ],
+    "image1": "https://img.guazicdn.com/page1.jpg"
+  },
+  "manhua6": {
+    "book": "https://www.hzxidou.com/comic/10",
+    "chapter": "https://www.hzxidou.com/chapter/10",
+    "search": "<div class=\"search-comic-list\"><div class=\"common-comic-item\"><img data-original=\"https://manhuagui.caiji2029.com/cover.jpg\"><p class=\"comic__title\"><a href=\"/comic/10\">普通作品</a></p><p class=\"comic__author\">普通作者</p></div><div class=\"common-comic-item\"><p class=\"comic__title\"><a href=\"/comic/10\">重复目录</a></p></div></div><aside><div class=\"common-comic-item\"><p class=\"comic__title\"><a href=\"/comic/99\">推荐广告</a></p></div></aside>",
+    "detail": "<a class=\"j-user-collect\" data-id=\"10\"></a><meta name=\"author\" content=\"网站管理员\"><h1>网站标题</h1><div class=\"de-info__cover\"><img data-original=\"https://manhuagui.caiji2029.com/cover.jpg\"></div><p class=\"comic-title j-comic-title\">普通作品</p><div class=\"comic-author\"><span class=\"name\">普通作者</span><span>| 9部作品</span></div><div class=\"comic-status\">连载</div><p class=\"intro-total\">合成作品简介</p><ul class=\"chapter__list-box clearfix\"><li><a href=\"/chapter/10\">第01回</a></li><li><a href=\"/chapter/11\">第02回</a></li><li><a href=\"/chapter/11\">第02回</a></li></ul><aside><a href=\"/chapter/99\">其他作品</a></aside>",
+    "read": "<h1 class=\"comic-title\"><a class=\"last-crumb\" href=\"/chapter/10\">第1话</a></h1><div class=\"page-index__btn\"><span class=\"count\">2</span></div><aside><span class=\"count\">999</span></aside><img class=\"lazy-read\" src=\"https://manhuagui.caiji2029.com/ad.webp\"><div class=\"rd-article-wr clearfix\"><div class=\"rd-article__pic\"><img class=\"lazy-read\" data-src=\"https://manhuagui.caiji2029.com/page1.webp\"></div><div class=\"rd-article__pic\"><img class=\"lazy-read\" data-src=\"https://manhuagui.caiji2029.com/page2.webp\"></div><div class=\"rd-article__pic\"><img class=\"lazy-read\" data-src=\"https://manhuagui.caiji2029.com/page2.webp\"></div></div>",
+    "names": [
+      "第01回",
+      "第02回"
+    ],
+    "image1": "https://manhuagui.caiji2029.com/page1.webp"
+  }
+}

@@ -1,0 +1,61 @@
+.continue-reading {width: min(100%, 550px); margin: 18px auto 0;}
+.continue-book {display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 17px; background: #ffffffd9; border: 1px solid #d3e4f8; border-radius: 13px; text-align: left; box-shadow: 0 3px 12px #2677ed09;}
+.continue-copy {display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 11px; min-width: 0;}
+.continue-label {font-size: 11px; color: #2677ed; align-self: center;}
+.continue-copy strong {font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.continue-position {grid-column: 2; font-size: 11px; color: #71829a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.continue-action {flex-shrink: 0; font-size: 12px; color: #2677ed;}
+.detail-actions button[aria-disabled="true"] {opacity: .65; cursor: default;}
+.shelf-dialog .dialog-header .muted {margin-top: 5px; font-size: 12px;}
+.shelf-dialog .shelf-tools {margin: 22px 30px 16px; gap: 12px; flex-wrap: wrap;}
+#shelf-query {flex: 1; min-width: 150px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px; background: #fff; font-size: 13px;}
+.shelf-dialog .shelf-sort-label {display: flex; align-items: center; gap: 7px; margin-left: 0;}
+.shelf-sort-label select {min-height: 44px;}
+.shelf-filters {display: flex; flex-wrap: wrap; gap: 7px; margin: 0 30px;}
+.shelf-filters button {display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 9px 15px; border-radius: 10px; background: transparent; color: #71829a; font-size: 13px;}
+.shelf-filters button span {font-size: 11px; opacity: .8;}
+.shelf-filters button[aria-pressed="true"] {background: #e5efff; color: #236cda; font-weight: 600;}
+.shelf-list-summary {margin: 13px 30px 22px; font-size: 11px; color: #71829a;}
+.shelf-update-tools {display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 16px 30px 0;}
+.shelf-update-tools button {min-height: 42px; padding: 9px 13px; font-size: 12px;}
+.shelf-update-tools label {display: inline-flex; align-items: center; gap: 7px; min-height: 42px; font-size: 12px; color: #496485; cursor: pointer;}
+.shelf-update-tools input {width: 16px; height: 16px; accent-color: #2677ed;}
+.shelf-update-tools button:disabled {opacity: .5; cursor: default;}
+.shelf-update-status {margin: 9px 30px 0; font-size: 11px; line-height: 1.7; color: #71829a; overflow-wrap: anywhere;}
+.book-update-note {margin-top: 7px; font-size: 11px; line-height: 1.6; color: #71829a; overflow-wrap: anywhere;}
+.book-update-note[data-change="new"], .book-update-note[data-change="changed"] {color: #236cda; font-weight: 600;}
+.book-update-note[data-error="true"] {color: #9a633e;}
+.book-history-note {font-size: 11px; color: #71829a; margin: 5px 0;}
+.shelf-preferences {margin-top: 2px;}
+.chapters .chapter-entry {display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;}
+.chapters .chapter-entry > button {border: 0; border-radius: 0; width: 100%;}
+.chapters .chapter-entry > .chapter-read-toggle {font-size: 11px; padding: 6px; min-height: 32px; color: #647b94; background: #f4f8fd;}
+.chapters .chapter-entry > .chapter-read-toggle[aria-pressed="true"] {color: #236cda; background: #eaf2ff;}
+.discovery-jump {display: inline-block; color: #496f9e; margin-top: 12px; padding: 8px 12px; font-size: 12px; text-decoration: none; border-radius: 8px;}
+.discovery-jump:hover {color: #2677ed; background: #ffffff99;}
+.shelf-dialog .book-reading-state {width: 100%; min-height: 38px; margin-top: 10px; font-size: 12px; background: #f5f9ff; border-color: #dde8f5;}
+.shelf-dialog .remove-book {width: 34px; height: 34px; font-size: 19px;}
+.shelf-backup {margin: 0 30px 26px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; color: #71829a;}
+.shelf-backup summary {cursor: pointer; padding: 8px 0; color: #496485;}
+.shelf-backup p {max-width: 580px; line-height: 1.8; margin: 7px 0 12px;}
+.shelf-backup > div {display: flex; flex-wrap: wrap; gap: 8px;}
+@media (max-width: 540px) {
+  .shelf-dialog .shelf-tools {margin: 18px 20px 10px;}
+  .shelf-filters {margin: 0 20px; gap: 4px;}
+  .shelf-filters button {padding: 8px 11px; gap: 6px; font-size: 12px;}
+  .shelf-list-summary {margin: 12px 20px 18px;}
+  .shelf-update-tools {margin: 14px 20px 0; gap: 6px 10px;}
+  .shelf-update-status {margin: 7px 20px 0;}
+  .shelf-backup {margin: 0 20px 22px;}
+  .shelf-dialog .book-reading-state {min-height: 42px;}
+  .continue-book {padding: 11px 12px; gap: 10px;}
+  .continue-copy {gap: 4px 8px;}
+  .continue-copy strong {font-size: 13px;}
+}
+@media (max-width: 360px) {
+  .shelf-dialog .shelf-sort-label {margin-left: auto;}
+  #shelf-query {flex-basis: 100%;}
+  .shelf-filters button {padding: 8px 9px;}
+  .continue-copy {grid-template-columns: minmax(0, 1fr);}
+  .continue-position {grid-column: 1;}
+}

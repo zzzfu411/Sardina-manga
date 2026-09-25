@@ -1,0 +1,256 @@
+{
+  "data": {
+    "episode": {
+      "databaseId": "3269754496548998088",
+      "series": {
+        "id": "U2VyaWVzOjMyNjk3NTQ0OTY1NDg5MTUyNzA",
+        "databaseId": "3269754496548915270",
+        "title": "名探偵コナン",
+        "description": "ホームズばりの推理力で、大活躍の高校生名探偵・工藤新一。ところがある日、事件を追っていた彼は、妙な薬の力で、なんと子供に戻ってしまった…！？仮の名を“江戸川コナン”。アニメ・映画も大人気の原作まんが！",
+        "thumbnailUri": "https://cdn-img.www.sunday-webry.com/public/series-thumbnail/3269754496548915270-366f5978fefbcb6994fe983f1a491c23?1700553648",
+        "author": {
+          "name": "青山剛昌"
+        },
+        "authors": [
+          {
+            "name": "青山剛昌"
+          }
+        ],
+        "firstEpisode": {
+          "databaseId": "3269754496548998088"
+        },
+        "latestEpisode": {
+          "title": "3. FILE.3 仲間はずれの名探偵"
+        },
+        "episodes": {
+          "edges": [
+            {
+              "cursor": "MA",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1MzcwOTkwMTcw",
+                "title": "172. FILE.2 二つの部屋",
+                "databaseId": "3270375685370990170",
+                "number": 172,
+                "publishedAt": "2022-07-26T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MQ",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1MzcwOTkwMTY2",
+                "title": "171. FILE.1 同じはずなのに…",
+                "databaseId": "3270375685370990166",
+                "number": 171,
+                "publishedAt": "2022-07-26T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "Mg",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1MzcwOTkwMTYw",
+                "title": "170. FILE.10 役者が揃った",
+                "databaseId": "3270375685370990160",
+                "number": 170,
+                "publishedAt": "2022-07-26T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "Mw",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDYx",
+                "title": "19. FILE.10 地下室の悪夢",
+                "databaseId": "3270375685397883061",
+                "number": 19,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "NA",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDU3",
+                "title": "18. FILE.9 消える子供達",
+                "databaseId": "3270375685397883057",
+                "number": 18,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "NQ",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDUz",
+                "title": "17. FILE.8 恐怖の館",
+                "databaseId": "3270375685397883053",
+                "number": 17,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "Ng",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDQ5",
+                "title": "16. FILE.7 悪魔のような女",
+                "databaseId": "3270375685397883049",
+                "number": 16,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "Nw",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDQ0",
+                "title": "15. FILE.6 大男を追え!",
+                "databaseId": "3270375685397883044",
+                "number": 15,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "OA",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDM5",
+                "title": "14. FILE.5 かわいそうな少女",
+                "databaseId": "3270375685397883039",
+                "number": 14,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "OQ",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDM1",
+                "title": "13. FILE.4 行方不明の男",
+                "databaseId": "3270375685397883035",
+                "number": 13,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTA",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDMx",
+                "title": "12. FILE.3 写真は語る",
+                "databaseId": "3270375685397883031",
+                "number": 12,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTE",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDI3",
+                "title": "11. FILE.2 完璧なアリバイ",
+                "databaseId": "3270375685397883027",
+                "number": 11,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTI",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDIz",
+                "title": "10. FILE.1 割のいい尾行",
+                "databaseId": "3270375685397883023",
+                "number": 10,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTM",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDE5",
+                "title": "9. FILE.9 不幸な誤解",
+                "databaseId": "3270375685397883019",
+                "number": 9,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTQ",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDE1",
+                "title": "8. FILE.8 あなたに似た人",
+                "databaseId": "3270375685397883015",
+                "number": 8,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTU",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDEx",
+                "title": "7. FILE.7 血ぬられたアイドル",
+                "databaseId": "3270375685397883011",
+                "number": 7,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTY",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDA3",
+                "title": "6. FILE.6 迷探偵を名探偵に",
+                "databaseId": "3270375685397883007",
+                "number": 6,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTc",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgzMDAz",
+                "title": "5. FILE.5 もう一人の犯人",
+                "databaseId": "3270375685397883003",
+                "number": 5,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTg",
+              "node": {
+                "id": "RXBpc29kZTozMjcwMzc1Njg1Mzk3ODgyOTk5",
+                "title": "4. FILE.4 6本目の煙突",
+                "databaseId": "3270375685397882999",
+                "number": 4,
+                "publishedAt": "2022-08-11T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MTk",
+              "node": {
+                "id": "RXBpc29kZTozMjY5NzU0NDk2NTQ4OTk4MDk5",
+                "title": "3. FILE.3 仲間はずれの名探偵",
+                "databaseId": "3269754496548998099",
+                "number": 3,
+                "publishedAt": "2017-06-30T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MjA",
+              "node": {
+                "id": "RXBpc29kZTozMjY5NzU0NDk2NTQ4OTk4MDk0",
+                "title": "2. FILE.2 小さくなった名探偵",
+                "databaseId": "3269754496548998094",
+                "number": 2,
+                "publishedAt": "2017-06-30T15:00:00Z"
+              }
+            },
+            {
+              "cursor": "MjE",
+              "node": {
+                "id": "RXBpc29kZTozMjY5NzU0NDk2NTQ4OTk4MDg4",
+                "title": "1. FILE.1 (第1話) 平成のホームズ",
+                "databaseId": "3269754496548998088",
+                "number": 1,
+                "publishedAt": "2017-06-30T15:00:00Z"
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": "MjE"
+          }
+        }
+      }
+    }
+  }
+}

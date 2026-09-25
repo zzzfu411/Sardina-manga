@@ -1,0 +1,129 @@
+{
+  "data": {
+    "page": {
+      "current_page": 1,
+      "total_page": 1,
+      "orderby": "date",
+      "count": 8,
+      "comic_sort": "",
+      "search_key": "",
+      "time": 18
+    },
+    "data": [
+      {
+        "comic_id": 98426,
+        "comic_name": "绝世武神",
+        "last_chapter_name": "第411话3 双双斩杀（3）",
+        "comic_type": "rexue,热血|maoxian,冒险|chuanyue,穿越",
+        "comic_newid": "jueshiwushen",
+        "comic_author": "云端漫画",
+        "renqi": 10522513876,
+        "update_time": 1789833781000,
+        "shoucang": 3148229,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/98426_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 95077,
+        "comic_name": "非人哉",
+        "last_chapter_name": "第1250话 我的大尾巴，由我做主。",
+        "comic_type": "gaoxiao,搞笑|shenmo,神魔|shenghuo,生活",
+        "comic_newid": "feirenzai",
+        "comic_author": "分子互动",
+        "renqi": 1645099186,
+        "update_time": 1789813806000,
+        "shoucang": 466251,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/95077_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 106518,
+        "comic_name": "逆天邪神",
+        "last_chapter_name": "第802话 东寒国第一美人",
+        "comic_type": "rexue,热血|hougong,后宫|xuanhuan,玄幻|jingpin,精品|mangai,漫改",
+        "comic_newid": "nitianxieshen",
+        "comic_author": "小明太极漫画",
+        "renqi": 16004920239,
+        "update_time": 1789776011000,
+        "shoucang": 4715860,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/106518_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 94560,
+        "comic_name": "星武神诀",
+        "last_chapter_name": "第998话 ",
+        "comic_type": "rexue,热血|maoxian,冒险|lianai,恋爱",
+        "comic_newid": "xingwushenjue",
+        "comic_author": "踏雪动漫",
+        "renqi": 9771518749,
+        "update_time": 1789747211000,
+        "shoucang": 3267780,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/94560_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 27417,
+        "comic_name": "妖神记",
+        "last_chapter_name": "第531话1 支援到来",
+        "comic_type": "rexue,热血|maoxian,冒险|shenmo,神魔",
+        "comic_newid": "yaoshenji",
+        "comic_author": "踏雪动漫",
+        "renqi": 24468117083,
+        "update_time": 1789542630000,
+        "shoucang": 7754027,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/27417_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 9680,
+        "comic_name": "风起苍岚",
+        "last_chapter_name": "第2季351话 你们的师父是谁？3",
+        "comic_type": "gufeng,古风|chuanyue,穿越|xiuzhen,修真|jingpin,精品",
+        "comic_newid": "fengqicanglan",
+        "comic_author": "飒飒动漫",
+        "renqi": 46566162843,
+        "update_time": 1789171205000,
+        "shoucang": 9792414,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/9680_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 91961,
+        "comic_name": "网游之近战法师",
+        "last_chapter_name": "第569话 PK王落单",
+        "comic_type": "rexue,热血|zhanzhen,战争|mangai,漫改|youxi,游戏",
+        "comic_newid": "wangyouzhijinzhanfashi",
+        "comic_author": "飒飒动漫",
+        "renqi": 12272343630,
+        "update_time": 1789084803000,
+        "shoucang": 3372559,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/91961_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 5471,
+        "comic_name": "星海镖师",
+        "last_chapter_name": "第277话2 地图",
+        "comic_type": "rexue,热血|maoxian,冒险|lianai,恋爱",
+        "comic_newid": "xinghaibiaoshi",
+        "comic_author": "漫言星空",
+        "renqi": 5015035149,
+        "update_time": 1786609050000,
+        "shoucang": 995382,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/5471_3_4.jpg-noresize.webp",
+        "has_video": 0
+      }
+    ]
+  },
+  "status": 0,
+  "message": "ok"
+}

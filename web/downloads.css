@@ -1,0 +1,21 @@
+.download-dialog {width: min(760px, calc(100% - 32px)); max-height: 88dvh; padding: 24px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px;}
+.download-dialog::backdrop {background: #1b18156b;}
+.download-dialog [hidden] {display: none;}
+.download-head {display: flex; align-items: center; justify-content: space-between; gap: 16px;}
+.download-head h2 {margin: 0; font-size: 24px;}
+.download-note, .download-summary {font-size: 13px; line-height: 1.7;}
+.download-dialog button, .download-dialog select {font: inherit; min-height: 44px;}
+.download-picker {display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 16px 0; border-block: 1px solid var(--line);}
+.download-picker > strong {flex-basis: 100%;}
+.download-picker label {display: flex; flex-direction: column; gap: 6px; font-size: 13px; min-width: 0;}
+.download-picker label:first-of-type {flex: 1; min-width: 160px;}
+.download-picker select {max-width: 100%; padding: 8px; border: 1px solid var(--line); color: var(--ink); background: var(--paper-hi); border-radius: 4px;}
+.download-list {display: grid; gap: 12px;}
+.download-row {display: flex; align-items: center; gap: 18px; padding: 15px; background: var(--paper-hi); border: 1px solid var(--line); border-radius: 5px;}
+.download-copy {display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; overflow-wrap: anywhere;}
+.download-copy > span, .download-error {font-size: 12px;}
+.download-copy progress {width: 100%; height: 7px; accent-color: var(--seal);}
+.download-error {margin: 0; color: var(--seal); line-height: 1.6;}
+.download-actions {display: flex; flex-wrap: wrap; gap: 8px;}
+.download-dialog :focus-visible {outline: 2px solid var(--seal); outline-offset: 3px;}
+@media (max-width: 540px) {.download-dialog {padding: 18px; width: calc(100% - 20px);}.download-row {align-items: stretch; flex-direction: column; gap: 12px;}.download-actions {justify-content: flex-end;}}

@@ -1,0 +1,11 @@
+[project]
+name = "sardina-manga"
+version = "0.2.0"
+description = "Local multi-source manga search and reader with native source adapters"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "cryptography>=50.0.1",
+    "lzstring>=1.0.4",
+    "pillow>=12.3.0",
+]

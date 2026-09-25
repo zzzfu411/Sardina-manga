@@ -1,0 +1,308 @@
+{
+  "data": {
+    "episode": {
+      "databaseId": "3269754496548998088",
+      "title": "1. FILE.1 (第1話) 平成のホームズ",
+      "series": {
+        "databaseId": "3269754496548915270",
+        "title": "名探偵コナン"
+      },
+      "pageImages": {
+        "edges": [
+          {
+            "cursor": "MA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573087-a5e7f076eb88aaf1a61fe5a1b5ba507d",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573088-8adf8ad844561c92dea7aff99da41fd2",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Mg",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573089-09aa4e28320203118460ec376ecfae27",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Mw",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573090-c96db991ffa99cefcd8de1ae15cace6f",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "NA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573091-f7d06b63d656568c7771017794fed692",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "NQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573092-cf25b29e7b23f152a59b98feecef17aa",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Ng",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573093-783552c77d7380aab84c2f24f4885aa9",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Nw",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573094-67a5c5cb6feb6cb49abe1dcbe71444e1",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "OA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573095-14075cd5bc0789bd72e2a580de172dd2",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "OQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573097-7444c156e0bfb6dc2dc5c5affadf460d",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573098-9752c229e7d5a5b12eb1cac5589e585c",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTE",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573099-2ea573205968fff788fe85240e8ba8de",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTI",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573100-e3a337317d8e224dc592f7b70589d73f",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTM",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573101-0c4e075047c36e845c6dc54ab78cee13",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573102-c18d9e89fc2b6ac399c5a297b9ebdee8",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTU",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573103-ee63b3ddf49dbaefd2efbefaa3ad755c",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTY",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573104-636941daefb55cb62df69d8d9d32e807",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTc",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573105-776d3515ea83eb6965da091bdc0db721",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTg",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573106-fdcc37db70688d39b7c0641f05c91e51",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MTk",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573107-bafe2bdfff2a7c469bac635b56a0124c",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573108-ceb906393fc9b9987a4be03251960c0f",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjE",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573109-126bf3e195f75ebb6f210a1c9f937159",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjI",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573110-d434aa64d5fc7c2dcf6c379779a9a869",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjM",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573111-5d4f6e10c3b244ca5d0301a52299ea0c",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573112-0a90b96f90873d289468ab33e424eb39",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjU",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573113-ffef2e9f27b2321a88127e6fb0c114c3",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MjY",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573114-c9af71337ffec83d13b1e9236bd3956b",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Mjc",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573115-2706f22103665f072b271328a09e70b4",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Mjg",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573116-595895c517d437f9fb0248da0e5ab03d",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "Mjk",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573117-d14a5bb3db2a362ab2a360b475d0c427",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzA",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573118-af754e465fc963b3db825a36f960a3af",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzE",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573119-41aef591a5dd0173533721b9a080bb2f",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzI",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573120-7c98a0520c9deba52aebb04eddd718d8",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzM",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573121-2ff4fd986c7f8054c387a4651303f6bc",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzQ",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573122-2f1f4b68b7c42c98a215b24344ac463e",
+              "width": 1304,
+              "height": 2048
+            }
+          },
+          {
+            "cursor": "MzU",
+            "node": {
+              "src": "https://cdn-img.www.sunday-webry.com/public/original/2551460909687573123-42e60380c30a1f4294010dc91fd30171",
+              "width": 1304,
+              "height": 2048
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "MzU"
+        }
+      }
+    }
+  }
+}

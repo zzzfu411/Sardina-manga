@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#d8d3cc">
+  <meta name="description" content="Sardina manga：聚合搜索漫画，在自己的浏览器里收藏与继续阅读。">
+  <title>Sardina manga</title>
+  <link rel="icon" href="/brand/sardina-097-c.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/search.css">
+  <link rel="stylesheet" href="/reader.css">
+  <link rel="stylesheet" href="/source-catalog.css">
+  <link rel="stylesheet" href="/library.css">
+  <link rel="stylesheet" href="/discovery.css">
+  <link rel="stylesheet" href="/recommendations.css">
+  <link rel="stylesheet" href="/cover-wall.css">
+  <link rel="stylesheet" href="/home.css">
+  <link rel="stylesheet" href="/downloads.css">
+  <link rel="stylesheet" href="/sardina.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="/" aria-label="Sardina 首页"><img src="/brand/sardina-097-c.png" width="66" height="44" alt=""><span>Sardina<small>manga</small></span></a>
+    <nav class="primary-nav" aria-label="主导航"><a href="/" data-page="home" aria-current="page">搜索</a><a href="/discover" data-page="discover">发现</a></nav>
+    <form id="header-search" class="search compact" hidden><label class="sr-only" for="header-keyword">搜索漫画</label><input id="header-keyword" maxlength="100" placeholder="搜索漫画名或别名" autocomplete="off"><button type="submit">搜索</button></form>
+    <div class="header-actions"><button id="source-catalog-open" class="header-icon" type="button" aria-label="全部漫画源" title="全部漫画源"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></button><button class="shelf-open quiet" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h5v15H4zM10 5h4v15h-4zM16 5l4-1 3 15-4 1z"/></svg><span>书架</span><b id="shelf-count">0</b></button></div>
+  </header>
+  <main id="main">
+    <section id="landing" class="landing">
+      <div id="atlas" role="region" aria-label="精选漫画"></div>
+      <div class="hero">
+        <h1 class="home-title"><img src="/brand/sardina-097-c.png" width="231" height="109" alt=""><span>Sardina<small>manga</small></span></h1>
+        <form id="home-search" class="search"><label class="sr-only" for="home-keyword">搜索漫画</label><span class="search-icon" aria-hidden="true">⌕</span><input id="home-keyword" maxlength="100" placeholder="搜索漫画" autocomplete="off" required><button type="submit">搜索</button></form>
+        <div id="history" class="history" aria-label="最近搜索" hidden></div>
+        <div id="continue-reading" class="continue-reading" hidden></div>
+      </div>
+      <button id="wall-motion" type="button" aria-label="暂停背景动效" hidden></button>
+    </section>
+    <section id="discover-page" class="discover-page" hidden aria-labelledby="discover-title">
+      <h1 id="discover-title">发现</h1>
+      <nav class="discover-tabs" aria-label="发现分类"><a href="/discover" data-discover="recommend">推荐</a><a href="/discover/popular" data-discover="popular">排行榜</a><a href="/discover/latest" data-discover="latest">最近更新</a></nav>
+      <section id="recommendations" hidden aria-label="漫画推荐"></section>
+      <section id="discovery" hidden aria-label="排行榜与最近更新"></section>
+    </section>
+    <section id="results" class="results" hidden aria-labelledby="results-title">
+      <div class="result-heading"><div><p class="muted">在不同漫画源中找一本好书</p><h1 id="results-title"></h1></div><button id="stop-search" class="quiet" hidden>停止搜索</button></div>
+      <div id="search-status" class="status" role="status" aria-live="polite"></div>
+      <nav id="source-tabs" class="source-tabs" aria-label="按漫画源筛选"></nav>
+      <div id="result-grid" class="result-grid"></div>
+    </section>
+  </main>
+  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title"><div id="detail-content"></div></dialog>
+  <dialog id="shelf-dialog" class="shelf-dialog" aria-labelledby="shelf-title">
+    <div class="dialog-header"><div><h2 id="shelf-title">我的书架</h2><p class="muted">书架与进度保存在当前浏览器</p></div><button class="icon-button" id="close-shelf" aria-label="关闭书架">×</button></div>
+    <div class="shelf-tools"><label class="sr-only" for="shelf-query">查找书架</label><input id="shelf-query" type="search" maxlength="100" placeholder="书名、作者或漫画源"><label class="shelf-sort-label">排序 <select id="shelf-sort"><option value="recent">最近阅读</option><option value="title">漫画名称</option></select></label></div>
+    <nav id="shelf-filters" class="shelf-filters" aria-label="按阅读状态筛选"></nav>
+    <div class="shelf-update-tools"><button id="shelf-check-updates" class="quiet" type="button">检查更新</button><button id="shelf-retry-updates" class="quiet" type="button" hidden>重试失败</button><label><input id="shelf-only-updated" type="checkbox">只看有更新 <span id="shelf-updated-count">0</span></label></div>
+    <div class="shelf-update-tools shelf-preferences"><label><input id="shelf-only-favorites" type="checkbox">只看收藏</label><label title="打开应用时检查常读连载，每本至少间隔 6 小时"><input id="shelf-auto-updates" type="checkbox">自动检查常读连载</label></div>
+    <p id="shelf-update-status" class="shelf-update-status" role="status" aria-live="polite">首次检查会记录目录，后续检查可发现新章节。</p>
+    <div class="shelf-update-tools"><button id="downloads-open" class="quiet" type="button">下载管理</button></div>
+    <p id="shelf-list-summary" class="shelf-list-summary" role="status" aria-live="polite"></p>
+    <div id="shelf-grid" class="result-grid"></div>
+    <details class="shelf-backup"><summary>备份与迁移</summary><p>保留收藏、阅读位置、逐章已读和分类。导入时合并较新的记录；暂不可用源的记录也会保留。</p><div><button id="export-shelf" class="quiet" type="button">导出书架</button><button id="import-shelf" class="quiet" type="button">导入备份</button><button id="export-shelf-recovery" class="quiet" type="button">导出原始恢复记录</button><input id="shelf-file" type="file" accept="application/json,.json" hidden></div></details>
+  </dialog>
+  <dialog id="reader-dialog" class="reader-dialog" aria-label="漫画阅读器"></dialog>
+  <dialog id="source-catalog-dialog" class="source-catalog-dialog" aria-labelledby="source-catalog-title">
+    <div class="dialog-header"><div><p class="muted">源资料与接入进度</p><h2 id="source-catalog-title">漫画源目录</h2></div><button class="icon-button" data-catalog-close aria-label="关闭源目录">×</button></div>
+    <div class="catalog-body">
+      <p class="catalog-summary" data-catalog-summary role="status"></p>
+      <p class="catalog-note">只有已接入的源参与搜索。接入状态不代表每部作品都可阅读；部分章节受源站权限或配额限制。</p>
+      <details class="catalog-active"><summary>当前搜索源</summary><div data-catalog-active></div></details>
+      <div class="catalog-tools"><label class="sr-only" for="catalog-query">查找源名称或域名</label><input id="catalog-query" data-catalog-query type="search" placeholder="查找源名称或域名"><label class="sr-only" for="catalog-filter">接入状态</label><select id="catalog-filter" data-catalog-filter><option value="">全部状态</option><option value="integrated">已接入</option><option value="duplicate">重复入口</option><option value="blocked">暂不可用</option><option value="pending">待适配</option></select></div>
+      <p class="catalog-count" data-catalog-count role="status" aria-live="polite"></p>
+      <ul class="catalog-list" data-catalog-list></ul>
+    </div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

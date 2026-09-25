@@ -1,0 +1,227 @@
+/* Sardina's paper and ink skin. Reader canvas and its theme remain independent. */
+:root {
+  color-scheme: light;
+  --paper: #d8d3cc;
+  --paper-hi: #e7e3db;
+  --paper-lo: #c6c0b6;
+  --paper-edge: #b4ada1;
+  --ink: #1b1815;
+  --ink-soft: #3b352f;
+  --muted: #5f5851;
+  --line: #1b181536;
+  --seal: #8c3a2c;
+  --seal-wash: #8c3a2c0c;
+  --wash: #1b181508;
+  --blue: var(--seal);
+  --font-hand: "LXGW WenKai", "LXGW WenKai Screen", "霞鹜文楷", "Kaiti SC", "KaiTi", "STKaiti", "楷体", "Songti SC", serif;
+  --font-en: "Caveat", "Bradley Hand", "Bradley Hand ITC", "Segoe Print", var(--font-hand);
+  font-family: var(--font-hand);
+  color: var(--ink);
+  background: var(--paper);
+}
+body {background: var(--paper);}
+:where(.header, #main, .detail-dialog, .shelf-dialog, .source-catalog-dialog) ::selection {background: #8c3a2c24; color: var(--ink);}
+:where(.header, #main, .detail-dialog, .shelf-dialog, .source-catalog-dialog) :is(button, a, input, select, summary):focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 4px;
+}
+:where(.header, #main, .detail-dialog, .shelf-dialog, .source-catalog-dialog) button:hover:not(:disabled) {filter: none;}
+:where(.header, #main, .detail-dialog, .shelf-dialog, .source-catalog-dialog) input::placeholder {color: var(--muted); opacity: 1;}
+
+/* Navigation and the one brand moment. */
+.header {background: var(--paper); border-bottom: 1px solid var(--line);}
+.brand > span, .hero .home-title {font-family: var(--font-en); color: var(--ink);}
+.brand small, .hero .home-title small {color: var(--ink-soft);}
+.brand img, .hero .home-title img {mix-blend-mode: multiply;}
+.primary-nav a {color: var(--muted); border-radius: 0; background: transparent;}
+.primary-nav a:hover {color: var(--ink);}
+.primary-nav a[aria-current="page"] {background: transparent; color: var(--seal); text-decoration: underline; text-underline-offset: 7px; text-decoration-thickness: 1px;}
+.header-icon, .header .shelf-open {color: var(--ink-soft); background: transparent; border-radius: 5px;}
+.header-icon:hover:not(:disabled), .header .shelf-open:hover:not(:disabled) {background: var(--wash);}
+.header .shelf-open {border-color: var(--line);}
+.shelf-open b {background: transparent; color: var(--muted);}
+.header #source-catalog-open {padding: 10px; border-radius: 5px;}
+.landing {background: var(--paper);}
+.landing::after {background: radial-gradient(ellipse at 50% 46%, #d8d3ccfa 0%, #d8d3ccf5 25%, #d8d3cc99 48%, #d8d3cc10 80%);}
+.landing .cover-wall-cover {border-color: #1b181520; border-radius: 3px; background: var(--paper-lo); box-shadow: 0 2px 0 #3b352f14;}
+.landing .cover-wall-cover img {filter: saturate(.3) contrast(.83); transition: filter .18s;}
+.landing .cover-wall-cover.is-ready:is(:hover, :focus-visible) {opacity: .94; outline: 2px solid var(--seal); outline-offset: 3px;}
+.landing .cover-wall-cover:is(:hover, :focus-visible) img {filter: saturate(.75) contrast(.95);}
+.landing .cover-wall-title {background: linear-gradient(transparent, #1b1815ec); color: var(--paper-hi);}
+.cover-wall-control {border-color: var(--line); border-radius: 5px; background: #e7e3dbed; color: var(--ink-soft); box-shadow: none;}
+.cover-wall-control:hover:not(:disabled) {background: var(--paper-hi); color: var(--ink);}
+.cover-wall-control:focus-visible {outline: 2px solid var(--seal);}
+
+/* Search stays a real field, with a restrained ink action. */
+.search, .hero .search {background: var(--paper-hi); border: 1px solid #1b181559; border-radius: 6px; box-shadow: 0 3px 0 #1b181509;}
+.search:focus-within, .hero .search:focus-within {border-color: var(--seal); box-shadow: 0 0 0 2px #8c3a2c10;}
+.search-icon {color: var(--muted);}
+.search input {color: var(--ink);}
+.search input::placeholder {color: var(--muted);}
+.search button, .hero .search button, .primary {background: var(--ink-soft); color: var(--paper-hi); border-radius: 4px; font-weight: 500;}
+.search button:hover:not(:disabled), .primary:hover:not(:disabled) {background: var(--ink);}
+.quiet {background: var(--paper-hi); border-color: var(--line); color: var(--ink-soft); border-radius: 5px; font-weight: 500;}
+.quiet:hover:not(:disabled) {background: var(--paper-lo);}
+.hero .history > span {color: var(--muted);}
+.hero .history button {border-radius: 3px; background: #e7e3dbcc; color: var(--ink-soft); border-bottom: 1px solid #1b181521;}
+.hero .history button:hover {background: var(--paper-hi);}
+.hero .continue-book {background: #e7e3dbed; border-color: var(--line); border-radius: 5px; box-shadow: none;}
+.continue-label, .continue-action {color: var(--seal);}
+.continue-position {color: var(--muted);}
+
+/* Shared book and dialog surfaces. Covers retain their original colours. */
+.results {padding-top: 44px;}
+.result-heading h1 {font-weight: 600;}
+.muted, .status, .book-meta, .book-history-note, .book-update-note {color: var(--muted);}
+.source-tabs {border-color: var(--line);}
+.source-tabs button {background: var(--paper-hi); color: var(--ink-soft); border: 1px solid transparent; border-radius: 4px;}
+.source-tabs button.active {background: var(--ink-soft); border-color: var(--ink-soft); color: var(--paper-hi);}
+.source-tabs button.failed {color: var(--seal); background: var(--seal-wash); border-color: #8c3a2c24;}
+.book-cover, .search-cover, .discovery-cover, .recommendation-cover-frame {background: var(--paper-lo); border-radius: 4px; box-shadow: 0 2px 6px #1b181510;}
+.cover-placeholder, .search-cover-placeholder {background: var(--paper-hi); color: var(--muted);}
+.source-badge {background: #e7e3dbf0; color: var(--ink-soft); border: 1px solid #1b181518; border-radius: 3px;}
+.book-title {color: var(--ink); font-weight: 600;}
+.empty strong {color: var(--ink-soft);}
+.loading::before {border-color: var(--paper-edge); border-top-color: var(--ink-soft);}
+.detail-dialog, .shelf-dialog, .source-catalog-dialog {background: var(--paper-hi); color: var(--ink); border: 1px solid #1b181547; border-radius: 8px; box-shadow: 0 18px 70px #1b18152b;}
+.detail-dialog::backdrop, .shelf-dialog::backdrop, .source-catalog-dialog::backdrop {background: #1b181570; backdrop-filter: blur(4px);}
+.dialog-header {border-color: var(--line);}
+.dialog-header h2 {font-weight: 600;}
+.icon-button {background: var(--wash); color: var(--ink-soft); border-radius: 4px;}
+.icon-button:hover:not(:disabled) {background: #1b181512;}
+.detail-info h2 {font-weight: 600;}
+.detail-info .description {color: var(--muted);}
+:where(.header, #main, .detail-dialog, .shelf-dialog, .source-catalog-dialog) select {background: var(--paper-hi); color: var(--ink-soft); border-color: var(--line); border-radius: 4px;}
+.chapter-tools input {background: #d8d3cc66; color: var(--ink); border-color: var(--line); border-radius: 4px;}
+.chapters button {background: #d8d3cc78; border-color: var(--line); color: var(--ink-soft); border-radius: 4px;}
+.chapters button:hover:not(:disabled) {background: var(--paper);}
+.chapters button.current {background: var(--seal-wash); border-color: #8c3a2c70; color: var(--seal);}
+.chapters .chapter-entry {border-color: var(--line); border-radius: 4px;}
+.chapters .chapter-entry > .chapter-read-toggle {color: var(--muted); background: #1b181506;}
+.chapters .chapter-entry > .chapter-read-toggle[aria-pressed="true"] {color: var(--seal); background: var(--seal-wash);}
+.remove-book {background: #e7e3dbed; color: var(--ink-soft);}
+.toast {background: #1b1815f2; color: var(--paper-hi); border: 1px solid #e7e3db33; border-radius: 5px; box-shadow: 0 5px 20px #1b18151a;}
+.error-panel {color: var(--seal);}
+.source-error, .source-unavailable {background: var(--seal-wash); border-color: #8c3a2c45; color: var(--seal); border-radius: 4px;}
+
+/* Search results and their source/chapters controls. */
+.search-work, .search-chapter-tools, .search-chapter-message, .search-fold {border-color: var(--line);}
+.search-work-title {color: var(--ink); font-weight: 600;}
+.search-work-title:hover {color: var(--seal);}
+.search-match {background: var(--wash); color: var(--muted); border-radius: 3px;}
+.search-work-meta, .search-description, .search-chapter-heading span, .search-chapter-message,
+.search-chapter-message small, .search-no-chapters, .search-empty, .search-section-count {color: var(--muted);}
+.search-status {color: var(--seal);}
+.search-source {color: var(--muted); border-radius: 3px 3px 0 0; font-weight: 500;}
+.search-source:hover {background: var(--wash); color: var(--ink);}
+.search-source[aria-pressed="true"], .search-source[aria-pressed="true"]:hover {background: var(--seal-wash); color: var(--seal); border-bottom-color: var(--seal);}
+.search-chapter-heading strong {color: var(--ink-soft);}
+.search-chapter-heading strong::before {background: var(--seal); width: 2px; border-radius: 0;}
+.search-order {background: var(--paper-hi); color: var(--ink-soft); border-radius: 4px;}
+.search-order[aria-pressed="true"] {background: var(--seal-wash); color: var(--seal);}
+.search-chapter, .search-all-chapters {background: var(--paper-hi); color: var(--ink-soft); border-color: var(--line); border-radius: 4px;}
+.search-chapter:hover {background: #e7e3db88; border-color: #1b18156b;}
+.search-all-chapters {background: transparent; color: var(--seal); border-color: #8c3a2c4d; font-weight: 500;}
+.search-all-chapters:hover {background: var(--seal-wash);}
+.search-detail-loading::before {border-color: var(--paper-edge); border-top-color: var(--ink-soft);}
+.search-text-button, .search-show-more {background: var(--paper-hi); color: var(--ink-soft); border-color: var(--line); border-radius: 4px;}
+.search-fold > summary {color: var(--ink-soft);}
+.search-fold > summary:focus-visible, .discovery-list-label:focus-visible {outline: 2px solid var(--seal);}
+
+/* Discovery and recommendations use the same paper, without a second palette. */
+.discover-tabs {border-bottom: 1px solid var(--line);}
+.discover-tabs a {color: var(--muted);}
+.discover-tabs a[aria-current="page"] {color: var(--seal);}
+.discover-tabs a[aria-current="page"]::after {background: var(--seal); border-radius: 0;}
+.discovery {background: var(--paper); border-color: var(--line);}
+.discovery-heading h2 {color: var(--ink); font-weight: 600;}
+.discovery-heading p, .discovery-select, .discovery-provenance, .discovery-scope-note,
+.discovery-chapter, .discovery-author, .discovery-updated, .discovery-status,
+.discovery-pagination, .recommendations-context, .recommendations-note,
+.recommendation-cover-loading, .recommendation-reason, .recommendations-status,
+.recommendation-dismiss {color: var(--muted);}
+.discovery-controls {border-color: var(--line);}
+.discovery-kind {color: var(--ink-soft); border-radius: 4px; font-weight: 500;}
+.discovery-kind[aria-pressed="true"] {background: var(--ink-soft); border-color: var(--ink-soft); color: var(--paper-hi);}
+.discovery-select select, .discovery-refresh, .discovery-retry, .discovery-cover-retry,
+.discovery-pagination button, .recommendations-refresh, .recommendation-cover-retry,
+.recommendation-cover-replace {background: var(--paper-hi); border-color: var(--line); border-radius: 4px; color: var(--ink-soft); font-weight: 500;}
+.discovery-list-label {color: var(--ink-soft);}
+.discovery-provenance a, .recommendations-origins a {color: var(--ink-soft);}
+.discovery-cover-placeholder, .recommendation-cover-error {color: var(--muted);}
+.discovery-rank {background: #e7e3dbf0; color: var(--seal); border-radius: 0 0 3px 0; font-weight: 600;}
+.discovery-book-title, .recommendation-title {color: var(--ink); font-weight: 600;}
+.discovery-status-error, .recommendations-status-error {color: var(--seal);}
+.recommendations-next {background: var(--ink-soft); color: var(--paper-hi); border-radius: 4px; font-weight: 500;}
+.recommendation-cover-replace {background: transparent; border-color: transparent; text-decoration: underline; text-underline-offset: 3px;}
+.recommendations-settings {color: var(--ink-soft);}
+.recommendations-settings-body {background: var(--paper-hi); border-color: var(--line); border-radius: 5px; box-shadow: 0 8px 28px #1b18151a;}
+.recommendations-settings-body label {color: var(--ink-soft);}
+.recommendations-settings-body input {accent-color: var(--seal);}
+.recommendations-settings-body p {color: var(--muted);}
+.recommendations-clear, .recommendations-undo-button {background: var(--paper); color: var(--ink-soft); border-radius: 4px;}
+.recommendations-undo {background: var(--paper-hi); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px;}
+.recommendations-undo-button {background: var(--paper);}
+.recommendation-saved {background: var(--wash); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 3px;}
+.recommendation-dismiss:hover {color: var(--seal);}
+
+/* Personal shelf and explicit reading state. */
+#shelf-query {background: #d8d3cc66; color: var(--ink); border-color: var(--line); border-radius: 4px;}
+.shelf-filters button {color: var(--muted); border-radius: 4px;}
+.shelf-filters button[aria-pressed="true"] {background: var(--seal-wash); color: var(--seal);}
+.shelf-list-summary, .shelf-update-status, .shelf-backup {color: var(--muted);}
+.shelf-update-tools label, .shelf-backup summary {color: var(--ink-soft);}
+.shelf-update-tools input {accent-color: var(--seal);}
+.book-update-note[data-change="new"], .book-update-note[data-change="changed"], .book-update-note[data-error="true"] {color: var(--seal);}
+.shelf-dialog .book-reading-state {background: var(--paper); border-color: var(--line); color: var(--ink-soft);}
+.discovery-jump {color: var(--ink-soft); border-radius: 4px;}
+.discovery-jump:hover {color: var(--seal); background: var(--paper-hi);}
+.shelf-backup {border-color: var(--line);}
+
+/* Source directory status stays readable in colour and in words. */
+.catalog-active {background: #d8d3cc78; border-color: var(--line); border-radius: 4px;}
+.catalog-favorite-notice, .catalog-reason {color: var(--ink-soft);}
+.catalog-favorite-notice.catalog-favorite-error {color: var(--seal);}
+.catalog-source-favorite {background: var(--paper-hi); color: var(--ink-soft); border-color: var(--line); border-radius: 4px;}
+.catalog-source-favorite[aria-pressed="true"] {background: var(--seal-wash); border-color: #8c3a2c60; color: var(--seal);}
+.catalog-source-favorite .catalog-source-star, .catalog-source-capabilities {color: var(--muted);}
+.catalog-source-favorite[aria-pressed="true"] .catalog-source-star {color: var(--seal);}
+.catalog-tools input {background: #d8d3cc66; color: var(--ink); border-color: var(--line); border-radius: 4px;}
+.catalog-badge {background: var(--wash); color: var(--muted); border: 1px solid var(--line); border-radius: 3px;}
+.catalog-integrated {background: #3b352f10; color: var(--ink-soft); border-color: #3b352f55;}
+.catalog-duplicate {background: transparent; color: var(--ink-soft);}
+.catalog-blocked {background: var(--seal-wash); color: var(--seal); border-color: #8c3a2c3d;}
+
+/* Reader controls share the brand; canvas/paper and light/dark rules stay in reader.css. */
+dialog.reader-shell {
+  --ry-chrome: #e7e3db;
+  --ry-ink: #1b1815;
+  --ry-muted: #5f5851;
+  --ry-line: #1b181536;
+  --ry-button: #d8d3cc;
+  --ry-accent: #8c3a2c;
+}
+dialog.reader-shell :is(.ry-reader-header, .ry-reader-toolbar, .ry-reader-catalog, .ry-reader-settings) .ry-reader-button:not(:disabled):hover {background: #c6c0b6;}
+dialog.reader-shell :is(.ry-reader-header, .ry-reader-toolbar, .ry-reader-catalog, .ry-reader-settings) .ry-reader-primary:not(:disabled):hover {background: #6f2d22;}
+dialog.reader-shell :is(.ry-reader-header, .ry-reader-toolbar, .ry-reader-catalog, .ry-reader-settings) :is(button, input, [tabindex]):focus-visible {outline-color: #8c3a2c;}
+dialog.reader-shell .ry-reader-heading > span,
+dialog.reader-shell .ry-reader-heading .ry-reader-load-status,
+dialog.reader-shell .ry-reader-setting-hint {color: var(--ry-muted);}
+dialog.reader-shell .ry-reader-catalog-shade {background: #1b181580;}
+dialog.reader-shell .ry-reader-catalog {background: var(--ry-chrome); box-shadow: -8px 0 36px #1b181530;}
+dialog.reader-shell .ry-reader-settings {background: var(--ry-chrome); box-shadow: 0 14px 48px #1b181538;}
+dialog.reader-shell .ry-setting-choice,
+dialog.reader-shell .ry-reader-catalog-tools input,
+dialog.reader-shell .ry-reader-page-jump input {background: var(--ry-chrome); color: var(--ry-ink); border-color: #1b18154d;}
+dialog.reader-shell .ry-setting-choice:has(input:checked) {background: #8c3a2c0c; border-color: #8c3a2c80;}
+dialog.reader-shell .ry-reader-catalog-list button[aria-current="true"] {background: #8c3a2c0c; color: #8c3a2c; border-color: #8c3a2c80;}
+dialog.reader-shell #reader-mark-read[aria-pressed="true"] {background: #8c3a2c0c; color: #8c3a2c;}
+
+@media (max-width: 540px) {
+  .header #source-catalog-open {padding: 8px;}
+  .results {padding-top: 28px;}
+  .landing::after {background: radial-gradient(ellipse at 50% 46%, #d8d3ccfc 0%, #d8d3ccf0 31%, #d8d3cc9c 58%, #d8d3cc2b 88%);}
+  .detail-dialog, .shelf-dialog, .source-catalog-dialog {border-radius: 6px;}
+  .catalog-tools input, #shelf-query, .chapter-tools input {font-size: 16px;}
+  .chapter-tools input {min-width: 0;}
+}

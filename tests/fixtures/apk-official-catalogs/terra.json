@@ -1,0 +1,173 @@
+{
+  "catalog": {
+    "code": 0,
+    "data": [
+      {
+        "cid": "1421",
+        "type": 1,
+        "cover": "https://web.hycdn.cn/comic/pic/20220614/b1b0f7c6da3fb225c8cf4cca13a70969_p_20.jpg",
+        "title": "罗德岛源石记事——莱茵生命",
+        "subtitle": "RHODES ISLAND’S RECORDS OF ORIGINIUM - RHINE LAB",
+        "authors": [
+          "鹰角网络"
+        ]
+      },
+      {
+        "cid": "9999",
+        "type": 1,
+        "title": "无关的合成测试作品",
+        "subtitle": "Unrelated synthetic fixture",
+        "authors": [
+          "测试作者"
+        ],
+        "cover": "https://web.hycdn.cn/comic/pic/fixture.jpg"
+      }
+    ],
+    "msg": ""
+  },
+  "details": {
+    "code": 0,
+    "data": {
+      "cid": "1421",
+      "type": 1,
+      "cover": "https://web.hycdn.cn/comic/pic/20220614/b1b0f7c6da3fb225c8cf4cca13a70969.jpg",
+      "title": "罗德岛源石记事——莱茵生命",
+      "subtitle": "RHODES ISLAND’S RECORDS OF ORIGINIUM - RHINE LAB",
+      "authors": [
+        "鹰角网络"
+      ],
+      "keywords": [
+        "剧情",
+        "莱茵生命",
+        "塞雷娅",
+        "赫默",
+        "伊芙利特"
+      ],
+      "introduction": "测试简介（目录结构和作品标识来自公开接口，简介缩短）",
+      "direction": "left",
+      "readConfig": null,
+      "episodes": [
+        {
+          "cid": "1505",
+          "type": 2,
+          "shortTitle": "03",
+          "title": "Silence",
+          "displayTime": 1660579200
+        },
+        {
+          "cid": "7422",
+          "type": 2,
+          "shortTitle": "02",
+          "title": "愿望",
+          "displayTime": 1659369600
+        },
+        {
+          "cid": "1506",
+          "type": 2,
+          "shortTitle": "01",
+          "title": "回礼",
+          "displayTime": 1658160000
+        },
+        {
+          "cid": "2895",
+          "type": 1,
+          "shortTitle": "09",
+          "title": "黎明之前",
+          "displayTime": 1656777600
+        },
+        {
+          "cid": "8668",
+          "type": 1,
+          "shortTitle": "08",
+          "title": "曲终人散",
+          "displayTime": 1656691200
+        },
+        {
+          "cid": "3181",
+          "type": 1,
+          "shortTitle": "07",
+          "title": "尽我所能",
+          "displayTime": 1656604800
+        },
+        {
+          "cid": "1507",
+          "type": 1,
+          "shortTitle": "06",
+          "title": "物是人非",
+          "displayTime": 1656518400
+        },
+        {
+          "cid": "4936",
+          "type": 1,
+          "shortTitle": "05",
+          "title": "祸不单行",
+          "displayTime": 1656432000
+        },
+        {
+          "cid": "0210",
+          "type": 1,
+          "shortTitle": "04",
+          "title": "如你，如我",
+          "displayTime": 1656345600
+        },
+        {
+          "cid": "7423",
+          "type": 1,
+          "shortTitle": "03",
+          "title": "如愿以偿",
+          "displayTime": 1656259200
+        },
+        {
+          "cid": "5779",
+          "type": 1,
+          "shortTitle": "02",
+          "title": "实验疗法",
+          "displayTime": 1656172800
+        },
+        {
+          "cid": "7424",
+          "type": 1,
+          "shortTitle": "01",
+          "title": "不速之客",
+          "displayTime": 1656086400
+        },
+        {
+          "cid": "1508",
+          "type": 1,
+          "shortTitle": "预告",
+          "title": "过往荆棘，誓约不灭",
+          "displayTime": 1655395200
+        }
+      ],
+      "updateTime": 1655395200
+    },
+    "msg": ""
+  },
+  "episode": {
+    "code": 0,
+    "data": {
+      "title": "不速之客",
+      "shortTitle": "01",
+      "type": 1,
+      "likes": 2958,
+      "pageInfos": [
+        {
+          "width": 1200,
+          "height": 1691,
+          "doublePage": true
+        },
+        {
+          "width": 1200,
+          "height": 1691,
+          "doublePage": false
+        },
+        {
+          "width": 1200,
+          "height": 1691,
+          "doublePage": false
+        }
+      ]
+    },
+    "msg": ""
+  }
+}

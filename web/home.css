@@ -1,0 +1,103 @@
+/* Sardina: the generated fish mark, a quiet wordmark, and one place to search. */
+.header {height: 80px; padding: 0 clamp(20px, 4vw, 64px); gap: 30px;}
+.brand {gap: 8px; flex-shrink: 0; min-height: 44px;}
+.brand img {display: block; width: 66px; height: 44px; object-fit: cover; object-position: 50% 58%;}
+.brand > span {display: flex; align-items: baseline; gap: 8px; font-size: 33px; line-height: 1; letter-spacing: -.8px; font-weight: 500;}
+.brand small {font-size: 12px; margin: 0; padding: 0; border: 0; letter-spacing: 0; font-weight: 400;}
+.primary-nav {display: flex; align-items: center; gap: 12px; margin-right: auto; flex-shrink: 0;}
+.primary-nav a {display: flex; align-items: center; min-height: 44px; padding: 0 10px; font-size: 15px; white-space: nowrap;}
+.primary-nav a[aria-current="page"] {font-weight: 600;}
+.header-actions {display: flex; align-items: center; gap: 12px; flex-shrink: 0;}
+.header-icon {display: grid; place-items: center; width: 42px; height: 44px; padding: 11px;}
+.header-icon svg, .shelf-open svg {width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round;}
+.shelf-open {gap: 7px; padding: 10px 12px; font-size: 14px; min-height: 44px;}
+.shelf-open b {font-weight: 400;}
+.header .compact {flex: 1; min-width: 120px; max-width: 570px;}
+.header.searching .primary-nav {margin-right: 0;}
+
+.landing {min-height: calc(100svh - 80px); isolation: isolate;}
+.landing > .cover-wall {--wall-cover-opacity: .48;}
+.landing::after {z-index: 0;}
+.hero {width: min(590px, calc(100% - 48px)); padding: 38px 0 88px; z-index: 1;}
+.hero .home-title {display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0; margin: 0 0 22.4px; border: 0; border-radius: 0; box-shadow: none; transform: none; background: none; font-size: clamp(47.6px, 5.25vw, 65.8px); line-height: 1.05; font-weight: 400; letter-spacing: -2.1px;}
+.hero .home-title img {display: block; width: 231px; height: 108.5px; margin-bottom: 2.1px; object-fit: cover; object-position: 50% 58%;}
+.hero .home-title > span {display: flex; flex-direction: column; align-items: center; font: inherit; color: inherit;}
+.hero .home-title small {margin-top: 4.2px; font-size: 13.3px; font-weight: 400; letter-spacing: .42px; line-height: 1.3;}
+.hero .search {height: 62px; padding: 6px 7px 6px 17px;}
+.hero .search button {padding: 12px 23px; font-size: 15px; min-height: 46px;}
+.hero .search input {font-size: 17px;}
+.hero .history {margin-top: 17px; gap: 8px; min-height: 0; font-size: 13px;}
+.hero .continue-reading {margin-top: 24px; max-width: 530px;}
+#wall-motion {position: fixed; right: 26px; bottom: max(22px, env(safe-area-inset-bottom)); z-index: 2;}
+
+.discover-page {max-width: 1280px; margin: 0 auto; padding: 48px 36px 72px; min-height: calc(100svh - 80px);}
+.discover-page > h1 {font-size: 33px; line-height: 1.3; font-weight: 600; letter-spacing: 0; margin: 0 0 25px;}
+.discover-tabs {display: flex; align-items: center; gap: 28px; margin-bottom: 28px;}
+.discover-tabs a {display: block; position: relative; padding: 0 1px 15px; font-size: 16px; line-height: 1.7;}
+.discover-tabs a[aria-current="page"] {font-weight: 600;}
+.discover-tabs a[aria-current="page"]::after {content: ""; height: 2px; position: absolute; bottom: -1px; left: 0; right: 0;}
+.discovery.discovery-embedded {border-top: 0; background: transparent;}
+.discovery-embedded .discovery-inner {padding: 0; max-width: none;}
+.discovery-embedded .discovery-controls {padding-bottom: 0; border-bottom: 0; justify-content: flex-end;}
+.discovery-embedded .discovery-context {padding: 21px 0;}
+
+@media (max-width: 1000px) {
+  .header {gap: 18px; padding: 0 24px;}
+  .brand small {display: none;}
+  .primary-nav {gap: 5px;}
+  .primary-nav a {padding: 0 9px;}
+  .header.searching {height: auto; min-height: 80px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; gap: 10px 16px;}
+  .header.searching .primary-nav {margin-right: auto;}
+  .header.searching .compact {order: 4; flex-basis: 100%; max-width: none;}
+  .discover-page {padding: 36px 24px 54px;}
+}
+
+@media (max-width: 540px) {
+  .header {height: 68px; padding: 0 14px; gap: 10px; flex-wrap: nowrap;}
+  .header .brand {gap: 5px;}
+  .header .brand img {display: block; width: 36px; height: 32px;}
+  .header .brand > span {font-size: 29px; letter-spacing: -.8px;}
+  .primary-nav {gap: 0;}
+  .primary-nav a {font-size: 14px; padding: 0 8px; min-height: 44px;}
+  .header-actions {gap: 3px;}
+  .header-icon {width: 34px; height: 44px; padding: 8px;}
+  .header .shelf-open {font-size: 13px; padding: 8px 6px; gap: 5px; min-height: 44px;}
+  .shelf-open svg {display: none;}
+  .shelf-open b {padding: 2px 3px; font-size: 11px;}
+  .header.searching {min-height: 68px; height: auto; padding: 10px 14px; gap: 10px;}
+  .header.searching .compact {height: 46px;}
+  .landing {min-height: calc(100svh - 68px);}
+  .landing > .cover-wall {--wall-cover-opacity: .4;}
+  .hero {width: calc(100% - 36px); padding: 25px 0 80px;}
+  .hero .home-title {font-size: 53.2px; letter-spacing: -1.75px; margin-bottom: 18.9px;}
+  .hero .home-title img {width: min(200.2px, 100%); height: 96.6px;}
+  .hero .home-title small {font-size: 11.9px; margin-top: 3.5px;}
+  .hero .search {height: 58px; padding: 5px 6px 5px 12px; gap: 6px;}
+  .hero .search button {font-size: 14px; padding: 10px 16px;}
+  .hero .search input, .header .compact input {font-size: 16px;}
+  .hero .history {font-size: 12px; gap: 6px;}
+  .hero .continue-reading {margin-top: 19px;}
+  #wall-motion {right: 16px; bottom: max(16px, env(safe-area-inset-bottom));}
+  .discover-page {padding: 30px 18px 45px; min-height: calc(100svh - 68px);}
+  .discover-page > h1 {font-size: 29px; margin-bottom: 22px;}
+  .discover-tabs {gap: 25px; margin-bottom: 24px;}
+  .discover-tabs a {font-size: 15px; padding-bottom: 12px;}
+  .discovery-embedded .discovery-context {padding: 16px 0;}
+}
+
+@media (max-width: 360px) {
+  .header {padding-inline: 12px; gap: 8px;}
+  .header .brand img {display: none;}
+  .header .brand > span {font-size: 28px;}
+  .primary-nav a {padding-inline: 7px;}
+  .header.searching {padding-inline: 12px; gap: 10px 8px;}
+  .hero {width: calc(100% - 32px);}
+  .hero .home-title {font-size: 47.6px;}
+  .hero .search button {padding-inline: 13px;}
+}
+
+@media (max-height: 700px) and (min-width: 541px) {
+  .hero {padding: 22px 0 52px;}
+  .hero .home-title {font-size: 53.2px; margin-bottom: 16.8px;}
+  .hero .home-title img {width: 193.2px; height: 86.8px;}
+}

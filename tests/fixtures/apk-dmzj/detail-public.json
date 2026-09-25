@@ -1,0 +1,335 @@
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "data": {
+      "id": 86003,
+      "title": "人人都会魔法的世界",
+      "aliasName": "",
+      "realName": "",
+      "direction": 2,
+      "islong": 2,
+      "is_dmzj": 0,
+      "cover": "https://images.zaimanhua.com/img/webpic/10/10885101785426234.jpg",
+      "description": "在这个星球上人人都会魔法？那岂不是逆天了？！",
+      "last_updatetime": 1789878059,
+      "last_update_chapter_name": "x城小剧场 注意力",
+      "copyright": 1,
+      "first_letter": "r",
+      "comic_py": "renrenduhuimofadeshijie",
+      "hidden": 0,
+      "hot_num": 6361,
+      "hit_num": 9296,
+      "is_lock": 0,
+      "last_update_chapter_id": 191298,
+      "types": [
+        {
+          "tag_id": 4,
+          "tag_name": "冒险",
+          "tag_py": "maoxian"
+        },
+        {
+          "tag_id": 11,
+          "tag_name": "魔法",
+          "tag_py": "mofa"
+        },
+        {
+          "tag_id": 12,
+          "tag_name": "神鬼",
+          "tag_py": "shengui"
+        },
+        {
+          "tag_id": 5848,
+          "tag_name": "奇幻",
+          "tag_py": "qihuan"
+        }
+      ],
+      "status": [
+        {
+          "tag_id": 2309,
+          "tag_name": "连载中",
+          "tag_py": "lianzaizhong"
+        }
+      ],
+      "authors": [
+        {
+          "tag_id": 36408,
+          "tag_name": "花枝鼠",
+          "tag_py": "huazhishu"
+        }
+      ],
+      "subscribe_num": 0,
+      "chapters": [
+        {
+          "title": "连载",
+          "data": [
+            {
+              "chapter_id": 191298,
+              "chapter_title": "x城小剧场 注意力",
+              "chapter_name": "x城小剧场 注意力",
+              "updatetime": 1789878059,
+              "filesize": 0,
+              "chapter_order": 22,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 190278,
+              "chapter_title": "15话",
+              "chapter_name": "15 可以再说一次我们的相遇吗",
+              "updatetime": 1788082133,
+              "filesize": 0,
+              "chapter_order": 21,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 189625,
+              "chapter_title": "14话",
+              "chapter_name": "14 小小珞怎么会是?！",
+              "updatetime": 1787151728,
+              "filesize": 0,
+              "chapter_order": 20,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 189445,
+              "chapter_title": "x城小剧场 味道（大卫·戴）",
+              "chapter_name": "x城小剧场 味道（大卫·戴）",
+              "updatetime": 1786715036,
+              "filesize": 0,
+              "chapter_order": 19,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 188740,
+              "chapter_title": "13话",
+              "chapter_name": "13 机械拼装？我在行！（下）",
+              "updatetime": 1785678025,
+              "filesize": 0,
+              "chapter_order": 18,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 187324,
+              "chapter_title": "13话",
+              "chapter_name": "13 机械拼装？我在行！（上）",
+              "updatetime": 1783774646,
+              "filesize": 0,
+              "chapter_order": 17,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 187002,
+              "chapter_title": "x城小剧场 在后室上班！",
+              "chapter_name": "x城小剧场 在后室上班！",
+              "updatetime": 1783233687,
+              "filesize": 0,
+              "chapter_order": 16,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 185946,
+              "chapter_title": "12话",
+              "chapter_name": "12 风起云涌的转校生活",
+              "updatetime": 1782043533,
+              "filesize": 0,
+              "chapter_order": 15,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 185288,
+              "chapter_title": "11话",
+              "chapter_name": "11 李奶的妈妈",
+              "updatetime": 1781066694,
+              "filesize": 0,
+              "chapter_order": 14,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 184958,
+              "chapter_title": "x城小剧场 精灵",
+              "chapter_name": "x城小剧场 精灵",
+              "updatetime": 1780538071,
+              "filesize": 0,
+              "chapter_order": 13,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 184878,
+              "chapter_title": "10话",
+              "chapter_name": "10 城市里的神奇设施",
+              "updatetime": 1780377286,
+              "filesize": 0,
+              "chapter_order": 12,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 184307,
+              "chapter_title": "9话",
+              "chapter_name": "9 最特别的亲签",
+              "updatetime": 1779550433,
+              "filesize": 0,
+              "chapter_order": 11,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 184019,
+              "chapter_title": "人物介绍1",
+              "chapter_name": "人物介绍1",
+              "updatetime": 1779075289,
+              "filesize": 0,
+              "chapter_order": 10,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 183834,
+              "chapter_title": "8话",
+              "chapter_name": "8 权力与玻璃珠",
+              "updatetime": 1778673477,
+              "filesize": 0,
+              "chapter_order": 9,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 183308,
+              "chapter_title": "7话",
+              "chapter_name": "7 混辕劲",
+              "updatetime": 1777734965,
+              "filesize": 0,
+              "chapter_order": 8,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 183267,
+              "chapter_title": "6话",
+              "chapter_name": "6 霸总的周末",
+              "updatetime": 1777533492,
+              "filesize": 0,
+              "chapter_order": 7,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 183028,
+              "chapter_title": "5话",
+              "chapter_name": "5 香山武林与婷婷泡的茶",
+              "updatetime": 1777178809,
+              "filesize": 0,
+              "chapter_order": 6,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 182719,
+              "chapter_title": "4话",
+              "chapter_name": "4 白鹤仙人与子女们",
+              "updatetime": 1776746093,
+              "filesize": 0,
+              "chapter_order": 5,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 182648,
+              "chapter_title": "3话",
+              "chapter_name": "3 万香山天池与小熊猫",
+              "updatetime": 1776576598,
+              "filesize": 0,
+              "chapter_order": 4,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 182518,
+              "chapter_title": "2.2话",
+              "chapter_name": "2 魔药课（下）",
+              "updatetime": 1776333925,
+              "filesize": 0,
+              "chapter_order": 3,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 182442,
+              "chapter_title": "2话",
+              "chapter_name": "2 魔药课（上）",
+              "updatetime": 1776234366,
+              "filesize": 0,
+              "chapter_order": 2,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 182392,
+              "chapter_title": "1话",
+              "chapter_name": "1 魔法的世界",
+              "updatetime": 1776088119,
+              "filesize": 0,
+              "chapter_order": 1,
+              "is_fee": false,
+              "canRead": true,
+              "volumn_id": 999
+            }
+          ]
+        }
+      ],
+      "is_need_login": 0,
+      "url_links": [],
+      "isHideChapter": 0,
+      "dh_url_links": [],
+      "corner_mark": "",
+      "is_fee": 0,
+      "canRead": true,
+      "comicNotice": "不定期更新但是会一直画",
+      "authorNotice": ""
+    },
+    "readingRecord": {
+      "type_name": "",
+      "uid": 0,
+      "source": 0,
+      "biz_id": 0,
+      "chapter_id": 0,
+      "viewing_time": 0,
+      "record": 0,
+      "volume_id": 0,
+      "total_num": 0,
+      "chapter_name": "",
+      "volume_name": ""
+    }
+  }
+}

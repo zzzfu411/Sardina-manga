@@ -1,0 +1,320 @@
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "data": {
+      "id": 42910,
+      "title": "请接受我这一拳！",
+      "aliasName": "私の拳を受け止めて！",
+      "realName": "私の拳をうけとめて！",
+      "direction": 1,
+      "islong": 2,
+      "is_dmzj": 0,
+      "cover": "https://images.zaimanhua.com/webpic/14/quan20200310.jpg",
+      "description": "也许很突然，下个月我要结婚了！天才拳交少女的故事。",
+      "last_updatetime": 1607868982,
+      "last_update_chapter_name": "第20话",
+      "copyright": 0,
+      "first_letter": "q",
+      "comic_py": "qingjieshouwozheyiquan",
+      "hidden": 0,
+      "hot_num": 20026,
+      "hit_num": 12104,
+      "is_lock": 0,
+      "last_update_chapter_id": 111701,
+      "types": [
+        {
+          "tag_id": 3243,
+          "tag_name": "ゆり",
+          "tag_py": "baihe"
+        }
+      ],
+      "status": [
+        {
+          "tag_id": 2310,
+          "tag_name": "已完结",
+          "tag_py": "yiwanjie"
+        }
+      ],
+      "authors": [
+        {
+          "tag_id": 8308,
+          "tag_name": "murata",
+          "tag_py": "murata"
+        }
+      ],
+      "subscribe_num": 0,
+      "chapters": [
+        {
+          "title": "连载",
+          "data": [
+            {
+              "chapter_id": 111701,
+              "chapter_title": "20话",
+              "chapter_name": "第20话",
+              "updatetime": 1607868982,
+              "filesize": 8894310,
+              "chapter_order": 220,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 108481,
+              "chapter_title": "19话",
+              "chapter_name": "第19话",
+              "updatetime": 1600865315,
+              "filesize": 4398528,
+              "chapter_order": 210,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 107539,
+              "chapter_title": "18话",
+              "chapter_name": "第18话",
+              "updatetime": 1599049722,
+              "filesize": 3080372,
+              "chapter_order": 200,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 106740,
+              "chapter_title": "17话",
+              "chapter_name": "第17话",
+              "updatetime": 1597676305,
+              "filesize": 2910913,
+              "chapter_order": 190,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 106209,
+              "chapter_title": "16话",
+              "chapter_name": "第16话",
+              "updatetime": 1596556011,
+              "filesize": 3382620,
+              "chapter_order": 180,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 104649,
+              "chapter_title": "15话",
+              "chapter_name": "第15话",
+              "updatetime": 1593705884,
+              "filesize": 4892431,
+              "chapter_order": 170,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 104648,
+              "chapter_title": "14话",
+              "chapter_name": "第14话",
+              "updatetime": 1593705856,
+              "filesize": 3932149,
+              "chapter_order": 160,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 104155,
+              "chapter_title": "13话",
+              "chapter_name": "第13话",
+              "updatetime": 1592704591,
+              "filesize": 8104612,
+              "chapter_order": 150,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 104129,
+              "chapter_title": "番外02",
+              "chapter_name": "番外02",
+              "updatetime": 1592659123,
+              "filesize": 1094898,
+              "chapter_order": 140,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 103657,
+              "chapter_title": "12话",
+              "chapter_name": "第12话",
+              "updatetime": 1592009483,
+              "filesize": 4425441,
+              "chapter_order": 130,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 103654,
+              "chapter_title": "11话",
+              "chapter_name": "第11话",
+              "updatetime": 1591981037,
+              "filesize": 7786660,
+              "chapter_order": 120,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 99228,
+              "chapter_title": "10话",
+              "chapter_name": "第10话",
+              "updatetime": 1583839670,
+              "filesize": 5670223,
+              "chapter_order": 110,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 94782,
+              "chapter_title": "9话",
+              "chapter_name": "第09话",
+              "updatetime": 1572964357,
+              "filesize": 6460334,
+              "chapter_order": 100,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 88299,
+              "chapter_title": "8话",
+              "chapter_name": "第08话",
+              "updatetime": 1555382135,
+              "filesize": 6240892,
+              "chapter_order": 90,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 85431,
+              "chapter_title": "7话",
+              "chapter_name": "第07话",
+              "updatetime": 1547460062,
+              "filesize": 3102619,
+              "chapter_order": 80,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 82404,
+              "chapter_title": "6话",
+              "chapter_name": "第06话",
+              "updatetime": 1538487831,
+              "filesize": 2678123,
+              "chapter_order": 70,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 81899,
+              "chapter_title": "番外01",
+              "chapter_name": "番外01",
+              "updatetime": 1537083114,
+              "filesize": 362540,
+              "chapter_order": 60,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 81503,
+              "chapter_title": "5话",
+              "chapter_name": "第05话",
+              "updatetime": 1535888373,
+              "filesize": 3894515,
+              "chapter_order": 50,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 78015,
+              "chapter_title": "4话",
+              "chapter_name": "第04话",
+              "updatetime": 1527730854,
+              "filesize": 6047249,
+              "chapter_order": 40,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 75021,
+              "chapter_title": "3话",
+              "chapter_name": "第03话",
+              "updatetime": 1520925699,
+              "filesize": 3412360,
+              "chapter_order": 30,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 73795,
+              "chapter_title": "2话",
+              "chapter_name": "第02话",
+              "updatetime": 1517814130,
+              "filesize": 3923889,
+              "chapter_order": 20,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            },
+            {
+              "chapter_id": 73595,
+              "chapter_title": "1话",
+              "chapter_name": "第01话",
+              "updatetime": 1517216089,
+              "filesize": 4203828,
+              "chapter_order": 10,
+              "is_fee": false,
+              "canRead": false,
+              "volumn_id": 999
+            }
+          ]
+        }
+      ],
+      "is_need_login": 0,
+      "url_links": [],
+      "isHideChapter": 0,
+      "dh_url_links": [],
+      "corner_mark": "",
+      "is_fee": 0,
+      "canRead": false,
+      "comicNotice": "",
+      "authorNotice": ""
+    },
+    "readingRecord": {
+      "type_name": "",
+      "uid": 0,
+      "source": 0,
+      "biz_id": 0,
+      "chapter_id": 0,
+      "viewing_time": 0,
+      "record": 0,
+      "volume_id": 0,
+      "total_num": 0,
+      "chapter_name": "",
+      "volume_name": ""
+    }
+  }
+}

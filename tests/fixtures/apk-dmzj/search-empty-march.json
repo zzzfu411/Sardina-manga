@@ -1,0 +1,10 @@
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "list": [],
+    "page": 1,
+    "size": 20,
+    "total": 0
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "data": {
+    "search": {
+      "edges": [
+        {
+          "cursor": "MA",
+          "node": {
+            "id": "U2VyaWVzOjMyNjk3NTQ0OTY1NDg5MTUyNzA",
+            "databaseId": "3269754496548915270",
+            "title": "名探偵コナン",
+            "thumbnailUri": "https://cdn-img.www.sunday-webry.com/public/series-thumbnail/3269754496548915270-366f5978fefbcb6994fe983f1a491c23?1700553648",
+            "author": {
+              "name": "青山剛昌"
+            },
+            "authors": [
+              {
+                "name": "青山剛昌"
+              }
+            ],
+            "firstEpisode": {
+              "databaseId": "3269754496548998088"
+            },
+            "latestEpisode": {
+              "title": "3. FILE.3 仲間はずれの名探偵"
+            }
+          }
+        },
+        {
+          "cursor": "MQ",
+          "node": {
+            "id": "U2VyaWVzOjI1NTA5MTI5NjQ5NDk0OTIxNjM",
+            "databaseId": "2550912964949492163",
+            "title": "名探偵コナン　警察学校編　Ｗｉｌｄ　Ｐｏｌｉｃｅ　Ｓｔｏｒｙ",
+            "thumbnailUri": "https://cdn-img.www.sunday-webry.com/public/series-thumbnail/2550912964949492163-6a905152f6e36942b95ef939b4eeb144?1744066416",
+            "author": {
+              "name": "青山剛昌/新井隆広"
+            },
+            "authors": [
+              {
+                "name": "青山剛昌/新井隆広"
+              }
+            ],
+            "firstEpisode": {
+              "databaseId": "2550912965532938899"
+            },
+            "latestEpisode": {
+              "title": "3. CASE.3 戮力協心"
+            }
+          }
+        },
+        {
+          "cursor": "Mg",
+          "node": {
+            "id": "U2VyaWVzOjMyNjk3NTQ0OTY1NDg5MTUyNzY",
+            "databaseId": "3269754496548915276",
+            "title": "名探偵コナン ゼロの日常",
+            "thumbnailUri": "https://cdn-img.www.sunday-webry.com/public/series-thumbnail/3269754496548915276-535fbe2e83af78676d8df54c7936d42e?1638928043",
+            "author": {
+              "name": "新井隆広/青山剛昌"
+            },
+            "authors": [
+              {
+                "name": "新井隆広/青山剛昌"
+              }
+            ],
+            "firstEpisode": {
+              "databaseId": "3269754496551508028"
+            },
+            "latestEpisode": {
+              "title": "3. TIME.3 眠くない…"
+            }
+          }
+        },
+        {
+          "cursor": "Mw",
+          "node": {
+            "id": "U2VyaWVzOjMyNjk3NTQ0OTY1NDg5MTUyOTQ",
+            "databaseId": "3269754496548915294",
+            "title": "名探偵コナン　犯人の犯沢さん",
+            "thumbnailUri": "https://cdn-img.www.sunday-webry.com/public/series-thumbnail/3269754496548915294-fd1168b09161910b5f719ea26ffe9cb2?1638928127",
+            "author": {
+              "name": "かんばまゆこ/青山剛昌"
+            },
+            "authors": [
+              {
+                "name": "かんばまゆこ/青山剛昌"
+              }
+            ],
+            "firstEpisode": {
+              "databaseId": "3269754496551508145"
+            },
+            "latestEpisode": {
+              "title": "60. FILE.59 恋愛のいろは"
+            }
+          }
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "Mw"
+      }
+    }
+  }
+}

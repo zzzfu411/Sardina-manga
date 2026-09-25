@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "chapter_name": "第3话 兄弟",
+      "chapter_id": 359042,
+      "chapter_newid": "dshxd",
+      "price": 0,
+      "order_num": 44,
+      "rule": "/comic/Y/妖神记/第3话F1_94463/$$.jpg",
+      "chapter_domain_suffix": "",
+      "chapter_domain": "dm300.com"
+    },
+    {
+      "chapter_name": "第2话 坐井观天",
+      "chapter_id": 359041,
+      "chapter_newid": "dehzjgt",
+      "price": 0,
+      "order_num": 43,
+      "rule": "/comic/Y/妖神记/第2话F1_94462/$$.jpg",
+      "chapter_domain_suffix": "",
+      "chapter_domain": "dm300.com"
+    },
+    {
+      "chapter_name": "第1话 重生",
+      "chapter_id": 359040,
+      "chapter_newid": "dyhzs",
+      "price": 0,
+      "order_num": 40,
+      "rule": "/comic/Y/妖神记/第1话F1_94461/$$.jpg",
+      "chapter_domain_suffix": "",
+      "chapter_domain": "dm300.com"
+    }
+  ],
+  "status": 0,
+  "message": "ok"
+}

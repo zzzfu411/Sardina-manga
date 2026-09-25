@@ -1,0 +1,1192 @@
+{
+  "details": {
+    "result": "ok",
+    "type": "entity",
+    "data": {
+      "id": "Lx6v77NL",
+      "type": "title",
+      "attributes": {
+        "slug": "part-time-adventurer",
+        "title": {
+          "en": "Part-Time Adventurer",
+          "es-419": "Aventurero de Medio Tiempo"
+        },
+        "description": {
+          "en": "Synthetic short description for the recorded public work."
+        },
+        "originalLanguage": "es-419",
+        "year": 2024,
+        "bannerFileName": "bbe644ba-d3f3-4ee7-8b7d-d8a593efaf62.png",
+        "type": "comic",
+        "links": [],
+        "contentRating": "safe",
+        "demographic": "none",
+        "publicationStatus": "ongoing",
+        "state": "published",
+        "gating": null,
+        "readingMode": "vls",
+        "locks": [],
+        "publishedAt": "2024-06-26T08:18:01+00:00",
+        "volumeKind": "volume",
+        "chapterKind": "chapter",
+        "createdAt": "2024-06-10T22:41:20+00:00",
+        "updatedAt": "2026-07-11T15:40:56+00:00",
+        "version": 13
+      },
+      "relationships": [
+        {
+          "id": "sHBDAeUG",
+          "type": "organization",
+          "attributes": {
+            "name": "Toxic-Ink Incorporated"
+          }
+        },
+        {
+          "id": "EhUCbzL6",
+          "type": "cover_art",
+          "attributes": {
+            "fileName": "bbb4fd43-5823-4132-9649-0f88f81a8863.png",
+            "locale": "es-419"
+          }
+        },
+        {
+          "id": "QbiWMhT2",
+          "type": "cover_art",
+          "attributes": {
+            "fileName": "3603cd20-fdb4-440a-be51-592acb4f10af.png",
+            "locale": "en"
+          }
+        }
+      ]
+    }
+  },
+  "directory": {
+    "result": "ok",
+    "type": "collection",
+    "data": [
+      {
+        "id": "9ZVdvpVK",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "1",
+          "name": "Proposiciones",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "dMJ4GDPS",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "1",
+          "name": "Proposition",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "EnCXwjQ9",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "2",
+          "name": "Relaciones",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 10
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "VVZQWTaS",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "2",
+          "name": "Relationships",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 10
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "wZa38hnX",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "3",
+          "name": "Encounter",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 11
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "9jRVMebF",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "3",
+          "name": "Encuentro",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 11
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "izWisthv",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "4",
+          "name": "Cerrado",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "SLvgxLHn",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "4",
+          "name": "Closed",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "xsxV9JRS",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "5",
+          "name": "Advance",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "SCbt4u3m",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "5",
+          "name": "Adentrarse",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 9
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "2v8Udbhq",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "6",
+          "name": "Un plan inesperado",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 14
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "AtucAf3x",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "6",
+          "name": "Unexpected plan",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 14
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "SVAWFDxZ",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "7",
+          "name": "Caída Tenaz",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 16
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "QdA9urwy",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "7",
+          "name": "Tenacious Fall",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 16
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "q7FhqvBZ",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "8",
+          "name": "Intenso Combate",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 42
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "kCHvqjUe",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "8",
+          "name": "Intense Combat",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 42
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "Y7AFa4Tu",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "9",
+          "name": "Obstáculos",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 22
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "kAvxwwDx",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "9",
+          "name": "Obstacles",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 22
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "vR9hbFKp",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "10",
+          "name": "New Beginning",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 20
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "n7VT4viB",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "10",
+          "name": "Nuevos Comienzos",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 20
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "nQnVydBk",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "11",
+          "name": "Vain Origin",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "dqGwpRHD",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "11",
+          "name": "Vanidoso Origen",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "mEdez5JG",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "12",
+          "name": "Interrogatorio",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 48
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "2RziK4nb",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "12",
+          "name": "Interrogation",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 48
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "GKtuj5yX",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "13",
+          "name": "Laments",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 32
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "6Juijfe2",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "13",
+          "name": "Lamentos",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 32
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "m8TZLAM2",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "14",
+          "name": "Líos carentes",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "GfvNJg8f",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "14",
+          "name": "Lacking messes",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "B7Pzci6W",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "15",
+          "name": "Asombrosa ayuda",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "RsD7bTUB",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "15",
+          "name": "Astonishing help",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "H7HXYx93",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "16",
+          "name": "Novato de Investigaciones",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "wxe65DzD",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "16",
+          "name": "Investigation Newbie",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "8LqAZXbq",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "17",
+          "name": "Observación notable",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "vLZv5frw",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "17",
+          "name": "Notable Observation",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "EjudXiMh",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "18",
+          "name": "Derrota inmensa",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "cF7y4f8Y",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "18",
+          "name": "Inmense defeat",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "P5kNyRGV",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "19",
+          "name": "Neutralized enemy",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "NREKjZxU",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "19",
+          "name": "Enemigo neutralizado",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "zBLaKxF3",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "20",
+          "name": "Special new event",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "GV6zqqHk",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "20",
+          "name": "Nuevo evento especial",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "v5KjskRs",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "21",
+          "name": "Tarea intrigante",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 32
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "w6FiinHS",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "21",
+          "name": "Intriguing treat",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 32
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "3rQZ9JBM",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "22",
+          "name": "Realidad profunda",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 48
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "u7WTVbsb",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "22",
+          "name": "Deep reality",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 48
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "bFdDTmfh",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "23",
+          "name": "Exciting obstacles",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "z4J2msrw",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "23",
+          "name": "Obstáculos excitantes",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "YQkTFSbA",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "24",
+          "name": "Overwhelming duality",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "PkR9cctZ",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "24",
+          "name": "Dualidad abrumadora",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 40
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "vbKBgTLG",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "25",
+          "name": "Final experience",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 36
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "PLsZV7zT",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "25",
+          "name": "Experiencia final",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 36
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "7UtZsfHr",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "26",
+          "name": "Mutuo acuerdo",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 46
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "iGxmyMCB",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "26",
+          "name": "Mutual agreement",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 46
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "vdaBEbBB",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "27",
+          "name": "Invasión del Este",
+          "translatedLanguage": "es-419",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 56
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      },
+      {
+        "id": "ZUucuRME",
+        "type": "chapter",
+        "attributes": {
+          "volume": null,
+          "chapter": "27",
+          "name": "East Invasion",
+          "translatedLanguage": "en",
+          "state": "published",
+          "workInProgress": false,
+          "pages": 56
+        },
+        "relationships": [
+          {
+            "id": "Lx6v77NL",
+            "type": "title"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "limit": 100,
+      "offset": 0,
+      "total": 54
+    }
+  },
+  "chapter": {
+    "result": "ok",
+    "type": "entity",
+    "data": {
+      "id": "dMJ4GDPS",
+      "type": "chapter",
+      "attributes": {
+        "volume": null,
+        "chapter": "1",
+        "name": "Proposition",
+        "translatedLanguage": "en",
+        "avatarFileName": "9ce14ff8-b021-405c-af45-a627b0f7fafa.png",
+        "state": "published",
+        "workInProgress": false,
+        "publishAt": "2024-06-26T22:56:29+00:00",
+        "authorsNote": null,
+        "createdAt": "2024-06-26T22:56:29+00:00",
+        "updatedAt": "2024-06-27T16:33:55+00:00",
+        "version": 5,
+        "pages": 9
+      },
+      "relationships": [
+        {
+          "id": "Lx6v77NL",
+          "type": "title"
+        },
+        {
+          "id": "c6c12dfa-55ee-4e8e-9b7d-a757357dcb10",
+          "type": "user"
+        },
+        {
+          "id": "sHBDAeUG",
+          "type": "organization"
+        }
+      ]
+    }
+  },
+  "images": {
+    "result": "ok",
+    "type": "image_data",
+    "data": {
+      "baseUrl": "https://uploads.namicomi.com",
+      "hash": "4e709f789ccacef15c0261f503434d4b",
+      "high": [
+        {
+          "size": 758538,
+          "filename": "1-e3763c69cde1b798079b9285a32cd7afcf7d19a63564d2d7ab6789f1c895dd96.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 709481,
+          "filename": "2-fc4dbc4851596f5f578f3f1fb9c4ac53abd87cfe9d725db59792d29ae64ff0a2.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 952462,
+          "filename": "3-7eaf993afe24eebd4d0bd9594e339eee7f1388a449fae0a882a58fdf139e6233.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 822632,
+          "filename": "4-d7eb8e7bf17dcb630b723774a7116ab18aa990e434b9afc1549a70d4f7d09a7a.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 680784,
+          "filename": "5-ad635935c7337c9c2f229886b97b4e653bd5a3cf2bf0849426176b94faf01a84.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 587697,
+          "filename": "6-b0ba3025e09ec7e1f7436c8e55b8195ac82f574b96e828e3c750e9a6b8fa0708.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 816759,
+          "filename": "7-c895df2499c058808f26df733f869c9d9dd26d0970a49db40f147276d94469d8.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 883066,
+          "filename": "8-168970a1718ebb17f677a7e8f11990f7e5ccafb8671de707ee0a2719a35bb6bd.png",
+          "resolution": "1000x1500"
+        },
+        {
+          "size": 528623,
+          "filename": "9-4687e09978f570b16f63824c343228af385bf1ea74865bc79a8ab0246d4f3b4b.png",
+          "resolution": "1000x1500"
+        }
+      ]
+    }
+  }
+}

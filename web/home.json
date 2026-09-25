@@ -1,0 +1,70 @@
+{
+  "featured": [
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/guimiezhiren",
+      "title": "鬼灭之刃",
+      "coverUrl": "https://lain.bgm.tv/pic/cover/l/f0/30/168891_hd9f3.jpg",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/guimiezhiren"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/zhoushuhuizhan",
+      "title": "咒术回战",
+      "coverUrl": "https://lain.bgm.tv/pic/cover/l/0f/f8/238887_mohh8.jpg",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/zhoushuhuizhan"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/yiquanchaoren",
+      "title": "一拳超人",
+      "coverUrl": "https://lain.bgm.tv/pic/cover/l/6f/a2/55911_n7jf7.jpg",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/yiquanchaoren"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/quanzhiduzheshijiao",
+      "title": "全知读者视角",
+      "coverUrl": "https://lain.bgm.tv/pic/cover/l/f9/9d/314398_R0A4x.jpg",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/quanzhiduzheshijiao"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/hanghaiwangquancaiban",
+      "title": "航海王（全彩版）",
+      "coverUrl": "https://static-tw.baozimh.com/cover/hanghaiwang-weitianrongyilang.jpg?w=285&h=375&q=100",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/hanghaiwangquancaiban"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/riyuetongcuo",
+      "title": "日月同错",
+      "coverUrl": "https://static-tw.baozimh.com/cover/riyuetongcuo-dinianmiao.jpg?w=285&h=375&q=100",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/riyuetongcuo"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/guanyuwozhuanshenghouchengweishilaimudenajianshi",
+      "title": "关于我转生后成为史莱姆的那件事",
+      "coverUrl": "https://static-tw.baozimh.com/cover/guanyuwozhuanshenghouchengweishilaimudenajianshi-chuanshangtaishufulai.jpg?w=285&h=375&q=100",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/guanyuwozhuanshenghouchengweishilaimudenajianshi"
+    },
+    {
+      "id": "manhuazhijia::https://www.manhuazhijia.cc/comic/douluodalu",
+      "title": "斗罗大陆",
+      "coverUrl": "https://static-tw.baozimh.com/cover/douluodalu-fengxuandongman.jpg?w=285&h=375&q=100",
+      "siteId": "manhuazhijia",
+      "siteName": "漫画之家",
+      "detailUrl": "https://www.manhuazhijia.cc/comic/douluodalu"
+    }
+  ],
+  "curatedAt": "2026-09-20",
+  "note": "精选书目，不代表实时热度或更新时间"
+}

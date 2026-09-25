@@ -1,0 +1,1376 @@
+{
+  "updatedAt": "2026-09-21",
+  "ruleEntryCount": 99,
+  "entries": [
+    {
+      "entryId": "vomic:0",
+      "name": "godacomic【英文】",
+      "origin": "https://manhuascans.org",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:1",
+      "name": "顶漫画【网】",
+      "origin": "https://www.dingmanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:2",
+      "name": "皮皮漫画",
+      "origin": "https://www.pipimanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索地址依赖脚本预处理或缺少静态关键词模板；未执行规则脚本，待独立转写公开协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:3",
+      "name": "沐沐漫画",
+      "origin": "http://www.talkmanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "规则携带凭据或 Cookie 字段；尚未验证不依赖账号的公开访问链路，不使用所带凭据。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:4",
+      "name": "包子漫画",
+      "origin": "https://cn.webmota.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:5",
+      "name": "漫画柜【网】",
+      "origin": "https://m.manhuagui.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:6",
+      "name": "漫画皮【网】",
+      "origin": "http://m.manhuapi.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:7",
+      "name": "漫神【网】",
+      "origin": "https://m.mhkami.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:8",
+      "name": "goda漫画【网】",
+      "origin": "https://godamh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:9",
+      "name": "包子漫画goda站【网】",
+      "origin": "https://baozimh.org",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:10",
+      "name": "漫画牛【网】",
+      "origin": "https://www.manhua666.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "前轮同一 manhua666.cc 域名 TLS 失败，未验证到完整阅读链路。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:11",
+      "name": "包子漫画主【网】",
+      "origin": "https://cn.bzmgcn.com",
+      "siteId": "baozimh",
+      "status": "duplicate",
+      "reason": "公开搜索入口实测重定向至 www.baozimh.com，映射到已注册的包子漫画源，不重复注册。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:12",
+      "name": "漫画网",
+      "origin": "https://www.manhua3.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：返回验证页面",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:13",
+      "name": "七夕漫画【网】",
+      "origin": "https://m.qiximanhua.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: IP address mismatch, certificate is not valid for '43.143.245.32'. (_ssl.c:1010)>",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:14",
+      "name": "新新漫画【网】",
+      "origin": "https://www.77mh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1010)>",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:15",
+      "name": "36漫画",
+      "origin": "https://m.36mh.org",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:16",
+      "name": "读漫屋【网】",
+      "origin": "http://m.dumanwu1.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:17",
+      "name": "奇漫屋",
+      "origin": "https://m.qimanwu.app",
+      "siteId": "",
+      "status": "pending",
+      "reason": "旧规则搜索 URL 返回公开页面，但当前页面结构与导入的结果规则不一致；准确搜索和阅读链路未验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:18",
+      "name": "再漫画【网】",
+      "origin": "https://m.zaimanhua.com",
+      "siteId": "zaimanhua",
+      "status": "integrated",
+      "reason": "规则域名对应已注册的原生源，沿用已有适配器；本次不重复注册。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:19",
+      "name": "包子漫画goda站【备用】",
+      "origin": "https://bzmh.org",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:20",
+      "name": "天天看漫画",
+      "origin": "https://www.ttkmh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:21",
+      "name": "COLAMANGA",
+      "origin": "https://www.yoyomanga.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "2026-09-21 复核：已迁移至 yoyomanga.com；网页搜索可用，但章节为 App 专属，App 2.1.1 阅读接口尚未验证，暂未启用。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:22",
+      "name": "漫画站",
+      "origin": "https://m.manhuazhan.org",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "规则搜索入口实测重定向到 www.bing.com，旧漫画搜索入口当前失效；未跟随无关搜索站。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:23",
+      "name": "goda漫画【备用】",
+      "origin": "https://manhuafree.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:24",
+      "name": "来漫画",
+      "origin": "https://m.laimanhua88.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索 POST 体无法直接作为 JSON 字面量解析，待独立转写；未执行脚本。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:25",
+      "name": "来漫画备用",
+      "origin": "https://www.comemh8.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索 POST 体无法直接作为 JSON 字面量解析，待独立转写；未执行脚本。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:26",
+      "name": "漫画160",
+      "origin": "https://m.mh160mh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:27",
+      "name": "飞飞漫画",
+      "origin": "http://www.feifeimanhua.vip",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索地址依赖脚本预处理或缺少静态关键词模板；未执行规则脚本，待独立转写公开协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:28",
+      "name": "漫圈子",
+      "origin": "https://www.9mqz.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "公开搜索页面当前显示漫集市品牌，旧规则的结果结构已变化；准确目录与正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:29",
+      "name": "追漫画",
+      "origin": "https://www.ycymh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:30",
+      "name": "包子漫画备用",
+      "origin": "https://cn.baozimhcn.com",
+      "siteId": "baozimh",
+      "status": "duplicate",
+      "reason": "公开搜索入口实测重定向至 www.baozimh.com，映射到已注册的包子漫画源，不重复注册。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:31",
+      "name": "yy漫画",
+      "origin": "http://www.yymanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:32",
+      "name": "MyComic",
+      "origin": "https://mycomic.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:33",
+      "name": "好国漫",
+      "origin": "https://m.haoguoman8.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索地址依赖脚本预处理或缺少静态关键词模板；未执行规则脚本，待独立转写公开协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:34",
+      "name": "漫画鱼",
+      "origin": "https://m.manhuayu88.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:35",
+      "name": "漫画1234【网】",
+      "origin": "https://m.wmh1234.com",
+      "siteId": "manhua1234",
+      "status": "integrated",
+      "reason": "已独立实现公开 HTML 适配器；“一拳超人”准确搜索、1375 条目录、首章 15 页与首图内存完整解码均通过。 实测无需使用导入规则中的 Cookie 或凭据。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:36",
+      "name": "哔哩漫画",
+      "origin": "https://www.bilimanga.net",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:37",
+      "name": "楠楠漫画",
+      "origin": "https://nnmh.info",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:38",
+      "name": "猕猴桃漫画",
+      "origin": "https://www.mhtmh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "规则搜索 API 实测重定向到 manwaxu.cc；新域名的公开普通作品与图片协议尚未验证，未跟随跨域入口。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:39",
+      "name": "歪瑞古德漫画",
+      "origin": "https://www.veryim.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:40",
+      "name": "七七漫画【备用】",
+      "origin": "https://mqqm.cc",
+      "siteId": "",
+      "status": "duplicate",
+      "reason": "规则的公开搜索入口 qiqm.cc 实测重定向到本批 hqqh.cc（vomic:76）；属于重复入口，目标尚无已接入适配器。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:41",
+      "name": "漫画100",
+      "origin": "https://m.manhua100.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "普通作品搜索、458 条目录与首章 HTML 可取得；正文通过加密参数生成，图片协议尚未独立实现，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:42",
+      "name": "x漫画",
+      "origin": "https://www.xmanhua.net",
+      "siteId": "",
+      "status": "pending",
+      "reason": "普通作品搜索、577 条目录与首章 HTML 可取得；正文使用 XMANHUA 动态图片协议，尚未独立实现，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:43",
+      "name": "漫画250",
+      "origin": "https://www.mh250.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索地址依赖脚本预处理或缺少静态关键词模板；未执行规则脚本，待独立转写公开协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:44",
+      "name": "新新漫画",
+      "origin": "https://www.xxim.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:45",
+      "name": "七七漫画",
+      "origin": "https://mqqm.cc",
+      "siteId": "",
+      "status": "duplicate",
+      "reason": "与本批较早规则的声明域名完全相同；保留重复入口记录，目标尚无已接入适配器。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:46",
+      "name": "漫蛙漫画",
+      "origin": "https://www.manwamh5.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:47",
+      "name": "漫蛙漫画",
+      "origin": "https://manwari.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:48",
+      "name": "漫画客",
+      "origin": "http://m.yumanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:49",
+      "name": "漫画456",
+      "origin": "https://m.manhua456.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:50",
+      "name": "包子漫画【app】",
+      "origin": "https://appcn-vdkr.baozimh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：<urlopen error _ssl.c:993: The handshake operation timed out>",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:51",
+      "name": "爱看漫【网】",
+      "origin": "https://ymcdnyfqdapp.ikmmh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:52",
+      "name": "小肥羊app",
+      "origin": "https://gurgle-unvalued.qrqrs.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:53",
+      "name": "卡拉漫画",
+      "origin": "https://www.kalamanhua.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:54",
+      "name": "如漫画【网】",
+      "origin": "http://m.rumanhua2.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:55",
+      "name": "布卡动漫",
+      "origin": "https://www.bukamh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:56",
+      "name": "古风漫画网",
+      "origin": "https://gfmh.app",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:57",
+      "name": "毒牙漫画",
+      "origin": "http://www.duya.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索地址依赖脚本预处理或缺少静态关键词模板；未执行规则脚本，待独立转写公开协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:58",
+      "name": "tibiu漫画",
+      "origin": "https://comic.tibiu.net",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:59",
+      "name": "奇妙漫画",
+      "origin": "https://www.cxjob.com.cn",
+      "siteId": "",
+      "status": "pending",
+      "reason": "公开搜索页面可取得，但旧规则对应的准确作品结果范围尚未验证；目录与正文图片链路未完成验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:60",
+      "name": "优酷漫画",
+      "origin": "https://www.ykmh.net",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:61",
+      "name": "豆豆漫画",
+      "origin": "https://www.ddmanhuaw.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:62",
+      "name": "咱追漫画",
+      "origin": "https://www.zanzhui.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:63",
+      "name": "动漫啦",
+      "origin": "https://m.dongman.la",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:64",
+      "name": "来漫画88",
+      "origin": "https://www.comemh8.com",
+      "siteId": "",
+      "status": "duplicate",
+      "reason": "与本批较早规则的声明域名完全相同；保留重复入口记录，目标尚无已接入适配器。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:65",
+      "name": "gayrb漫画",
+      "origin": "https://gaygg.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:66",
+      "name": "D漫画",
+      "origin": "https://www.dmanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:67",
+      "name": "komiic漫画",
+      "origin": "https://komiic.com",
+      "siteId": "komiic",
+      "status": "integrated",
+      "reason": "规则域名对应已注册的原生源，沿用已有适配器；本次不重复注册。 图片读取仍受源站每日配额限制，本次未再次请求图片票据。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:68",
+      "name": "拷贝漫画",
+      "origin": "https://www.copy4000.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "公开搜索 HTML 可取得，结果由后续脚本接口加载；尚未独立转写该入口的搜索及图片协议。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:69",
+      "name": "喵喵漫画",
+      "origin": "https://www.miaomiaomanhua.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：[SSL] record layer failure (_ssl.c:2580)",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:70",
+      "name": "一耽漫画",
+      "origin": "https://yidan7.club",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:71",
+      "name": "豆包漫画【网】",
+      "origin": "https://doubaomanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:72",
+      "name": "漫蛙漫画",
+      "origin": "https://manwaqi.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:73",
+      "name": "漫蛙漫画【网】",
+      "origin": "https://imanwa.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:74",
+      "name": "多看漫画【网】",
+      "origin": "https://www.duokanmh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:75",
+      "name": "漫蛙FL【网】",
+      "origin": "https://manwafl.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:76",
+      "name": "七七漫画",
+      "origin": "https://hqqh.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:77",
+      "name": "W漫画【网】",
+      "origin": "https://www.wmanhua.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:78",
+      "name": "图库漫画【网】",
+      "origin": "https://www.tuku.cc",
+      "siteId": "tuku",
+      "status": "integrated",
+      "reason": "规则域名对应已注册的原生源，沿用已有适配器；本次不重复注册。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:79",
+      "name": "ジャンプルーキー【网】",
+      "origin": "https://rookie.shonenjump.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已用普通日文关键词“猫”取得搜索页；作品目录与正文图片链路尚未验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:80",
+      "name": "BoyBL【网】",
+      "origin": "https://boybl.cc",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:81",
+      "name": "可可漫画【网】",
+      "origin": "https://www.cocoecar.com",
+      "siteId": "cocoecar",
+      "status": "integrated",
+      "reason": "已独立实现公开 HTML 适配器；“一拳超人”准确搜索、314 条目录、首章 27 页与首图内存完整解码均通过。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:82",
+      "name": "发发漫画【网】",
+      "origin": "https://m.fafamh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:83",
+      "name": "大福漫画【网】",
+      "origin": "http://www.dafumh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "规则搜索 URL 返回页面，但响应未包含所搜普通关键词，未验证到准确搜索结果与阅读链路。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:84",
+      "name": "瓜子漫画【网】",
+      "origin": "https://www.guazimanhua.com",
+      "siteId": "guazimanhua",
+      "status": "integrated",
+      "reason": "已独立实现公开 HTML 适配器；“一拳超人”准确搜索、429 条目录、首章 15 页与首图内存完整解码均通过。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:85",
+      "name": "漫画台【网】",
+      "origin": "https://www.manhuat.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：<urlopen error _ssl.c:993: The handshake operation timed out>",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:86",
+      "name": "口袋漫画【网】",
+      "origin": "https://m.koudaimh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:87",
+      "name": "漫蛙漫画【网】",
+      "origin": "https://manwame.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:88",
+      "name": "漫旺【网】",
+      "origin": "https://www.manwang.net",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:89",
+      "name": "漫画团【网】",
+      "origin": "https://m.manhuatuan.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：The read operation timed out",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:90",
+      "name": "石头漫画【网】",
+      "origin": "https://www.stcwz.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已取得公开搜索响应；目录与正文图片链路尚未完整验证，未加入实际搜索。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:91",
+      "name": "肉漫屋【网】",
+      "origin": "https://roum29.xyz",
+      "siteId": "",
+      "status": "pending",
+      "reason": "尚无合适公开普通作品样本完成验证；保留候选，不请求专门内容或图片。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:92",
+      "name": "漫画铺【网】",
+      "origin": "https://www.amaan.cc",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "普通作品搜索受源站/网络限制，尚无完整阅读链路：HTTP Error 403: Forbidden",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:93",
+      "name": "拷贝漫画【网】",
+      "origin": "https://www.kaobei.org",
+      "siteId": "",
+      "status": "pending",
+      "reason": "搜索页可命中普通作品，当前页面呈 DM5 类模板；没有证据证明它与已注册拷贝漫画同源，目录和图片协议尚未验证。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "vomic:94",
+      "name": "6漫画【网】",
+      "origin": "https://www.hzxidou.com",
+      "siteId": "manhua6",
+      "status": "integrated",
+      "reason": "已独立实现公开 HTML 适配器；“一拳超人”准确搜索、440 条目录、首章 15 页与首图内存完整解码均通过。",
+      "collection": "你搜 v185",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "octopus:0",
+      "name": "包子漫画",
+      "origin": "https://cn.czmanga.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "首页实测重定向到 www.twmanga.com；原条目仅含站点与分类 URL，新入口的搜索和阅读链路尚未验证。",
+      "collection": "章鱼图源",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "octopus:1",
+      "name": "漫画屋",
+      "origin": "https://www.cmh5.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "公开首页请求的 TLS 握手超时；当前未取得可核验页面，未完成搜索与阅读链路。",
+      "collection": "章鱼图源",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "octopus:2",
+      "name": "古风漫画",
+      "origin": "https://www.gufengmh9.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "公开首页请求证书验证失败（无法取得可信发行链）；停止访问，未绕过 TLS 验证。",
+      "collection": "章鱼图源",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "octopus:3",
+      "name": "漫画吧",
+      "origin": "https://www.manhuaba.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "公开首页可访问，观察到 /search 的 key 搜索表单；条目缺少解析规则，准确搜索、目录和正文图片链路尚未验证。",
+      "collection": "章鱼图源",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:sundaywebry",
+      "name": "Sunday Webry",
+      "origin": "https://www.sunday-webry.com",
+      "siteId": "sundaywebry",
+      "status": "integrated",
+      "reason": "已接入公开网站搜索、完整目录和匿名免费章节；官网与原生 App 目录不同，受限章节会明确提示。",
+      "collection": "Sunday APK / 官网",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:terra",
+      "name": "泰拉记事社",
+      "origin": "https://comic.hypergryph.com",
+      "siteId": "terrahistoricus",
+      "status": "integrated",
+      "reason": "已接入迁移后的官方入口；完整作品表筛选、目录和章节图片通过云漫 HTTP 验证。",
+      "collection": "Tachiyomi 插件",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:namicomi",
+      "name": "NamiComi",
+      "origin": "https://namicomi.com",
+      "siteId": "namicomi",
+      "status": "integrated",
+      "reason": "已接入公开搜索、完整分页目录和图片；章节按语言分组并标注，受限章节无法匿名读取。",
+      "collection": "Tachiyomi 插件",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:happymh",
+      "name": "Happymh",
+      "origin": "https://m.happymh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "当前入口连接失败，尚未取得可读取的搜索页面。",
+      "collection": "Tachiyomi 插件",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:manhuaren",
+      "name": "漫画人",
+      "origin": "http://mangaapi.manhuaren.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已有搜索及阅读接口线索，完整目录和阅读尚待验证。",
+      "collection": "Tachiyomi 插件",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:mkzhan",
+      "name": "漫客栈 App 协议",
+      "origin": "https://comic.mkzhan.com",
+      "siteId": "mkzhan",
+      "status": "duplicate",
+      "reason": "同站公开接口已由现有漫客栈适配器接入，不重复增加搜索源。",
+      "collection": "官方 App 新提取协议",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:zaimanhua",
+      "name": "ZAI-X / 再漫画",
+      "origin": "https://v4api.zaimanhua.com",
+      "siteId": "zaimanhua",
+      "status": "duplicate",
+      "reason": "与已接入再漫画使用同一套接口，沿用现有源。",
+      "collection": "Flutter / Tachiyomi 插件",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:manhuatai",
+      "name": "漫画台 App 协议",
+      "origin": "https://m.manhuatai.com",
+      "siteId": "manhuatai",
+      "status": "duplicate",
+      "reason": "漫画台已接入可公开使用的网页接口；App 新协议资料单独保留。",
+      "collection": "官方 App 新提取协议",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "protocol:mangacopy",
+      "name": "拷贝 2.2.5 协议",
+      "origin": "https://www.mangacopy.com",
+      "siteId": "mangacopy",
+      "status": "duplicate",
+      "reason": "沿用已有拷贝源。新提取 App 协议仍返回访问限制，未据此增加可读性结论。",
+      "collection": "官方 App 新提取协议",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:0",
+      "name": "92漫画",
+      "origin": "http://www.92mh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 92漫画_1.4.11.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:1",
+      "name": "COLAMANGA漫画",
+      "origin": "https://www.yoyomanga.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "已迁移至 yoyomanga.com；该插件仍使用旧网页协议。网页章节为 App 专属，尚未打通 App 阅读接口，暂未启用。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ COLAMANGA漫画_1.4.22.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:2",
+      "name": "NamiComi漫畫",
+      "origin": "https://namicomi.com",
+      "siteId": "namicomi",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ NamiComi漫畫_1.4.2.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:3",
+      "name": "Pixiv",
+      "origin": "https://www.pixiv.net",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ Pixiv_1.4.9.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:4",
+      "name": "Zero搬运网",
+      "origin": "http://www.zerobywgbo2.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ Zero搬运网_1.4.18.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:5",
+      "name": "优酷漫画",
+      "origin": "https://www.ykmh.net",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 优酷漫画_1.4.29.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:6",
+      "name": "再漫画",
+      "origin": "https://manhua.zaimanhua.com",
+      "siteId": "zaimanhua",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 再漫画_1.4.5.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:7",
+      "name": "动漫之家",
+      "origin": "http://sacg.idmzj.com/comicsum/search.php",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 动漫之家_1.4.42.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:8",
+      "name": "动漫屋",
+      "origin": "https://www.dm5.cn",
+      "siteId": "dm5",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 动漫屋_1.4.2.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:9",
+      "name": "包子漫画",
+      "origin": "https://api-get-v2.mgsearcher.com",
+      "siteId": "baozimh",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 包子漫画_1.4.32.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:10",
+      "name": "古风漫画",
+      "origin": "https://www.gufengmh9.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 古风漫画_1.4.18.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:11",
+      "name": "可漫",
+      "origin": "https://komiic.com",
+      "siteId": "komiic",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 可漫_1.4.1.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:12",
+      "name": "咚漫",
+      "origin": "https://global.apis.naver.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 咚漫_1.4.2.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:13",
+      "name": "崩坏3ip站",
+      "origin": "https://comic.bh3.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 崩坏3ip站_1.4.3.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:14",
+      "name": "拷貝漫畫",
+      "origin": "https://www.mangacopy.com",
+      "siteId": "mangacopy",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 拷貝漫畫_1.4.53.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:15",
+      "name": "日本漫画",
+      "origin": "",
+      "siteId": "",
+      "status": "pending",
+      "reason": "插件字符串未提取到可验证的入口地址，未猜测域名或启用搜索。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 日本漫画_1.4.8.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:16",
+      "name": "泰拉记事社",
+      "origin": "https://comic.hypergryph.com",
+      "siteId": "terrahistoricus",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 泰拉记事社_1.4.3.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:17",
+      "name": "腾讯动漫",
+      "origin": "https://ac.qq.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · Tachiyomi_ 腾讯动漫_1.4.7.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:18",
+      "name": "百漫谷",
+      "origin": "https://www.darpou.com/",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.baimangu-v1.4.3.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:19",
+      "name": "包子漫画（旧插件）",
+      "origin": "https://www.baozimh.com",
+      "siteId": "baozimh",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.baozimanhua-v1.4.22.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:20",
+      "name": "ComicABC",
+      "origin": "https://www.comicabc.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.comicabc-v1.4.1.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:21",
+      "name": "古风漫画（旧插件）",
+      "origin": "https://www.gufengmh.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.gufengmh-v1.4.17.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:22",
+      "name": "Happymh",
+      "origin": "https://m.happymh.com",
+      "siteId": "",
+      "status": "blocked",
+      "reason": "当前 HTTPS 入口正常连接失败（TLS EOF），尚未完成搜索和阅读验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.happymh-v1.4.8.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:23",
+      "name": "漫画巴士",
+      "origin": "https://www.mangabz.com",
+      "siteId": "mangabz",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.mangabz-v1.4.8.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:24",
+      "name": "漫画 DB",
+      "origin": "https://www.manhuadb.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.manhuadb-v1.4.6.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:25",
+      "name": "漫画柜",
+      "origin": "https://www.manhuagui.com",
+      "siteId": "manhuagui",
+      "status": "duplicate",
+      "reason": "对应已接入漫画源的另一份插件资料，沿用现有适配器；不重复注册，也不据此声明实时可读。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.manhuagui-v1.4.20.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:26",
+      "name": "漫画人",
+      "origin": "http://mangaapi.manhuaren.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.manhuaren-v1.4.15.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:27",
+      "name": "一本漫画 / COLAMANGA",
+      "origin": "https://www.yoyomanga.com",
+      "siteId": "",
+      "status": "duplicate",
+      "reason": "与 COLAMANGA 指向同一站点（现为 yoyomanga.com）；网页章节为 App 专属，目标尚未启用，不另算一个漫画源。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.onemanhua-v1.4.18.apk",
+      "checkedAt": "2026-09-21"
+    },
+    {
+      "entryId": "tachiyomi:28",
+      "name": "亲亲漫画",
+      "origin": "http://www.acgwd.com",
+      "siteId": "",
+      "status": "pending",
+      "reason": "已保留插件提取的接口资料，尚未完成搜索、目录、图片的完整适配与验证。",
+      "collection": "Tachiyomi 插件 · tachiyomi-zh.qinqin-v1.4.13.apk",
+      "checkedAt": "2026-09-21"
+    }
+  ]
+}

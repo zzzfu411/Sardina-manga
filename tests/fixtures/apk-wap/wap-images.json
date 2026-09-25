@@ -1,0 +1,14 @@
+{
+  "status": 0,
+  "message": "ok",
+  "data": {
+    "comic_id": 27417,
+    "current_chapter": {
+      "chapter_newid": "dyhzs",
+      "chapter_img_list": [
+        "https://hw-chapter2.kaimanhua.com/comic/Y/%E5%A6%96%E7%A5%9E%E8%AE%B0/%E7%AC%AC1%E8%AF%9DF1_94461/1.jpg-kmh.low.webp?auth_key=fixture-only",
+        "https://hw-chapter2.kaimanhua.com/comic/Y/%E5%A6%96%E7%A5%9E%E8%AE%B0/%E7%AC%AC1%E8%AF%9DF1_94461/2.jpg-kmh.low.webp?auth_key=fixture-only"
+      ]
+    }
+  }
+}

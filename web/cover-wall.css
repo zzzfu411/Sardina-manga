@@ -1,0 +1,107 @@
+.cover-wall {
+  --wall-cover-height: clamp(122px, 14vw, 184px);
+  --wall-cover-width: calc(var(--wall-cover-height) * .7);
+  --wall-gap: clamp(14px, 2vw, 26px);
+  position: absolute;
+  inset: -18px -36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(4, var(--wall-cover-height));
+  align-content: center;
+  gap: var(--wall-gap);
+  overflow: hidden;
+  transform: none;
+  --wall-cover-opacity: .34;
+  pointer-events: none;
+  user-select: none;
+  contain: layout paint;
+}
+
+.cover-wall-track {
+  --wall-duration: 112s;
+  --wall-delay: -19s;
+  --wall-direction: normal;
+  display: flex;
+  width: max-content;
+  height: var(--wall-cover-height);
+  animation: cover-wall-drift var(--wall-duration) linear infinite;
+  animation-delay: var(--wall-delay);
+  animation-direction: var(--wall-direction);
+  animation-play-state: paused;
+}
+.cover-wall-track:nth-child(2) { --wall-duration: 128s; --wall-delay: -73s; --wall-direction: reverse; }
+.cover-wall-track:nth-child(3) { --wall-duration: 121s; --wall-delay: -44s; }
+.cover-wall-track:nth-child(4) { --wall-duration: 139s; --wall-delay: -102s; --wall-direction: reverse; }
+.cover-wall[data-motion="running"] .cover-wall-track { animation-play-state: running; }
+.cover-wall-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-around;
+  width: max(calc((var(--wall-cover-width) + var(--wall-gap)) * 8), calc(100vw + 144px));
+  height: 100%;
+  padding: 8px 0;
+}
+.cover-wall-cover {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--wall-cover-width);
+  height: calc(var(--wall-cover-height) - 16px);
+  overflow: hidden;
+  border: 1px solid #ffffffc9;
+  border-radius: 5px 7px 7px 5px;
+  box-shadow: 0 3px 0 #aec8e447, 0 6px 13px #4976aa13;
+  opacity: 0;
+  padding: 0;
+  background: #e7eff9;
+}
+.cover-wall-cover:is(button) { pointer-events: auto; touch-action: manipulation; }
+.cover-wall-cover:is(button):is(:hover, :focus-visible) { outline: 3px solid #2677ed; outline-offset: 2px; }
+.cover-wall-title { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 15px 6px 6px; background: linear-gradient(transparent,#172f4aeb); color: #fff; font-size: 11px; line-height: 1.4; text-align: left; opacity: 0; }
+.cover-wall-cover:is(:hover, :focus-visible) .cover-wall-title { opacity: 1; }
+.cover-wall-cover:nth-child(3n + 1) { transform: translateY(-5px) rotate(-2deg); }
+.cover-wall-cover:nth-child(3n + 2) { transform: translateY(4px) rotate(1.5deg); }
+.cover-wall-cover.is-ready { opacity: var(--wall-cover-opacity); }
+.cover-wall-cover.is-ready:is(:hover, :focus-visible) { opacity: 1; }
+.cover-wall-cover.is-unavailable { visibility: hidden; }
+.cover-wall .cover-wall-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover-wall-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 44px;
+  padding: 10px 12px;
+  gap: 6px;
+  flex: none;
+  border: 1px solid #d5e4f6;
+  border-radius: 24px;
+  background: #fafdfff0;
+  color: #567ca8;
+}
+.cover-wall-control span { font-size: 12px; line-height: 1; }
+.cover-wall-control svg { display: block; width: 18px; height: 18px; fill: currentColor; }
+.cover-wall-control:hover:not(:disabled) { background: #e8f2ff; }
+.cover-wall-control:focus-visible { outline: 3px solid #edb846; outline-offset: 4px; }
+@keyframes cover-wall-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+@media (max-width: 540px) {
+  .cover-wall { --wall-cover-height: 116px; --wall-gap: 17px; inset: -8px -22px; --wall-cover-opacity: .29; }
+  .cover-wall-track { --wall-duration: 126s; }
+  .cover-wall-track:nth-child(2) { --wall-duration: 143s; }
+  .cover-wall-track:nth-child(3) { --wall-duration: 137s; }
+  .cover-wall-track:nth-child(4) { --wall-duration: 152s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Retain a paused timeline so explicit play/pause does not reset the tracks.
+     The module defaults to paused when the system requests reduced motion. */
+  .cover-wall[data-motion] .cover-wall-track {
+    animation: cover-wall-drift var(--wall-duration) linear infinite !important;
+    animation-delay: var(--wall-delay) !important;
+    animation-direction: var(--wall-direction) !important;
+    animation-play-state: paused !important;
+  }
+  .cover-wall[data-motion="running"] .cover-wall-track { animation-play-state: running !important; }
+}

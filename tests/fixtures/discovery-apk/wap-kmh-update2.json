@@ -1,0 +1,73 @@
+{
+  "data": {
+    "page": {
+      "current_page": 2,
+      "total_page": 1,
+      "orderby": "date",
+      "count": 4,
+      "comic_sort": "",
+      "search_key": "",
+      "time": 57
+    },
+    "data": [
+      {
+        "comic_id": 107682,
+        "comic_name": "仙武帝尊",
+        "last_chapter_name": "第911话 会出现在这里",
+        "comic_type": "rexue,热血|xiuzhen,修真|xuanhuan,玄幻|mangai,漫改",
+        "comic_newid": "xianwudizun",
+        "comic_author": "小明太极漫画",
+        "renqi": 10507688947,
+        "update_time": 1780099207000,
+        "shoucang": 2180704,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/107682_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 8842,
+        "comic_name": "寻找前世之旅",
+        "last_chapter_name": "第2季第297话 大结局",
+        "comic_type": "maoxian,冒险|lianai,恋爱|mangai,漫改|chuanyue,穿越|jingpin,精品",
+        "comic_newid": "xunzhaoqianshizhilv",
+        "comic_author": "飒飒动漫",
+        "renqi": 21657254070,
+        "update_time": 1776556801000,
+        "shoucang": 5126690,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/8842_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 112517,
+        "comic_name": "弟子修炼，我躺平！",
+        "last_chapter_name": "第253话 通道开了",
+        "comic_type": "xuanhuan,玄幻|rexue,热血",
+        "comic_newid": "dizixiulianwotangping",
+        "comic_author": "iCiyuan动漫",
+        "renqi": 101379803,
+        "update_time": 1768988730000,
+        "shoucang": 4254,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/112517_3_4.jpg-noresize.webp",
+        "has_video": 0
+      },
+      {
+        "comic_id": 107882,
+        "comic_name": "星梦偶像计划",
+        "last_chapter_name": "十周年 纪念",
+        "comic_type": "luoli,萝莉|dushi,都市|shenghuo,生活",
+        "comic_newid": "xingmengouxiangjihua",
+        "comic_author": "籍火文化",
+        "renqi": 2600173140,
+        "update_time": 1764754650000,
+        "shoucang": 471264,
+        "comic_grade": "2",
+        "cover_img": "http://image.yqmh.com/mh/107882_3_4.jpg-noresize.webp",
+        "has_video": 0
+      }
+    ]
+  },
+  "status": 0,
+  "message": "ok"
+}

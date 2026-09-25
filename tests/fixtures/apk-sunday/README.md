@@ -1,0 +1,3 @@
+Sunday Webry public website fixtures, captured 2026-09-21.
+
+All samples are the ordinary work 名探偵コナン. Search, directory (22 total, source hasNextPage=false), and image metadata (36 pages) are real JSON responses. Viewer HTML is reduced to the two original permission/identity data attributes; ads, analytics and page chrome were removed. viewer-restricted.html is the source’s fourth episode, can_read=false/isPublic=false/pageStructure=null; no image metadata was requested for that episode. No comic image files are stored. Pagination variants in tests are controlled modifications of these observed connection shapes.

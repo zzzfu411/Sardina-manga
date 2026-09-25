@@ -1,0 +1,30 @@
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "data": {
+      "chapter_id": 182392,
+      "comic_id": 86003,
+      "title": "1 魔法的世界",
+      "chapter_order": 1,
+      "direction": 2,
+      "page_url": [
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775566491048.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962486918.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962494180.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962502307.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775973854447.jpg?sign=fixture-redacted&t=0"
+      ],
+      "picnum": 5,
+      "page_url_hd": [
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775566491048.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962486918.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962494180.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775962502307.jpg?sign=fixture-redacted&t=0",
+        "https://images.zaimanhua.com/img/chapterpic%2F43264%2F160724%2F1775973854447.jpg?sign=fixture-redacted&t=0"
+      ],
+      "comment_count": 0,
+      "canRead": true
+    }
+  }
+}

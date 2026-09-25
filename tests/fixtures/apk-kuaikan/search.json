@@ -1,0 +1,38 @@
+{
+  "code": 200,
+  "message": "OK",
+  "total": 1,
+  "hits": [
+    {
+      "id": 2625,
+      "topic_id": 2625,
+      "title": "谷围南亭",
+      "vertical_image_url": "https://tn1-f2.kkmh.com/image/200714/juxCCvnxK.webp-w320.w",
+      "cover_image_url": "https://tn1-f2.kkmh.com/image/210426/yvarIIItn.webp-w750",
+      "is_favourite": false,
+      "favourite": false,
+      "category": [
+        "悬疑",
+        "剧情",
+        "搞笑"
+      ],
+      "likes_count": 22991879,
+      "comments_count": 2036453,
+      "favourite_count": 4133033,
+      "comics_count": 121,
+      "first_comic_publish_time": "2018.12.15",
+      "author_name": "墨飞",
+      "popularity": 39056080731,
+      "latest_comic_title": "《谷围南亭》同名动画热播中",
+      "is_free": false,
+      "action_type": {
+        "type": 68,
+        "parent_target_id": "2625"
+      },
+      "continueReadComic": {
+        "id": 132643,
+        "title": "第1话 那年夏天宁静的海"
+      }
+    }
+  ]
+}

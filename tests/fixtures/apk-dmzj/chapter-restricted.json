@@ -1,0 +1,18 @@
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "data": {
+      "chapter_id": 73595,
+      "comic_id": 42910,
+      "title": "第01话",
+      "chapter_order": 10,
+      "direction": 1,
+      "page_url": [],
+      "picnum": 0,
+      "page_url_hd": [],
+      "comment_count": 1,
+      "canRead": false
+    }
+  }
+}

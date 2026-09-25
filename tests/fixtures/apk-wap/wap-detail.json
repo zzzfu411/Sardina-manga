@@ -1,0 +1,42 @@
+{
+  "status": 0,
+  "message": "ok",
+  "data": {
+    "comic_name": "妖神记",
+    "comic_id": 27417,
+    "comic_newid": "yaoshenji",
+    "comic_author": "踏雪动漫",
+    "comic_desc": "【不定期更新】妖神一出，谁与争锋？ 这是一个妖灵的世界，融合了妖灵，就可以成为强大的妖灵师。 因为一本时空妖灵之书，时空发生了扭转，当一切重新开始之时，命运之轮缓缓转动。",
+    "update_status_str": "不定期更新",
+    "comic_status": 1,
+    "cover_list": [
+      "http://image.mhxk.com/mh/27417.jpg-600x800.jpg.webp"
+    ],
+    "comic_chapter": [
+      {
+        "chapter_name": "第531话1 支援到来",
+        "chapter_id": "di531hua1-1789542630",
+        "chapter_newid": "di531hua1-1789542630",
+        "price": 49
+      },
+      {
+        "chapter_name": "第3话 兄弟",
+        "chapter_id": "dshxd",
+        "chapter_newid": "dshxd",
+        "price": 0
+      },
+      {
+        "chapter_name": "第2话 坐井观天",
+        "chapter_id": "dehzjgt",
+        "chapter_newid": "dehzjgt",
+        "price": 0
+      },
+      {
+        "chapter_name": "第1话 重生",
+        "chapter_id": "dyhzs",
+        "chapter_newid": "dyhzs",
+        "price": 0
+      }
+    ]
+  }
+}

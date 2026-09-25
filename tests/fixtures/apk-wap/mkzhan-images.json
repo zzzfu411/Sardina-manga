@@ -1,0 +1,18 @@
+{
+  "code": "200",
+  "message": "章节内容",
+  "data": {
+    "read_card": {},
+    "buy_status": "0",
+    "page": [
+      {
+        "page_id": "14665545",
+        "image": "http://content.mkzcdn.com/image/20260720/6a5de04af3a59-800x1132.jpg!page-800-x?auth_key=fixture-only"
+      },
+      {
+        "page_id": "14665574",
+        "image": "http://content.mkzcdn.com/image/20260720/6a5de04b65277-800x1187.jpg!page-800-x?auth_key=fixture-only"
+      }
+    ]
+  }
+}
