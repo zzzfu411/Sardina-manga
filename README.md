@@ -7,8 +7,8 @@
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/)；嬉皮章节解码还需要 Node.js 在 PATH 中。
 
 ```bash
-git clone https://github.com/zzzfu411/Sardina-anime.git
-cd Sardina-anime
+git clone https://github.com/zzzfu411/Sardina-manga.git
+cd Sardina-manga
 uv sync
 .venv/bin/python scripts/sardina_service.py start
 ```
