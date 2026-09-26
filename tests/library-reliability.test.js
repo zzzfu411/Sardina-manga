@@ -169,3 +169,109 @@ test('verified Coco new-host URLs reuse the original book identity', () => {
   assert.notEqual(sourceEntryKey(old), sourceEntryKey({...old, detailUrl: 'https://keke2026.com.evil.test/comic/12686'}));
   assert.notEqual(sourceEntryKey(old), sourceEntryKey({...old, detailUrl: 'https://keke2026.com/comic/12687'}));
 });
+
+test('deletion invalidates an old reading session even if a later save has a newer clock', async () => {
+  const storage = new Storage(), a = createLibraryStore({storage, locks: null, now: () => 100});
+  await a.save([book(1)]);
+  const context = a.beginProgressSession(book(1));
+  const b = createLibraryStore({storage, locks: null, now: () => 200});
+  await b.save([]);
+  assert.equal(a.canSaveProgress(book(1), context), false);
+  for (const page of [1, 2, 3]) assert.equal(await a.updateBook(book(1, {chapterUrl: chapter(1).url, page, readAt: 9000}), {progressContext: context}), null);
+  a.flush();
+  assert.equal(createLibraryStore({storage}).books.length, 0);
+  const reopened = a.beginProgressSession(book(1));
+  assert.equal(a.canSaveProgress(book(1), reopened), true);
+  const saved = await a.updateBook(book(1, {chapterUrl: chapter(1).url, page: 4, readAt: 10000}), {progressContext: reopened});
+  assert.equal(saved.page, 4);
+  assert.equal(a.canSaveProgress(book(1), context), false);
+});
+
+test('a deletion racing a queued progress write is checked again under the write lock', async () => {
+  const storage = new Storage(), seed = createLibraryStore({storage, locks: null, now: () => 100});
+  await seed.save([book(1)]);
+  let release;
+  const a = createLibraryStore({storage, now: () => 1000, locks: {request: (_name, action) => new Promise(resolve => {release = () => resolve(action());})}});
+  const context = a.beginProgressSession(book(1));
+  const save = a.updateBook(book(1, {chapterUrl: chapter(1).url, page: 9, readAt: 1000}), {progressContext: context});
+  await new Promise(resolve => setImmediate(resolve));
+  const b = createLibraryStore({storage, locks: null, now: () => 500}); await b.save([]);
+  a.flush();
+  assert.equal(createLibraryStore({storage}).books.length, 0);
+  release(); assert.equal(await save, null);
+  assert.equal(a.books.length, 0);
+});
+
+test('restoring a deleted book does not grant old readers permission to overwrite its progress', async () => {
+  const storage = new Storage(), a = createLibraryStore({storage, locks: null, now: () => 100});
+  await a.save([book(1)]); const context = a.beginProgressSession(book(1));
+  const b = createLibraryStore({storage, locks: null, now: () => 200});
+  await b.save([]); await b.save([book(1, {favorite: true, page: 5, chapterUrl: chapter(1).url, readAt: 500})]);
+  assert.equal(await a.updateBook(book(1, {page: 99, chapterUrl: chapter(1).url, readAt: 10000}), {progressContext: context}), null);
+  assert.equal(createLibraryStore({storage}).books[0].page, 5);
+  assert.equal(a.canSaveProgress(book(2), a.beginProgressSession(book(1))), false);
+});
+
+test('a same-tab explicit reopen preserves the pending deletion fence before its lock runs', async () => {
+  const storage = new Storage(), seed = createLibraryStore({storage, locks: null, now: () => 100});
+  await seed.save([book(1)]);
+  const callbacks = [], locks = {request: (_name, action) => new Promise(resolve => callbacks.push(() => resolve(action())))};
+  const store = createLibraryStore({storage, locks, now: () => 200});
+  const oldContext = store.beginProgressSession(book(1)), removal = store.save([]);
+  const freshContext = store.beginProgressSession(book(1));
+  assert.notEqual(freshContext.deletionEpoch, oldContext.deletionEpoch);
+  const first = store.updateBook(book(1, {chapterUrl: chapter(1).url, page: 1, readAt: 500}), {progressContext: freshContext});
+  const second = store.updateBook(book(1, {chapterUrl: chapter(1).url, page: 2, readAt: 501}), {progressContext: freshContext});
+  store.flush();
+  assert.equal(store.canSaveProgress(book(1), oldContext), false);
+  assert.equal(createLibraryStore({storage}).books[0].page, 2);
+  for (let index = 0; index < 3; index++) {await new Promise(resolve => setImmediate(resolve)); callbacks.shift()();}
+  await Promise.all([removal, first, second]);
+});
+
+test('passive metadata cannot erase a queued progress deletion guard', async () => {
+  const storage = new Storage(), seed = createLibraryStore({storage, locks: null, now: () => 100});
+  await seed.save([book(1)]);
+  const callbacks = [], locks = {request: (_name, action) => new Promise(resolve => callbacks.push(() => resolve(action())))};
+  const a = createLibraryStore({storage, locks, now: () => 1000}), context = a.beginProgressSession(book(1));
+  const saving = a.updateBook(book(1, {chapterUrl: chapter(1).url, page: 8, readAt: 1000}), {progressContext: context});
+  const b = createLibraryStore({storage, locks: null, now: () => 500}); await b.save([]);
+  const metadata = a.save(a.books.map(row => ({...row, description: '后台目录刷新'})), {intent: 'passive'});
+  a.flush(); assert.equal(createLibraryStore({storage}).books.length, 0);
+  for (let index = 0; index < 2; index++) {await new Promise(resolve => setImmediate(resolve)); callbacks.shift()();}
+  await Promise.all([saving, metadata]); assert.equal(a.books.length, 0);
+});
+
+test('passive requests keep their original deletion context across storage sync and explicit restoration', async () => {
+  const storage = new Storage(), a = createLibraryStore({storage, locks: null, now: () => 100});
+  await a.save([book(1)]); const requestContext = a.beginProgressSession(book(1));
+  const b = createLibraryStore({storage, locks: null, now: () => 200});
+  await b.save([]); await a.sync();
+  await a.save([book(1, {description: 'late deleted response'})], {intent: 'passive', contexts: new Map([[bookKey(book(1)), requestContext]])});
+  assert.equal(createLibraryStore({storage}).books.length, 0);
+  await b.save([book(1, {description: 'explicitly restored', openedAt: 300})]); await a.sync();
+  await a.save(a.books.map(row => ({...row, description: 'stale response', openedAt: 9999})), {intent: 'passive', contexts: {[bookKey(book(1))]: requestContext}});
+  assert.equal(createLibraryStore({storage}).books[0].description, 'explicitly restored');
+  const fresh = a.beginProgressSession(book(1));
+  await a.save(a.books.map(row => ({...row, description: 'fresh response', openedAt: 10000})), {intent: 'passive', contexts: new Map([[bookKey(book(1)), fresh]])});
+  assert.equal(createLibraryStore({storage}).books[0].description, 'fresh response');
+});
+
+test('an old passive response does not replace a fresh pending progress update after a new open', async () => {
+  const storage = new Storage(), seed = createLibraryStore({storage, locks: null, now: () => 100});
+  await seed.save([book(1)]); const oldContext = seed.beginProgressSession(book(1)); await seed.save([]);
+  const a = createLibraryStore({storage, locks: null, now: () => 300}), newContext = a.beginProgressSession(book(1));
+  const reading = a.updateBook(book(1, {chapterUrl: chapter(1).url, page: 4, readAt: 500}), {progressContext: newContext});
+  const metadata = a.save(a.books.map(row => ({...row, description: 'stale metadata'})), {intent: 'passive', contexts: new Map([[bookKey(book(1)), oldContext]])});
+  await Promise.all([reading, metadata]);
+  const restored = createLibraryStore({storage}).books[0];
+  assert.equal(restored.page, 4); assert.notEqual(restored.description, 'stale metadata');
+});
+
+test('passive partial snapshots do not delete records, while explicit removal still does', async () => {
+  const storage = new Storage(), store = createLibraryStore({storage, locks: null});
+  await store.save([book(1), book(2)]);
+  await store.save([book(1, {description: 'metadata'})], {intent: 'passive'});
+  assert.equal(createLibraryStore({storage}).books.length, 2);
+  await store.save([book(1)]); assert.equal(createLibraryStore({storage}).books.length, 1);
+});

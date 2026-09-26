@@ -18,7 +18,7 @@ function memoryStorage() {
 function harness(initialShelf = [], options = {}) {
   const calls = [], changes = []; let shelf = initialShelf, time = 2000000000000;
   const storage = options.storage || memoryStorage();
-  const feedback = createRecommendationFeedback({storage, now: () => time});
+  const feedback = createRecommendationFeedback({locks: null, storage, now: () => time});
   const model = createRecommendationsModel({getShelf: () => shelf, feedback, now: () => time,
     api: (path, body, signal) => new Promise((resolve, reject) => calls.push({path, body, signal, resolve, reject})),
     onChange: state => changes.push(state)});
@@ -129,15 +129,15 @@ test('explicit favorite and content evidence alter ordering; trial reads have a 
   const content = rankRecommendations(candidates, {profile: buildRecommendationProfile([book('saved', {description: '将棋竞技', favorite: true})])});
   assert.equal(content[0].book.title, '作品sports'); assert.match(content[0].reason, /运动.*线索/);
   assert.ok(preferenceWeight({favorite: true}) > preferenceWeight({}) && preferenceWeight({}) > preferenceWeight({favorite: false}));
-  const feedback = createRecommendationFeedback({storage: memoryStorage()}); feedback.setPersonalization(false);
+  const feedback = createRecommendationFeedback({locks: null, storage: memoryStorage()}); feedback.setPersonalization(false);
   assert.equal(rankRecommendations(candidates, {profile: authorProfile, feedback})[0].book.title, '作品neutral');
 });
 
 test('exposure is a bounded penalty that preserves strong relevance and survives reload', () => {
-  const storage = memoryStorage(), feedback = createRecommendationFeedback({storage});
+  const storage = memoryStorage(), feedback = createRecommendationFeedback({locks: null, storage});
   const favorite = book('favorite', {author: '同作者'}), other = book('new');
   feedback.markExposed(favorite);
-  const restored = createRecommendationFeedback({storage});
+  const restored = createRecommendationFeedback({locks: null, storage});
   const ranked = rankRecommendations(normalizeRecommendations(payload([favorite, other])).candidates,
     {feedback: restored, profile: buildRecommendationProfile([book('saved', {author: '同作者', favorite: true})])});
   assert.equal(ranked[0].book.title, '作品favorite');
@@ -154,22 +154,22 @@ test('negative feedback persists locally, can be undone, and never removes unkno
   const reloaded = await ready(payload(), [], {storage: h.storage});
   assert.equal(keys(reloaded).includes(card.key), false);
   h.model.undoDismiss(); assert.equal(keys(h)[0], card.key); assert.equal(h.model.getState().canUndo, false);
-  const feedback = createRecommendationFeedback({storage: memoryStorage()});
+  const feedback = createRecommendationFeedback({locks: null, storage: memoryStorage()});
   feedback.dismiss(book('a', {title: '逆光'}));
   assert.equal(feedback.isDismissed(book('b', {title: '逆光'})), false);
   feedback.clear(); assert.equal(feedback.snapshot().dismissed.length, 0);
 });
 
 test('feedback is bounded, clearable and storage failure remains visible without erasing unreadable records', () => {
-  const storage = memoryStorage(), feedback = createRecommendationFeedback({storage});
+  const storage = memoryStorage(), feedback = createRecommendationFeedback({locks: null, storage});
   for (let index = 0; index < 650; index++) {feedback.dismiss(book(index)); feedback.markExposed(book(index));}
   assert.equal(feedback.snapshot().dismissed.length, FEEDBACK_LIMITS.dismissed);
   assert.equal(feedback.snapshot().exposures.length, FEEDBACK_LIMITS.exposures);
   feedback.clear(); assert.equal(feedback.snapshot().exposures.length, 0);
-  const broken = createRecommendationFeedback({storage: {getItem: () => null, setItem() {throw new Error('quota');}}});
+  const broken = createRecommendationFeedback({locks: null, storage: {getItem: () => null, setItem() {throw new Error('quota');}}});
   broken.dismiss(book(1)); assert.equal(broken.isDismissed(book(1)), true); assert.match(broken.snapshot().warning, /无法保存/);
   storage.setItem(RECOMMENDATION_FEEDBACK_KEY, '{broken');
-  const corrupt = createRecommendationFeedback({storage}); corrupt.markExposed(book(1));
+  const corrupt = createRecommendationFeedback({locks: null, storage}); corrupt.markExposed(book(1));
   assert.equal(storage.getItem(RECOMMENDATION_FEEDBACK_KEY), '{broken'); assert.match(corrupt.snapshot().warning, /原记录已保留/);
 });
 
@@ -258,12 +258,12 @@ test('exposure decays and a recent source failure is a temporary soft penalty', 
 });
 
 test('reading quality counts decoded progress only after a recommendation was opened and is bounded per open', () => {
-  const feedback=createRecommendationFeedback({storage:memoryStorage(),now:()=>2000000000000}),target=book('quality');
+  const feedback=createRecommendationFeedback({locks: null, storage:memoryStorage(),now:()=>2000000000000}),target=book('quality');
   feedback.recordRead(target,{chapterUrl:'chapter',page:0}); assert.equal(feedback.snapshot().metrics.readingStarts,0);
   feedback.opened(target);
   for(const page of [0,0,1,2,3,0,1,2,3])feedback.recordRead(target,{chapterUrl:'chapter',page});
   feedback.recordFailure(target);feedback.recordFailure(target);
-  assert.deepEqual(feedback.snapshot().metrics,{impressions:0,opens:1,dismissals:0,readingStarts:1,continuedReads:1,openFailures:1});
+  assert.deepEqual(feedback.snapshot().metrics,{impressions:0,opens:1,dismissals:0,readingStarts:1,continuedReads:1,openFailures:1,openRecoveries:0});
   feedback.clear();assert.equal(feedback.snapshot().metrics.readingStarts,0);
 });
 

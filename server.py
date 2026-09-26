@@ -21,9 +21,17 @@ from client.native_sources import _ssl_context
 from client.source_coverage import compare_sources
 from client.source_catalog import catalog as source_catalog
 from client.source_health import SourceHealth
+from client.request_budget import ImageBudget, ImageCapacityError
 
 ROOT = Path(__file__).resolve().parent
 IMAGE_DOMAINS = ("bzcdn.net", "baozimh.com", "bgm.tv", "hamreus.com", "cdndm5.com", "mangabz.com", "tuku.cc", "s3imgs.top", "mangafunb.fun", "komiic.com", "shimolife.com", "ecombdimg.com", "mangacopy.com", "manhuagui.com", "mhgui.com") + providers.EXTRA_IMAGE_DOMAINS + comicbox_images.IMAGE_DOMAINS + discovery.image_domains()
+
+
+class SardinaHTTPServer(ThreadingHTTPServer):
+    # Python 3.12 defaults to five pending connections. A burst of ES module
+    # requests can overflow that socket backlog before handlers are started.
+    # This queue is independent of the bounded upstream request budgets.
+    request_queue_size = 64
 
 
 def validate_image(url):
@@ -68,7 +76,7 @@ class Cache:
     def size(value):
         return len(value[0]) if isinstance(value, tuple) and isinstance(value[0], bytes) else 0
 
-    def get(self, key, ttl, load, *, refresh=False):
+    def get(self, key, ttl, load, *, refresh=False, on_wait=None):
         with self.lock:
             hit = self.data.get(key)
             if not refresh and hit and hit[0] > time.monotonic():
@@ -81,6 +89,8 @@ class Cache:
                     raise RuntimeError("请求较多，请稍后重试")
                 self.pending[key] = future = Future()
         if not owner:
+            if on_wait:
+                on_wait()
             return future.result()
         try:
             value = load()
@@ -116,7 +126,7 @@ class Application:
         self.book_metadata_cache = Cache(limit=200)
         self.book_metadata_slots = threading.BoundedSemaphore(2)
         self.metadata_slots = threading.BoundedSemaphore(8)
-        self.image_slots = threading.BoundedSemaphore(8)
+        self.image_slots = ImageBudget(limit=8, foreground_reserved=2)
         self.image_cache = Cache(limit=96, max_bytes=32 * 1024 * 1024)
         self.health = SourceHealth()
         self.upstream = MangaYun(timeout=45)
@@ -129,15 +139,27 @@ class Application:
         finally:
             self.metadata_slots.release()
 
-    def image(self, site, url, *, refresh=False):
+    def image(self, site, url, *, refresh=False, purpose='cover'):
+        if purpose not in {'reader', 'prefetch', 'download', 'cover'}:
+            raise ValueError('图片请求类型无效')
+        key = (site, url)
         def load():
-            if not self.image_slots.acquire(timeout=5):
-                raise RuntimeError("图片请求较多，请稍后重试")
+            ticket = self.image_slots.acquire(key, foreground=purpose == 'reader', timeout=5)
+            if ticket is None:
+                raise ImageCapacityError("图片请求较多，请稍后重试")
             try:
-                return self.health.observe(site, 'image', lambda: self._image(site, url))
+                data, content_type = self._image(site, url)
+                if (not isinstance(data, bytes) or not data or len(data) > 12 * 1024 * 1024
+                        or content_type not in {'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'}):
+                    raise RuntimeError('源站未返回有效图片，请重试或切换漫画源')
+                return data, content_type
             finally:
-                self.image_slots.release()
-        return self.image_cache.get((site, url), 300, load, refresh=refresh)
+                self.image_slots.release(ticket)
+        # Covers and pages can share bytes without sharing health semantics.
+        capability = 'coverImage' if purpose == 'cover' else 'image'
+        return self.health.observe(site, capability, lambda: self.image_cache.get(
+            key, 300, load, refresh=refresh,
+            on_wait=(lambda: self.image_slots.promote(key)) if purpose == 'reader' else None))
 
     def _image(self, site, url):
         host = urlparse(url).hostname or ''
@@ -267,14 +289,26 @@ class Application:
         refresh = body.get("refresh", False)
         if type(refresh) is not bool:
             raise ValueError("刷新参数无效")
-        images = self.cache.get((path,site,url),60,lambda:self.source_request(site, 'chapter', lambda: providers.images(site,url) if self.mode=="native" else self.upstream.chapter_images(site,url)),refresh=refresh)
-        if not images:
-            raise RuntimeError("这个源未返回章节图片，请重试或切换漫画源")
+        def load_images():
+            images = providers.images(site,url) if self.mode=="native" else self.upstream.chapter_images(site,url)
+            if not isinstance(images, list) or not images:
+                raise RuntimeError("这个源未返回章节图片，请重试或切换漫画源")
+            for image in images:
+                try:
+                    parsed = urlparse(image) if isinstance(image, str) else None
+                    if (parsed is None or parsed.scheme not in {'http', 'https'} or not parsed.hostname
+                            or parsed.username or parsed.password or parsed.port not in (None, 80, 443)):
+                        raise ValueError('invalid URL')
+                    validate_image(image)
+                except ValueError:
+                    raise RuntimeError("这个源返回的章节图片地址无效，请重试或切换漫画源") from None
+            return images
+        images = self.cache.get((path,site,url),60,lambda:self.source_request(site, 'chapter', load_images),refresh=refresh)
         return {"images":images}
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Sardina/0.3"
+    server_version = "Sardina/0.4"
 
     def log_request(self, code="-", size="-"):
         # Image URLs may contain short-lived source tickets or signatures.
@@ -332,7 +366,10 @@ class Handler(BaseHTTPRequestHandler):
                 url = validate_image(parse_qs(p.query).get("url",[""])[0])
                 params = parse_qs(p.query)
                 site = params.get('siteId', [''])[0]
-                data, content_type = self.server.app.image(site, url, refresh=bool(params.get('retry') or params.get('coverRetry')))
+                purposes = params.get('purpose', ['cover'])
+                if len(purposes) != 1:
+                    raise ValueError('图片请求类型无效')
+                data, content_type = self.server.app.image(site, url, refresh=bool(params.get('retry') or params.get('coverRetry')), purpose=purposes[0])
                 self.send(200, data, content_type, 'private, max-age=300')
             elif p.path.startswith("/api/"):
                 self.send(404,{"error":"接口不存在"})
@@ -343,6 +380,9 @@ class Handler(BaseHTTPRequestHandler):
                 for name in ("search-model.js", "search-view.js", "search.css", "reader.js", "reader-model.js", "reader-transport.js", "reader.css", "source-catalog.js", "source-catalog.css", "source-preferences.js", "library-model.js", "library.css", "library-updates.js", "library-store.js", "library-auto-updates.js", "book-identity.js", "discovery.js", "discovery-model.js", "discovery-covers.js", "discovery.css", "recommendations.js", "recommendations-model.js", "recommendations-feedback.js", "recommendations.css", "cover-wall.js", "cover-wall.css", "home.css"):
                     files["/" + name] = name
                 files["/recommendations-ranking.js"] = "recommendations-ranking.js"
+                files["/route-history.js"] = "route-history.js"
+                files["/page-window.js"] = "page-window.js"
+                files["/cover-pause.js"] = "cover-pause.js"
                 files["/recommendations-metadata.js"] = "recommendations-metadata.js"
                 for name in ("image-loader.js", "download-store.js", "download-model.js", "downloads.js", "downloads.css"):
                     files["/" + name] = name
@@ -383,7 +423,7 @@ def main():
     def stop_service(signum, frame):
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, stop_service)
-    server = ThreadingHTTPServer(("127.0.0.1",args.port),Handler)
+    server = SardinaHTTPServer(("127.0.0.1",args.port),Handler)
     server.app = Application(args.provider)
     server.app.health = SourceHealth(ROOT / 'output/runtime/source-health.json')
     print(f"Sardina manga http://127.0.0.1:{args.port} / provider={args.provider}",flush=True)

@@ -199,12 +199,23 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     }));
     if (enrichment === controller) enrichment = null;
   }
+  const unsubscribeFeedback = feedback.subscribe?.(() => {
+    if (undo && !feedback.isDismissed(undo.book)) undo = null;
+    for (const card of [...state.cards]) {
+      if (!card.variants.some(book => feedback.isDismissed(book))) continue;
+      if (!replace(card, false)) state = {...state, cards: state.cards.filter(item => item !== card)};
+    }
+    updateReasons(); notify();
+  });
   return {
     rememberMetadata,
     recordRead: (book, progress) => feedback.recordRead(book, progress),
-    recordFailure: book => feedback.recordFailure(book),
+    recordFailure: (book, detail) => feedback.recordFailure(book, detail),
+    recordRecovery: (book, detail) => feedback.recordRecovery(book, detail),
+    destroy() {cancel(); unsubscribeFeedback?.(); feedback.destroy?.();},
     show() {
       if (state.visible) return;
+      feedback.sync?.();
       state = {...state, visible: true};
       if (loaded) {
         if (now() - loadedAt >= RECOMMENDATION_SOFT_TTL) return load('soft');
@@ -230,7 +241,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
       if (!card) return;
       undo = {book: card.book, card, index: state.cards.indexOf(card)};
       feedback.dismiss(card.book);
-      if (!replace(card, false)) state = {...state, cards: state.cards.filter(item => item !== card)};
+      if (state.cards.includes(card) && !replace(card, false)) state = {...state, cards: state.cards.filter(item => item !== card)};
       notify();
     },
     undoDismiss() {

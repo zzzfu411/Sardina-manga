@@ -1,4 +1,5 @@
-async page => {
+async (page, step = () => {}) => {
+  step("downloads-fixture");
   const base = '__BASE_URL__';
   await page.route('**/__regression-harness', route => route.fulfill({contentType:'text/html',body:'<!doctype html><title>Sardina isolated storage regression</title>'}));
   await page.goto(base + '/__regression-harness');

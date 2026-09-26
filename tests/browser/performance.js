@@ -1,4 +1,5 @@
-async page => {
+async (page, step = () => {}) => {
+  step("performance-fixture");
   await page.route('**/__performance',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Isolated performance regression</title>'}));
   await page.goto('__BASE_URL__/__performance');
   return page.evaluate(async()=>{

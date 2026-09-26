@@ -100,7 +100,7 @@ class ApplicationBudgetTests(unittest.TestCase):
                 with entered:
                     active -= 1
         with patch.object(app, '_image', side_effect=fetch), ThreadPoolExecutor(max_workers=12) as pool:
-            jobs = [pool.submit(app.image, 'mangabz', f'https://image.mangabz.com/{i}.png') for i in range(12)]
+            jobs = [pool.submit(app.image, 'mangabz', f'https://image.mangabz.com/{i}.png', purpose='reader') for i in range(12)]
             try:
                 with entered:
                     self.assertTrue(entered.wait_for(lambda: active == 8, timeout=2))

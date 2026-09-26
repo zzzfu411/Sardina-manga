@@ -1,4 +1,4 @@
-async page => {
+async (page, step = () => {}) => {
   const base='__BASE_URL__', screenshotDir='__OUTPUT_DIR__';
   const assert=(ok,message)=>{if(!ok)throw new Error(message);};
   const errors=[],images=[];page.on('pageerror',error=>errors.push(error.message));
@@ -19,6 +19,7 @@ async page => {
     return route.fulfill({contentType:'image/png',path:'__ROOT__/tests/fixtures/reader-page.png'});
   });
   await page.addInitScript(()=>Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>!sessionStorage.getItem('offline-fixture')}));
+  step('seed-partial-download');
   await page.goto(base+'/');
   const readPath=await page.evaluate(async({book,chapter,oldUrls})=>{
     const {createDownloadStore,downloadKey}=await import('/download-store.js');const store=createDownloadStore();
@@ -31,6 +32,7 @@ async page => {
     const encode=value=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
     return '/read/'+encode([book.siteId,book.detailUrl,{title:book.title}])+'/'+encode(chapter.url);
   },{book,chapter,oldUrls});
+  step('recover-expired-partial-download');
   await page.goto(base+readPath);
   await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
   await page.locator('#reader-next-page').click();
@@ -45,12 +47,14 @@ async page => {
     const canvas=document.createElement('canvas');canvas.width=80;canvas.height=120;const blob=await new Promise(resolve=>canvas.toBlob(resolve));
     await store.putPage(record,1,blob);await store.putCatalog(book,[chapter]);await store.close();
   },{book,chapter,oldUrls});
+  step('revalidate-local-catalog');
   const previousDetails=detailsCalls,previousImages=images.length;await page.reload();
   await page.waitForFunction(()=>document.querySelector('#reader-load-status')?.textContent.includes('本地阅读'));
   await page.waitForFunction(()=>document.querySelector('#next-chapter')?.disabled===false);
   assert(detailsCalls>previousDetails,'local catalog never revalidated');
   assert(images.length===previousImages,'complete local download fetched remote images');
   await page.evaluate(()=>sessionStorage.setItem('offline-fixture','1'));
+  step('read-complete-chapter-offline');
   const beforeOffline={details:detailsCalls,images:images.length,chapters:chapterCalls};await page.reload();
   await page.waitForSelector('.ry-reader-page[data-state="loaded"]');
   await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
@@ -58,6 +62,7 @@ async page => {
   await page.locator('#reader-next-page').click();await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="1"]')?.dataset.state==='loaded');
   assert(detailsCalls===beforeOffline.details&&images.length===beforeOffline.images&&chapterCalls===beforeOffline.chapters,'offline reader attempted external data');
   await page.evaluate(async({book,chapter})=>{sessionStorage.removeItem('offline-fixture');const {createDownloadStore,downloadKey}=await import('/download-store.js');const store=createDownloadStore();await store.remove(downloadKey(book,chapter));await store.close();},{book,chapter});
+  step('visit-240-pages-and-backscroll');
   longChapter=true;await page.reload();
   await page.waitForSelector('.ry-reader-page[data-state="loaded"]');
   await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
@@ -67,6 +72,7 @@ async page => {
   await page.locator('#reader-page-input').fill('1');await page.locator('#reader-jump').click();
   await page.waitForFunction(()=>document.querySelector('.ry-reader-page[data-page="0"]')?.dataset.state==='loaded');
   assert(await page.locator('.ry-reader-page').count()===longPageCount,'image eviction changed page geometry');
+  step('reader-settings-focus-and-mobile-layout');
   await page.locator('#reader-settings-open').click();
   for(let i=0;i<30;i++){await page.keyboard.press('Tab');assert(await page.evaluate(()=>!!document.activeElement.closest('#reader-settings')),'settings focus escaped');}
   await page.keyboard.press('Escape');
@@ -76,9 +82,11 @@ async page => {
     const overflow=await page.locator('#reader-dialog').evaluate(root=>root.scrollWidth-root.clientWidth);assert(overflow<=1,'reader horizontal overflow');readerSizes.push({width,overflow});
   }
   await page.screenshot({path:screenshotDir+'/reader-320.png'});
+  step('seed-partial-download');
   await page.goto(base+'/');
   const siteResponse=await page.request.get(base+'/api/sites'),sites=(await siteResponse.json()).data;
   await page.route('**/api/search',route=>{const body=route.request().postDataJSON(),source=sites.find(site=>site.siteId===body.siteId);return json(route,[{...source,results:source===sites.at(-1)?[]:[{...source,title:'三月的狮子',author:'羽海野千花',detailUrl:'https://www.mangabz.com/990025bz/',coverUrl:'https://image.mangabz.com/repair-cover.png'}],...(source===sites.at(-1)?{error:'合成失败样本'}:{})}]);});
+  step('search-25-sources-mobile');
   await page.setViewportSize({width:393,height:852});await page.goto(base+'/s/'+encodeURIComponent('三月的狮子'));
   await page.waitForFunction(()=>document.querySelector('#search-status')?.textContent.includes('25 / 25'));
   await page.waitForSelector('.search-chapter');

@@ -4,8 +4,21 @@ import json
 import re
 import threading
 import time
+from client.request_budget import ImageCapacityError
 
-CAPABILITIES = {'search', 'details', 'chapter', 'image', 'popular', 'latest', 'cover', 'metadata'}
+CAPABILITIES = {'search', 'details', 'chapter', 'image', 'coverImage', 'popular', 'latest', 'cover', 'metadata'}
+
+
+def recent_window(value):
+    now = time.time()
+    rows = value if isinstance(value, list) else []
+    return [item for item in rows[-32:] if isinstance(item, dict)
+            and type(item.get('at')) in (float, int) and now - 15 * 60 <= item['at'] <= now
+            and isinstance(item.get('status'), str) and item['status'] in {'ok', 'empty', 'limited', 'error'}]
+
+
+def counter(value):
+    return min(100000, max(0, value)) if type(value) is int else 0
 
 
 class SourceHealth:
@@ -24,6 +37,8 @@ class SourceHealth:
         start = time.monotonic()
         try:
             value = load()
+        except ImageCapacityError:
+            raise
         except Exception as error:
             self.record(site, capability, 'error', start, str(error))
             raise
@@ -43,18 +58,31 @@ class SourceHealth:
             if site not in self.records and len(self.records) >= 50:
                 return
             previous = self.records.setdefault(site, {}).get(capability, {})
+            recent = recent_window(previous.get('recent'))[-31:]
+            recent.append({'at': time.time(), 'status': status})
             row = {**previous, 'status': status, 'checkedAt': now, 'elapsedMs': elapsed,
-                   'samples': min(100000, previous.get('samples', 0) + 1), 'error': ''}
+                   'samples': counter(counter(previous.get('samples')) + 1), 'error': '',
+                   'recent': recent, 'windowFailures': sum(item['status'] == 'error' for item in recent),
+                   'windowSuccesses': sum(item['status'] in {'ok', 'empty'} for item in recent)}
             if status == 'error':
                 row['error'] = re.sub(r'https?://\S+', '[源站地址]', error)[:180]
-            else:
+                row['lastFailure'], row['lastFailureAt'] = row['error'], now
+                row['failures'] = counter(counter(previous.get('failures')) + 1)
+            elif status in {'ok', 'empty'}:
                 row['lastSuccessAt'] = now
+                row['successes'] = counter(counter(previous.get('successes')) + 1)
             self.records[site][capability] = row
             self.flush()
 
     def snapshot(self):
         with self.lock:
-            return json.loads(json.dumps(self.records))
+            records = json.loads(json.dumps(self.records))
+            for capabilities in records.values():
+                for row in capabilities.values():
+                    row['recent'] = recent_window(row.get('recent'))
+                    row['windowFailures'] = sum(item['status'] == 'error' for item in row['recent'])
+                    row['windowSuccesses'] = sum(item['status'] in {'ok', 'empty'} for item in row['recent'])
+            return records
 
     def flush(self, force=False):
         if not self.path or not force and time.monotonic() - self.saved_at < 5:

@@ -11,11 +11,15 @@ import {createDiscovery} from './discovery.js';
 import {createRecommendations} from './recommendations.js';
 import {createCoverWall} from './cover-wall.js';
 import {createLibraryUpdates, acknowledgeCatalog, normalizeCatalogState} from './library-updates.js';
+import {pageWindow} from './page-window.js';
+import {createRouteHistory} from './route-history.js';
+import {createCoverPause} from './cover-pause.js';
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const button = (text, cls, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
 const readStore = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
-const state = {page: 'home', discoverTab: 'recommend', sites: [], groups: [], keyword: '', filter: '', shelfFilter: 'all', sourcePreferences: loadSourcePreferences(), search: null, retries: new Map(), detailSeq: 0, detailRequest: null, book: null, chapters: [], chapter: null};
+const state = {page: 'home', discoverTab: 'recommend', sites: [], groups: [], keyword: '', filter: '', shelfFilter: 'all', shelfPage: 0, detailView: null, sourcePreferences: loadSourcePreferences(), search: null, retries: new Map(), detailSeq: 0, detailRequest: null, book: null, chapters: [], chapter: null};
+const navigation = createRouteHistory({history: window.history, location});
 let libraryStore;
 try {libraryStore = createLibraryStore({storage: localStorage});}
 catch {libraryStore = {books: [], issues: ['浏览器无法读取记录，请检查存储权限'], async save() {throw new Error('浏览器无法保存记录，请导出书架备份');}, flush() {}, async sync() {return shelf;}, recovery() {return '{}';}};}
@@ -25,30 +29,56 @@ const storedAttempts = readStore('revyunman.autoUpdateAttempts.v1', {});
 const autoAttempts = storedAttempts && typeof storedAttempts === 'object' && !Array.isArray(storedAttempts) ? Object.fromEntries(Object.entries(storedAttempts).filter(([, value]) => Number.isFinite(value) && value >= 0)) : {};
 let history = readStore('revyunman.searches.v1', []);
 const updateErrors = new Map();
-let updateRun = null, updateStats = {baseline: 0, new: 0, changed: 0};
+let updateRun = null, updateStats = {baseline: 0, new: 0, changed: 0}, updateContexts = new Map();
+let removedBook = null, removalTimer;
 if (!Array.isArray(history)) history = [];
 history = history.filter(x => typeof x === 'string').slice(0, 8);
 const key = bookKey;
 function persist(name, data) { try { localStorage.setItem(name, JSON.stringify(data)); } catch { toast('浏览器无法保存记录，请导出书架备份'); } }
 function toast(message) { const t = $('#toast'); const modal = [...document.querySelectorAll('dialog[open]')].at(-1); (modal || document.body).append(t); t.textContent = message; t.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => t.hidden = true, 4000); }
 function shelfChanged() {$('#shelf-count').textContent = shelf.length; renderContinueReading(); renderShelfUpdateControls(); recommendations.shelfChanged?.();}
-function saveShelf() {
+function saveShelf(options = {}) {
   const generation = ++shelfSaveGeneration; shelfChanged();
-  return libraryStore.save(shelf).then(saved => {if (generation === shelfSaveGeneration) {shelf = saved; shelfChanged();} return true;})
-    .catch(error => {toast(`${error.message || '保存失败'}；当前记录仍可导出备份`); return false;});
+  const failed = error => {toast(`${error.message || '保存失败'}；当前记录仍可导出备份`); return false;};
+  try {
+    return libraryStore.save(shelf, options).then(saved => {if (generation === shelfSaveGeneration) {shelf = saved; shelfChanged();} return true;}).catch(failed);
+  } catch (error) {return Promise.resolve(failed(error));}
 }
-function remember(book, extra = {}) {const old = shelf.find(b => key(b) === key(book)); const saved = rememberBook(old, old ? book : {...book, favorite: false}, extra); shelf = [saved, ...shelf.filter(b => key(b) !== key(book))]; saveShelf(); return saved;}
-function rememberProgress(book, progress) {
+function captureProgressContext(book) {
+  try {return libraryStore.beginProgressSession?.(book);}
+  catch {toast('无法读取书架记录，本次阅读仍可继续；请检查浏览器存储权限'); return null;}
+}
+function progressAllowed(book, context) {
+  try {return !libraryStore.canSaveProgress || libraryStore.canSaveProgress(book, context);}
+  catch {toast('无法保存阅读记录，请检查浏览器存储权限'); return false;}
+}
+const passiveSave = (book, context) => ({intent: 'passive', contexts: new Map([[key(book), context]])});
+function remember(book, extra = {}, options = {}) {
+  const old = shelf.find(b => key(b) === key(book));
+  if (options.intent === 'passive' && !progressAllowed(book, options.contexts?.get(key(book)))) return old || book;
+  const stamp = Object.hasOwn(extra, 'favorite') ? Math.max(Date.now(), (Number(old?.favoriteChangedAt) || 0) + 1) : Date.now();
+  const saved = rememberBook(old, old ? book : {...book, favorite: false}, extra, stamp);
+  shelf = [saved, ...shelf.filter(b => key(b) !== key(book))]; saveShelf(options); return saved;
+}
+function rememberProgress(book, progress, progressContext) {
+  if (!progressAllowed(book, progressContext)) return;
   const id = key(book), old = shelf.find(item => key(item) === id);
   const saved = rememberBook(old, old ? book : {...book, favorite: false}, progress);
   shelf = [saved, ...shelf.filter(item => key(item) !== id)];
   const generation = ++shelfSaveGeneration;
   $('#shelf-count').textContent = shelf.length; renderContinueReading();
   recommendations.recordRead?.(book, progress);
-  if (!libraryStore.updateBook) {saveShelf(); return;}
-  libraryStore.updateBook(saved).then(merged => {
-    if (merged && generation === shelfSaveGeneration) {shelf = [merged, ...shelf.filter(item => key(item) !== id)]; renderContinueReading();}
-  }).catch(error => toast(`${error.message || '保存失败'}；当前记录仍可导出备份`));
+  if (!libraryStore.updateBook) {saveShelf(passiveSave(book, progressContext)); return;}
+  const failed = error => toast(`${error.message || '保存失败'}；当前记录仍可导出备份`);
+  try {
+    libraryStore.updateBook(saved, {progressContext}).then(async merged => {
+      if (merged && generation === shelfSaveGeneration) {shelf = [merged, ...shelf.filter(item => key(item) !== id)]; renderContinueReading();}
+      else if (!merged && generation === shelfSaveGeneration) {
+        const synced = await libraryStore.sync();
+        if (generation === shelfSaveGeneration) {shelf = synced; shelfChanged();}
+      }
+    }).catch(failed);
+  } catch (error) {failed(error);}
 }
 async function api(path, body, signal) {
   const controller = new AbortController(); let timedOut = false;
@@ -70,10 +100,7 @@ function decode(value) { return JSON.parse(new TextDecoder().decode(Uint8Array.f
 function bookToken(book) { return encode([book.siteId, book.detailUrl, {title: book.title, coverUrl: book.coverUrl || ''}]); }
 function bookRoute(book) { return '/m/' + bookToken(book); }
 function route(path, replace = false) {
-  if (location.pathname !== path) {
-    const context = /^\/(m|read)\//.test(path) ? {background: resultRoute()} : {};
-    window.history[replace ? 'replaceState' : 'pushState'](context, '', path);
-  }
+  navigation.navigate(path, {replace, background: resultRoute()});
 }
 function discoverPath(tab = state.discoverTab) {return tab === 'recommend' ? '/discover' : `/discover/${tab}`;}
 function resultRoute() { return state.page === 'discover' ? discoverPath() : state.page === 'search' && state.keyword ? '/s/' + encodeURIComponent(state.keyword) : '/'; }
@@ -94,15 +121,16 @@ const coverWall = createCoverWall({root: $('#atlas'), imageUrl, control: $('#wal
 const discovery = createDiscovery({root: $('#discovery'), api, imageUrl, onOpenBook: book => openBook(book), embedded: true});
 const recommendations = createRecommendations({root: $('#recommendations'), api, imageUrl, onOpenBook: book => openBook(book), getShelf: () => shelf});
 const libraryUpdates = createLibraryUpdates({api,
-  getBook: id => shelf.find(book => key(book) === id) || null,
+  getBook: id => {const book = shelf.find(book => key(book) === id); return book && progressAllowed(book, updateContexts.get(id)) ? book : null;},
   onBookResult: result => {
     const current = shelf.find(book => key(book) === result.key); if (!current) return;
+    const context = updateContexts.get(result.key); if (!progressAllowed(current, context)) return;
     if (result.error) updateErrors.set(result.key, result.error);
     else if (result.catalogState) {
       updateErrors.delete(result.key);
       shelf = shelf.map(book => key(book) === result.key ? {...book, catalogState: result.catalogState} : book);
       if (Object.hasOwn(updateStats, result.outcome)) updateStats[result.outcome]++;
-      saveShelf();
+      saveShelf(passiveSave(current, context));
     }
     renderShelfUpdateControls();
     if ($('#shelf-dialog').open && $('#shelf-only-updated').checked) renderShelf();
@@ -119,11 +147,15 @@ const imageLoader = createImageLoader();
 const downloads = createDownloads({api, imageUrl, imageLoader, toast,
   onOpen: record => openBook(record.book, {chapterUrl: record.chapter.url, resume: true, detail: {...record.book, chapters: record.chapters, savedOffline: true}}),
 });
+const coverPause = createCoverPause({root: document, exclude: $('#reader-dialog')});
 const reader = createReader({root: $('#reader-dialog'), api, imageUrl, imageLoader, downloads, toast,
+  onOpen: coverPause.pause,
+  onClose: coverPause.resume,
   getProgress: book => shelf.find(b => key(b) === key(book)),
   onProgress: rememberProgress,
   onRefreshCatalog: () => refreshBookCatalog(),
-  onFailure: book => recommendations.recordFailure?.(book),
+  onFailure: (book, detail) => recommendations.recordFailure?.(book, detail),
+  onRecovery: (book, detail) => recommendations.recordRecovery?.(book, detail),
   isChapterRead: (book, chapter) => isChapterRead(shelf.find(item => key(item) === key(book)), chapter),
   onChapterRead: (book, chapter, read) => {
     const old = shelf.find(item => key(item) === key(book)) || remember(book);
@@ -156,15 +188,17 @@ function card(book, isShelf = false) {
   article.append(open, button(book.title, 'book-title', openCard), el('p', 'book-meta', isShelf ? (book.chapterName ? `${book.chapterName} · 第${(book.page || 0) + 1}页` : '还未开始阅读') : book.latestChapter || book.author || '点击查看章节'));
   if (isShelf) {
     if (book.favorite === false) article.append(el('p', 'book-history-note', '阅读记录'));
-    const del = button('×', 'remove-book', () => {shelf = shelf.filter(b => key(b) !== key(book)); updateErrors.delete(key(book)); saveShelf(); renderShelf(); $('#shelf-query').focus(); toast(`已移出《${book.title}》`);});
+    const del = button('×', 'remove-book', () => removeShelfBook(book));
     del.setAttribute('aria-label', `移出书架：${book.title}`);
     const status = el('select', 'book-reading-state'); status.setAttribute('aria-label', `《${book.title}》的阅读状态`); status.dataset.bookKey = key(book);
     for (const [value, text] of Object.entries(READING_STATES)) {const option = el('option', '', text); option.value = value; status.append(option);}
     status.value = readingState(book);
     status.onchange = () => {
-      shelf = shelf.map(item => key(item) === key(book) ? setReadingState(item, status.value) : item); saveShelf(); renderShelf();
+      shelf = shelf.map(item => key(item) === key(book) ? setReadingState(item, status.value) : item); saveShelf();
+      if (state.shelfFilter === 'all') {renderShelfCounts(); return;}
+      renderShelf();
       const next = [...$('#shelf-grid').querySelectorAll('.book-reading-state')].find(item => item.dataset.bookKey === key(book));
-      (next || $('#shelf-filters').querySelector('[aria-pressed="true"]')).focus({preventScroll: true});
+      if (next) next.focus({preventScroll: true}); else $('#shelf-filters').querySelector('[aria-pressed="true"]').focus();
     };
     const updateNote = el('p', 'book-update-note'); updateNote.dataset.bookKey = key(book); fillUpdateNote(updateNote, book);
     article.append(updateNote, status, del);
@@ -200,6 +234,7 @@ function renderShelfUpdateControls() {
 function checkShelfUpdates(books = shelf) {
   if (libraryUpdates.isRunning()) {libraryUpdates.stop(); return;}
   updateStats = {baseline: 0, new: 0, changed: 0};
+  updateContexts = new Map(books.map(book => [key(book), captureProgressContext(book)]));
   const priority = {reading: 0, later: 1, finished: 2};
   libraryUpdates.start([...books].sort((a, b) => priority[readingState(a)] - priority[readingState(b)]));
 }
@@ -297,18 +332,26 @@ async function retrySource(id) {
   finally {if (state.retries.get(id) === controller) state.retries.delete(id); if (state.groups === groups) renderResults();}
 }
 function pageTitle() {return state.page === 'discover' ? '发现 · Sardina' : state.page === 'search' && state.keyword ? `${state.keyword} · 搜索 · Sardina` : 'Sardina';}
-function closeDetail(push = true) { state.catalogRequest?.abort(); state.detailSeq++; state.detailRequest?.abort(); state.detailRequest = null; $('#detail-dialog').close(); if (push) {route(resultRoute()); document.title = pageTitle();} }
+function closeDetail(push = true) {
+  state.catalogRequest?.abort(); state.detailSeq++; state.detailRequest?.abort(); state.detailRequest = null;
+  const wasOpen = $('#detail-dialog').open; $('#detail-dialog').close();
+  if (push && wasOpen) {navigation.close('page', resultRoute()); document.title = pageTitle();}
+}
 async function openBook(book, {resume = false, push = true, chapterUrl = null, detail: prefetchedDetail = null} = {}) {
   state.catalogRequest?.abort(); closeReader(false); $('#shelf-dialog').close(); state.detailSeq++; const seq = state.detailSeq;
   state.detailRequest?.abort(); const controller = new AbortController(); state.detailRequest = controller;
   const old = shelf.find(b => key(b) === key(book)); state.book = {...old, ...book}; state.chapters = [];
+  const catalogContext = captureProgressContext(book), saveOptions = passiveSave(book, catalogContext);
+  if (state.detailView?.bookKey !== key(book)) state.detailView = {bookKey: key(book), query: '', reverse: false, page: 0, scrollTop: 0};
   const catalogStartedAt = Date.now(), catalogBase = old?.catalogState;
   const refreshCatalog = hasCatalogChange(old || book) || updateErrors.has(key(book));
-  if (old) state.book = remember(state.book);
+  if (old) state.book = remember(state.book, {}, saveOptions);
+  $('#detail-dialog').onscroll = null;
   const root = $('#detail-content'); root.replaceChildren();
   const header = el('div', 'dialog-header'); const heading = el('h2', '', '漫画详情'); heading.id = 'detail-title';
   const close = button('×', 'icon-button', () => closeDetail()); close.setAttribute('aria-label', '关闭漫画详情'); header.append(heading, close); root.append(header, el('div', 'loading', '正在加载漫画目录…'));
   if (!$('#detail-dialog').open) $('#detail-dialog').showModal();
+  $('#detail-dialog').scrollTop = state.detailView.scrollTop;
   if (push) route(bookRoute(book));
   document.title = `${book.title} · Sardina`;
   try {
@@ -324,13 +367,13 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
     const saved = shelf.find(item => key(item) === key(state.book));
     const catalogState = detail.savedOffline ? null : acknowledgeCatalog(saved?.catalogState, detail, {fresh: refreshCatalog, startedAt: catalogStartedAt, baseState: catalogBase});
     if (catalogState) state.book.catalogState = catalogState;
-    if (saved) {
-      remember(state.book);
+    if (saved && progressAllowed(state.book, catalogContext)) {
+      remember(state.book, {}, saveOptions);
       // Acknowledgement may keep checkedAt unchanged; apply it to the current
       // record directly so a progress merge cannot reintroduce a viewed badge.
       if (catalogState) shelf = shelf.map(item => key(item) === key(state.book) ? {...item, catalogState} : item);
       if (!detail.savedOffline && state.chapters.length && (!detail.unavailableReason || detail.catalogCompleteness === 'complete')) updateErrors.delete(key(state.book));
-      saveShelf();
+      saveShelf(saveOptions);
     }
     renderDetail();
     const target = chapterUrl || (resume && shelf.find(item => key(item) === key(state.book))?.chapterUrl);
@@ -347,6 +390,7 @@ async function refreshBookCatalog({quiet = false} = {}) {
   if (!state.book) return;
   state.catalogRequest?.abort();
   const controller = new AbortController(), book = {...state.book}, seq = state.detailSeq, startedAt = Date.now();
+  const catalogContext = captureProgressContext(book), saveOptions = passiveSave(book, catalogContext);
   state.catalogRequest = controller;
   try {
     const detail = await api('/api/details', {siteId: book.siteId, detailUrl: book.detailUrl, refresh: true}, controller.signal);
@@ -360,85 +404,171 @@ async function refreshBookCatalog({quiet = false} = {}) {
     await downloads.store.putCatalog(state.book, state.chapters);
     if (seq !== state.detailSeq) return;
     const saved = shelf.find(item => key(item) === key(book));
-    if (saved) {state.book.catalogState = acknowledgeCatalog(saved.catalogState, detail, {fresh: true, startedAt, baseState: saved.catalogState}); remember(state.book);}
+    if (saved && progressAllowed(book, catalogContext)) {state.book.catalogState = acknowledgeCatalog(saved.catalogState, detail, {fresh: true, startedAt, baseState: saved.catalogState}); remember(state.book, {}, saveOptions);}
     if (!reader.isOpen() && $('#detail-dialog').open) renderDetail();
     if (!quiet || state.chapters.length > previousCount) toast(state.chapters.length > previousCount ? `目录已更新，共 ${state.chapters.length} 章` : '目录已更新');
   } finally {if (state.catalogRequest === controller) state.catalogRequest = null;}
 }
+function renderPageControls(root, window, onPage) {
+  root.hidden = window.pages <= 1;
+  if (!root.children.length) {
+    const previous = button('上一页', 'quiet', () => {}), label = el('span'), next = button('下一页', 'quiet', () => {});
+    previous.dataset.pageAction = 'previous'; next.dataset.pageAction = 'next'; label.setAttribute('aria-live', 'polite');
+    root.append(previous, label, next);
+  }
+  const [previous, label, next] = root.children;
+  previous.disabled = !window.hasPrevious; next.disabled = !window.hasNext;
+  label.textContent = `第 ${window.page + 1} / ${window.pages} 页`;
+  previous.onclick = () => onPage(window.page - 1); next.onclick = () => onPage(window.page + 1);
+}
 function renderDetail() {
-  const root = $('#detail-content'); const header = root.firstChild; root.replaceChildren(header); const b = state.book;
+  const root = $('#detail-content'), dialog = $('#detail-dialog'), b = state.book;
+  const view = state.detailView || (state.detailView = {bookKey: key(b), query: '', reverse: false, page: 0, scrollTop: 0});
+  const active = document.activeElement, chapterFocus = active?.closest('.chapter-entry')?.dataset.chapterUrl;
+  const markFocused = active?.classList.contains('chapter-read-toggle'), queryFocused = active?.classList.contains('detail-chapter-query');
+  const oldScroll = dialog.scrollTop || view.scrollTop;
+  const header = root.firstChild; root.replaceChildren(header);
   const body = el('div', 'detail-body'), info = el('div', 'detail-info'), text = el('div');
   text.append(el('h2', '', b.title), el('p', 'muted', `${b.siteName || b.siteId}${b.author ? ' · ' + b.author : ''} · ${state.chapters.length} 章`));
   if (b.description) text.append(el('p', 'description', b.description));
   if (b.unavailableReason) text.append(el('p', 'source-unavailable', b.unavailableReason));
   const actions = el('div', 'detail-actions'); const saved = shelf.find(x => key(x) === key(b)); const resumeIndex = state.chapters.findIndex(c => c.url === saved?.chapterUrl);
   const start = button(resumeIndex >= 0 ? '继续阅读' : '开始阅读', 'primary', () => readChapter(Math.max(0, resumeIndex), {resume: resumeIndex >= 0})); start.disabled = !state.chapters.length;
-  const collected = saved && saved.favorite !== false;
-  const collect = button(collected ? '已收藏' : '加入收藏', 'quiet', () => {
-    const current = shelf.find(item => key(item) === key(state.book));
-    if (current && current.favorite !== false) return;
-    remember(state.book, {favorite: true}); collect.textContent = '已收藏'; collect.setAttribute('aria-disabled', 'true'); toast('已加入收藏');
-  }); collect.setAttribute('aria-disabled', String(!!collected));
+  const collect = button('', 'quiet', () => {
+    const current = shelf.find(item => key(item) === key(b)), favorite = !(current && current.favorite !== false);
+    remember(b, {favorite}); updateCollect(); toast(favorite ? '已加入收藏' : '已取消收藏，阅读进度已保留');
+  });
+  function updateCollect() {
+    const current = shelf.find(item => key(item) === key(b)), collected = !!current && current.favorite !== false;
+    collect.textContent = collected ? '取消收藏' : '加入收藏'; collect.setAttribute('aria-pressed', String(collected));
+  }
+  updateCollect();
   const download = button('下载章节', 'quiet', () => downloads.open({book: b, chapters: state.chapters, chapter: state.chapters[Math.max(0, resumeIndex)]})); download.disabled = !state.chapters.length;
   const update = button('更新目录', 'quiet', async () => {update.disabled = true; try {await refreshBookCatalog();} catch (error) {toast(error.message);} finally {update.disabled = false;}});
   actions.append(start, collect, download, update, button('换源查找', 'quiet', () => search(b.title))); text.append(actions); info.append(cover(b), text); body.append(info);
-  const tools = el('div', 'chapter-tools'), chapters = el('div', 'chapters'), filter = el('input'); filter.placeholder = '查找章节'; filter.setAttribute('aria-label', '查找章节'); let reverse = false;
-  const sort = button('倒序排列', 'quiet', () => {reverse = !reverse; sort.textContent = reverse ? '正序排列' : '倒序排列'; renderChapters();});
-  tools.append(el('strong', '', '章节目录'), filter, sort); body.append(tools, chapters);
+  const tools = el('div', 'chapter-tools'), chapters = el('div', 'chapters'), filter = el('input', 'detail-chapter-query');
+  filter.placeholder = '查找章节'; filter.setAttribute('aria-label', '查找章节'); filter.value = view.query;
+  const summary = el('p', 'chapter-list-summary'); summary.setAttribute('role', 'status'); summary.setAttribute('aria-live', 'polite');
+  const pages = el('nav', 'list-pagination'); pages.setAttribute('aria-label', '章节目录分页');
+  const sort = button(view.reverse ? '正序排列' : '倒序排列', 'quiet', () => {view.reverse = !view.reverse; view.page = 0; sort.textContent = view.reverse ? '正序排列' : '倒序排列'; renderChapters();});
+  tools.append(el('strong', '', '章节目录'), filter, sort); body.append(tools, summary, chapters, pages);
   function renderChapters() {
-    chapters.replaceChildren(); const current = shelf.find(item => key(item) === key(b));
-    let rows = state.chapters.map((c, i) => ({c, i})).filter(({c}) => c.name.toLowerCase().includes(filter.value.toLowerCase())); if (reverse) rows.reverse();
-    rows.forEach(({c, i}) => {const read = isChapterRead(current, c), item = el('div', 'chapter-entry'); const btn = button(c.name, c.url === current?.chapterUrl ? 'current' : '', () => readChapter(i)); btn.title = c.name;
-      const mark = button(read ? '已读' : '标为已读', 'chapter-read-toggle', () => {const old = shelf.find(book => key(book) === key(b)) || remember(b); shelf = shelf.map(book => key(book) === key(b) ? markChapterRead(old, c, !read) : book); saveShelf(); renderChapters();});
-      mark.setAttribute('aria-label', `${c.name}：${read ? '标为未读' : '标为已读'}`); mark.setAttribute('aria-pressed', String(read)); item.append(btn, mark); chapters.append(item);
-    });
+    const scrollTop = dialog.scrollTop;
+    const needle = filter.value.normalize('NFKC').trim().toLocaleLowerCase();
+    let rows = state.chapters.map((c, i) => ({c, i})).filter(({c}) => String(c.name || '').normalize('NFKC').toLocaleLowerCase().includes(needle));
+    if (view.reverse) rows.reverse();
+    const window = pageWindow(rows, {page: view.page, size: 80}); view.page = window.page;
+    const current = shelf.find(item => key(item) === key(b));
+    chapters.replaceChildren();
+    for (const {c, i} of window.items) {
+      const item = el('div', 'chapter-entry'); item.dataset.chapterUrl = c.url;
+      const btn = button(c.name, c.url === current?.chapterUrl ? 'current' : '', () => readChapter(i)); btn.title = c.name;
+      const mark = button('', 'chapter-read-toggle', () => {
+        const old = shelf.find(book => key(book) === key(b)) || remember(b), nextRead = !isChapterRead(old, c);
+        shelf = shelf.map(book => key(book) === key(b) ? markChapterRead(old, c, nextRead) : book); saveShelf(); updateMark(nextRead);
+      });
+      function updateMark(read) {mark.textContent = read ? '已读' : '标为已读'; mark.setAttribute('aria-label', `${c.name}：${read ? '标为未读' : '标为已读'}`); mark.setAttribute('aria-pressed', String(read));}
+      updateMark(isChapterRead(current, c)); item.append(btn, mark); chapters.append(item);
+    }
     if (!rows.length) chapters.append(el('p', 'muted', state.chapters.length ? '没有匹配的章节' : '当前源没有可读章节，请换源查找。'));
+    summary.textContent = rows.length ? `显示 ${window.start + 1}–${window.end} / ${rows.length} 章` : '0 章';
+    renderPageControls(pages, window, page => {
+      view.page = page; renderChapters();
+      chapters.querySelector('button')?.focus({preventScroll: true}); chapters.scrollIntoView({block: 'start'});
+    });
+    dialog.scrollTop = scrollTop;
   }
-  filter.oninput = renderChapters; renderChapters(); root.append(body);
+  filter.oninput = () => {view.query = filter.value; view.page = 0; renderChapters();}; renderChapters(); root.append(body);
+  dialog.scrollTop = oldScroll;
+  if (queryFocused) filter.focus({preventScroll: true});
+  if (chapterFocus) {
+    const row = [...chapters.children].find(item => item.dataset.chapterUrl === chapterFocus);
+    (row?.querySelector(markFocused ? '.chapter-read-toggle' : 'button') || filter).focus({preventScroll: true});
+  }
+  dialog.onscroll = () => {view.scrollTop = dialog.scrollTop;};
 }
-function renderShelf() {
-  const grid = $('#shelf-grid'), focused = document.activeElement;
-  const focusKey = focused?.closest('.book-card')?.dataset.bookKey;
-  const focusClass = ['book-reading-state', 'book-cover', 'book-title', 'remove-book'].find(name => focused?.classList.contains(name));
-  grid.replaceChildren();
-  const query = $('#shelf-query').value, onlyUpdated = $('#shelf-only-updated').checked;
-  const books = filterLibrary(shelf, {query, state: state.shelfFilter, sort: $('#shelf-sort').value}).filter(book => (!onlyUpdated || hasCatalogChange(book)) && (!$('#shelf-only-favorites').checked || book.favorite !== false)), counts = libraryCounts(shelf);
-  const filters = $('#shelf-filters');
+function renderShelfCounts() {
+  const counts = libraryCounts(shelf), filters = $('#shelf-filters');
   if (!filters.children.length) for (const [value, text] of Object.entries({all: '全部', ...READING_STATES})) {
-    const filter = button('', '', () => {state.shelfFilter = value; renderShelf();}); filter.dataset.state = value; filter.dataset.label = text; filters.append(filter);
+    const filter = button('', '', () => {state.shelfFilter = value; state.shelfPage = 0; renderShelf();}); filter.dataset.state = value; filter.dataset.label = text; filters.append(filter);
   }
   for (const filter of filters.children) {filter.replaceChildren(document.createTextNode(filter.dataset.label), el('span', '', counts[filter.dataset.state])); filter.setAttribute('aria-pressed', String(state.shelfFilter === filter.dataset.state));}
-  $('#shelf-list-summary').textContent = `显示 ${books.length} / ${shelf.length} 本`;
-  books.forEach(b => grid.append(card(b, true)));
+}
+function clearShelfFilters() {
+  $('#shelf-query').value = ''; $('#shelf-only-updated').checked = false; $('#shelf-only-favorites').checked = false;
+  state.shelfFilter = 'all'; state.shelfPage = 0; renderShelf(); $('#shelf-query').focus();
+}
+function findManga() {$('#shelf-dialog').close(); goHome(); $('#home-keyword').focus();}
+function renderRemoval() {
+  const root = $('#shelf-undo'); root.replaceChildren(); root.hidden = !removedBook;
+  if (!removedBook) return;
+  const entry = removedBook;
+  const undo = button('撤销', 'quiet', async () => {
+    if (removedBook !== entry) return;
+    clearTimeout(removalTimer); removedBook = null; renderRemoval();
+    shelf = mergeShelfBackup(shelf, [entry.book]);
+    const saved = await saveShelf(); renderShelf();
+    const restored = [...$('#shelf-grid').children].find(item => item.dataset.bookKey === key(entry.book));
+    (restored?.querySelector('.book-title') || $('#shelf-query')).focus({preventScroll: true});
+    if (saved) toast(`已恢复《${entry.book.title}》及阅读进度`);
+  });
+  root.append(el('span', '', `已移出《${entry.book.title}》`), undo);
+  const expire = () => {removalTimer = setTimeout(() => {if (removedBook === entry) {removedBook = null; renderRemoval();}}, 10000);};
+  root.onfocusin = root.onpointerenter = () => clearTimeout(removalTimer);
+  root.onfocusout = root.onpointerleave = () => {clearTimeout(removalTimer); expire();};
+  clearTimeout(removalTimer); expire();
+}
+function removeShelfBook(book) {
+  const current = shelf.find(item => key(item) === key(book)); if (!current) return;
+  removedBook = {book: current};
+  shelf = shelf.filter(item => key(item) !== key(book)); updateErrors.delete(key(book));
+  saveShelf(); renderRemoval(); renderShelf(); $('#shelf-undo button').focus({preventScroll: true});
+}
+function renderShelf() {
+  const grid = $('#shelf-grid'), focused = document.activeElement, dialog = $('#shelf-dialog'), scrollTop = dialog.scrollTop;
+  const focusKey = focused?.closest('.book-card')?.dataset.bookKey;
+  const focusClass = ['book-reading-state', 'book-cover', 'book-title', 'remove-book'].find(name => focused?.classList.contains(name));
+  const query = $('#shelf-query').value, onlyUpdated = $('#shelf-only-updated').checked, onlyFavorites = $('#shelf-only-favorites').checked;
+  const books = filterLibrary(shelf, {query, state: state.shelfFilter, sort: $('#shelf-sort').value}).filter(book => (!onlyUpdated || hasCatalogChange(book)) && (!onlyFavorites || book.favorite !== false));
+  const window = pageWindow(books, {page: state.shelfPage, size: 48}); state.shelfPage = window.page;
+  renderShelfCounts(); grid.replaceChildren();
+  $('#shelf-list-summary').textContent = books.length > 48 ? `显示 ${window.start + 1}–${window.end} / ${books.length} 本 · 书架共 ${shelf.length} 本` : `显示 ${books.length} / ${shelf.length} 本`;
+  window.items.forEach(b => grid.append(card(b, true)));
   if (!books.length) {
     const empty = el('div', 'empty');
-    if (!shelf.length) empty.append(el('strong', '', '还没有收藏的漫画'), el('p', '', '在详情页加入书架，开始阅读后也会自动保存。'), button('去找漫画', 'primary', () => {$('#shelf-dialog').close(); ($('#landing').hidden ? $('#header-keyword') : $('#home-keyword')).focus();}));
-    else empty.append(el('strong', '', onlyUpdated ? '当前没有匹配的待查看更新' : query ? '书架中没有匹配的漫画' : `还没有标为“${READING_STATES[state.shelfFilter] || '全部'}”的漫画`), el('p', '', onlyUpdated ? '检查更新，或清除筛选查看全部收藏。' : '试试其他名称，或查看全部收藏。'), button('查看全部', 'quiet', () => {$('#shelf-query').value = ''; $('#shelf-only-updated').checked = false; state.shelfFilter = 'all'; renderShelf(); $('#shelf-query').focus();}));
+    if (!shelf.length) empty.append(el('strong', '', '书架还是空的'), el('p', '', '收藏漫画，或开始阅读后在这里继续。'), button('去找漫画', 'primary', findManga));
+    else empty.append(el('strong', '', onlyUpdated ? '当前没有匹配的待查看更新' : onlyFavorites ? '当前筛选下没有收藏的漫画' : query ? '书架中没有匹配的漫画' : `还没有标为“${READING_STATES[state.shelfFilter] || '全部'}”的漫画`), el('p', '', '试试其他名称，或清除筛选查看全部记录。'), button('查看全部', 'quiet', clearShelfFilters));
     grid.append(empty);
   }
-  renderShelfUpdateControls();
+  renderPageControls($('#shelf-pagination'), window, page => {
+    state.shelfPage = page; renderShelf(); grid.querySelector('.book-title')?.focus({preventScroll: true}); grid.scrollIntoView({block: 'start'});
+  });
+  renderShelfUpdateControls(); dialog.scrollTop = scrollTop;
   if (focusKey && focusClass) {
     const kept = [...grid.children].find(item => item.dataset.bookKey === focusKey);
-    (kept?.querySelector(`.${focusClass}`) || $('#shelf-only-updated')).focus({preventScroll: true});
+    if (kept) kept.querySelector(`.${focusClass}`)?.focus({preventScroll: true});
+    else if (!removedBook) $('#shelf-query').focus();
   }
 }
 function saveProgress() { reader.flush(); }
 async function readChapter(index, {resume = false, push = true} = {}) {
   if (!state.chapters[index] || !state.book) return;
   $('#detail-dialog').close();
-  await reader.open({book: {...state.book}, chapters: [...state.chapters], index, resume, push});
+  const progressContext = captureProgressContext(state.book);
+  await reader.open({book: {...state.book}, chapters: [...state.chapters], index, resume, push, progressContext});
 }
 function closeReader(push = true) {
   const wasOpen = reader.isOpen();
   reader.close(); state.chapter = null;
   if (push && wasOpen && state.book) {
-    route(bookRoute(state.book)); document.title = `${state.book.title} · Sardina`;
+    if (navigation.close('detail', bookRoute(state.book))) return;
+    document.title = `${state.book.title} · Sardina`;
     renderDetail(); if (!$('#detail-dialog').open) $('#detail-dialog').showModal();
   }
 }
 async function restoreRoute() {
   const parts = location.pathname.split('/').filter(Boolean);
-  closeReader(false); closeDetail(false);
+  closeReader(false); closeDetail(false); $('#shelf-dialog').close();
   try {
     if (parts[0] === 's') return await search(decodeURIComponent(parts.slice(1).join('/')), false);
     if (parts[0] === 'discover') return showDiscover(['popular', 'latest'].includes(parts[1]) ? parts[1] : 'recommend', {push: false, scroll: false});
@@ -484,10 +614,9 @@ $('#stop-search').onclick = stopSearch;
 $('.shelf-open').onclick = () => {renderShelf(); $('#shelf-dialog').showModal(); $('#shelf-query').focus(); maybeAutoUpdate();};
 $('#close-shelf').onclick = () => $('#shelf-dialog').close();
 $('#downloads-open').onclick = () => downloads.open();
-$('#shelf-sort').onchange = renderShelf;
-$('#shelf-query').oninput = renderShelf;
-$('#shelf-only-updated').onchange = renderShelf;
-$('#shelf-only-favorites').onchange = renderShelf;
+for (const [selector, event] of [['#shelf-sort', 'onchange'], ['#shelf-query', 'oninput'], ['#shelf-only-updated', 'onchange'], ['#shelf-only-favorites', 'onchange']]) {
+  $(selector)[event] = () => {state.shelfPage = 0; renderShelf();};
+}
 $('#shelf-auto-updates').checked = autoUpdates;
 $('#shelf-auto-updates').onchange = event => {autoUpdates = event.target.checked; persist('revyunman.autoUpdates.v1', autoUpdates); if (autoUpdates) maybeAutoUpdate(); else libraryUpdates.stop();};
 $('#shelf-check-updates').onclick = () => checkShelfUpdates();
@@ -521,7 +650,7 @@ $('#shelf-file').onchange = async e => {
   } catch (error) {toast('导入失败：' + error.message);} finally {e.target.value = '';}
 };
 async function init() {
-  await saveShelf(); renderHistory();
+  await saveShelf({intent: 'passive'}); renderHistory();
   if (libraryStore.issues.length) toast(libraryStore.issues.join('；'));
   const [sites, home] = await Promise.allSettled([api('/api/sites'), api('/api/home-sections')]);
   if (sites.status === 'fulfilled') state.sites = sites.value;

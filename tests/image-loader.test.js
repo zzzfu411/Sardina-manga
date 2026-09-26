@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createImageLoader} from '../web/image-loader.js';
+import {createImageLoader, imageRequestPurpose} from '../web/image-loader.js';
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const blob = () => new Blob(['abc'], {type: 'image/png'});
 
@@ -50,4 +50,49 @@ test('byte-limited LRU cache evicts old blobs and never caches failed or oversiz
 test('request timeout releases its slot and permits subsequent reading', async () => {
   const loader = createImageLoader({timeoutMs: 20, limit: 1, fetchImage: (url, {signal}) => url === 'ok' ? Promise.resolve(blob()) : new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new DOMException('cancelled', 'AbortError'))))});
   await assert.rejects(loader.load('slow'), /超时/); assert.equal((await loader.load('ok')).size, 3);
+});
+
+test('a decoder can discard just the rejected blob and retry the same address immediately', async () => {
+  const calls = [], bad = new Blob(['not-an-image']), good = blob();
+  const loader = createImageLoader({fetchImage: async url => {calls.push(url); return url === 'broken' && calls.filter(value => value === url).length === 1 ? bad : good;}});
+  await loader.load('already-read');
+  assert.equal(await loader.load('broken'), bad);
+  assert.equal(loader.invalidate('broken', bad), true);
+  assert.equal(await loader.load('broken'), good);
+  assert.equal(loader.invalidate('broken', bad), false, 'late failure cannot discard replacement bytes');
+  assert.equal(await loader.load('already-read'), good);
+  assert.deepEqual(calls, ['already-read', 'broken', 'broken']);
+  assert.equal(loader.stats().bytes, good.size * 2);
+});
+
+test('proxy purposes reflect foreground, prefetch and download without splitting their cache identity', async () => {
+  const urls = [], requests = [];
+  const loader = createImageLoader({fetchImage: async (url, options) => {urls.push(new URL(url, 'http://localhost')); requests.push(options.priority); return blob();}});
+  const base = '/api/image?site=mangabz&url=https%3A%2F%2Fimage.mangabz.com%2Fone.png';
+  await loader.load(base, {priority: 2});
+  await loader.load(base + '&purpose=reader');
+  assert.equal(urls.length, 1);
+  assert.equal(urls[0].searchParams.get('purpose'), 'download');
+  assert.equal(urls[0].searchParams.get('url'), 'https://image.mangabz.com/one.png');
+  await loader.load(base.replace('one.png', 'two.png'), {priority: 1});
+  await loader.load(base.replace('one.png', 'three.png'));
+  assert.deepEqual(urls.map(url => url.searchParams.get('purpose')), ['download', 'prefetch', 'reader']);
+  assert.deepEqual(requests, ['low', 'low', 'high']);
+  assert.equal(imageRequestPurpose(0), 'reader');
+  assert.equal(imageRequestPurpose(1), 'prefetch');
+  assert.equal(imageRequestPurpose(2), 'download');
+});
+
+test('a queued prefetch promoted to visible is dispatched to the server as reader work', async () => {
+  let finish;
+  const seen = [];
+  const loader = createImageLoader({limit: 1, fetchImage: async url => {
+    if (url === 'hold') return new Promise(resolve => {finish = resolve;});
+    seen.push(new URL(url, 'http://localhost').searchParams.get('purpose')); return blob();
+  }});
+  const first = loader.load('hold');
+  const url = '/api/image?site=mangabz&url=https%3A%2F%2Fimage.mangabz.com%2Fone.png';
+  const second = loader.load(url, {priority: 1});
+  loader.promote(url); await tick(); finish(blob()); await Promise.all([first, second]);
+  assert.deepEqual(seen, ['reader']);
 });

@@ -51,13 +51,15 @@ export function createSourceCatalog({root, api, onPreferencesChange = () => {}})
         const labels = site.discoveryModes.map(kind => ({popular: '排行榜', latest: '最近更新'})[kind]).filter(Boolean);
         info.append(node('span', 'catalog-source-capabilities', labels.join(' · ') || '发现列表待接入'));
       }
-      const labels = {search: '搜索', details: '目录', chapter: '章节', image: '图片'};
+      const labels = {search: '搜索', details: '目录', chapter: '章节', image: '正文图片', coverImage: '封面'};
       const observed = Object.entries(site.health || {}).filter(([key]) => labels[key]);
       const latest = observed.sort((a, b) => String(b[1].checkedAt).localeCompare(String(a[1].checkedAt)))[0];
       const health = node('span', 'catalog-source-health');
       const states = {ok: '成功', empty: '无匹配', limited: '部分可用', error: '失败'};
       health.textContent = latest ? `最近${labels[latest[0]]}${states[latest[1].status] || '已检查'} · ${(latest[1].elapsedMs / 1000).toFixed(1)} 秒` : '暂无实际请求记录';
-      health.title = observed.map(([key, row]) => `${labels[key]}：${states[row.status]} · ${row.checkedAt}${row.error ? ' · ' + row.error : ''}`).join('\n') || '状态会根据实际搜索和阅读更新';
+      const recentFailures = observed.filter(([, row]) => row.lastFailureAt && Date.now() - Date.parse(row.lastFailureAt) >= 0 && Date.now() - Date.parse(row.lastFailureAt) < 15 * 60000);
+      if (recentFailures.length) health.textContent += ` · 近期${recentFailures.map(([key]) => labels[key]).join('/')}有失败`;
+      health.title = observed.map(([key, row]) => `${labels[key]}：${states[row.status]} · ${row.checkedAt}${row.error ? ' · ' + row.error : ''}${row.lastFailureAt ? `；最近失败 ${row.lastFailureAt} ${row.lastFailure || ''}` : ''}`).join('\n') || '状态会根据实际搜索和阅读更新';
       if (latest?.[1]?.checkedAt) health.textContent += ' · ' + new Date(latest[1].checkedAt).toLocaleString('zh-CN', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'});
       info.append(health);
       button.append(star, info);

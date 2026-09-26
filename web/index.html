@@ -61,7 +61,9 @@
     <p id="shelf-update-status" class="shelf-update-status" role="status" aria-live="polite">首次检查会记录目录，后续检查可发现新章节。</p>
     <div class="shelf-update-tools"><button id="downloads-open" class="quiet" type="button">下载管理</button></div>
     <p id="shelf-list-summary" class="shelf-list-summary" role="status" aria-live="polite"></p>
+    <div id="shelf-undo" class="shelf-undo" role="status" aria-live="polite" hidden></div>
     <div id="shelf-grid" class="result-grid"></div>
+    <nav id="shelf-pagination" class="list-pagination" aria-label="书架分页" hidden></nav>
     <details class="shelf-backup"><summary>备份与迁移</summary><p>保留收藏、阅读位置、逐章已读和分类。导入时合并较新的记录；暂不可用源的记录也会保留。</p><div><button id="export-shelf" class="quiet" type="button">导出书架</button><button id="import-shelf" class="quiet" type="button">导入备份</button><button id="export-shelf-recovery" class="quiet" type="button">导出原始恢复记录</button><input id="shelf-file" type="file" accept="application/json,.json" hidden></div></details>
   </dialog>
   <dialog id="reader-dialog" class="reader-dialog" aria-label="漫画阅读器"></dialog>

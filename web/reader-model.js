@@ -49,11 +49,29 @@ export function readerPreferencesForBook(defaults, records, key) {
 export function chapterNavigation(chapters, index) {
   if (!Array.isArray(chapters) || !Number.isInteger(index) || !chapters[index]) return {previous: null, next: null, sequenceId: '', count: 0};
   const chapter = chapters[index], sequenceId = typeof chapter.sequenceId === 'string' ? chapter.sequenceId.trim() : '';
-  const same = row => !sequenceId || typeof row?.sequenceId === 'string' && row.sequenceId.trim() === sequenceId;
+  if (chapter.localOnly) return {previous: null, next: null, sequenceId, count: 1};
+  const same = row => !row?.localOnly && (!sequenceId || typeof row?.sequenceId === 'string' && row.sequenceId.trim() === sequenceId);
   let previous = null, next = null;
   for (let at = index - 1; at >= 0; at--) if (same(chapters[at])) {previous = at; break;}
   for (let at = index + 1; at < chapters.length; at++) if (same(chapters[at])) {next = at; break;}
-  return {previous, next, sequenceId, count: sequenceId ? chapters.filter(same).length : chapters.length};
+  return {previous, next, sequenceId, count: chapters.filter(same).length};
+}
+
+/** One explicit reading session can fail and recover once. Retrying the same
+ * chapter or moving within this session does not inflate recommendation events.
+ */
+export function createReadingFeedback({sessionId, onFailure = () => {}, onRecovery = () => {}} = {}) {
+  let failure = null, recovered = false;
+  return {
+    fail(detail) {
+      if (failure) return false;
+      failure = {...detail, sessionId}; onFailure(failure); return true;
+    },
+    recover(detail) {
+      if (!failure || recovered || failure.chapterUrl !== detail.chapterUrl || failure.pageIndex !== null && failure.pageIndex !== detail.pageIndex) return false;
+      recovered = true; onRecovery({...detail, sessionId, failureKind: failure.kind}); return true;
+    },
+  };
 }
 
 export function clampPage(page, total) {

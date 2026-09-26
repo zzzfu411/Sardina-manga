@@ -4,7 +4,7 @@ export const DOWNLOAD_LIMIT = 1024 * 1024 * 1024;
 export const downloadKey = (book, chapter) => JSON.stringify([sourceEntryKey(book), chapter.url]);
 const request = value => new Promise((resolve, reject) => {value.onsuccess = () => resolve(value.result); value.onerror = () => reject(value.error);});
 const storageError = error => error?.name === 'QuotaExceededError' ? new Error('下载空间不足，请删除不需要的章节后继续') : error;
-const catalogChapters = rows => (rows || []).map(({url, name, language, sequenceId}) => ({url, name, language, sequenceId}));
+const catalogChapters = rows => (rows || []).filter(row => !row.localOnly).map(({url, name, language, sequenceId}) => ({url, name, language, sequenceId}));
 const compactBook = book => Object.fromEntries(['siteId', 'siteName', 'detailUrl', 'title', 'coverUrl', 'author', 'description', 'tags', 'language', 'edition'].filter(key => book[key] !== undefined).map(key => [key, book[key]]));
 const summary = row => ({id: row.id, book: row.book, chapter: row.chapter, total: row.urls.length, count: row.count, bytes: row.bytes + (row.backups || []).reduce((n, version) => n + version.bytes, 0), complete: row.complete, updatedAt: row.updatedAt, retainedVersions: row.backups?.length || 0});
 const version = row => ({generation: row.generation, urls: row.urls, count: row.count, bytes: row.bytes, complete: row.complete});
@@ -22,6 +22,15 @@ export function imageIdentity(site, raw) {
   return raw;
 }
 export const sameImageManifest = (site, left, right) => left.length === right.length && left.every((url, i) => imageIdentity(site, url) === imageIdentity(site, right[i]));
+
+/** Saved bytes remain reachable when the remote source removes a chapter.
+ * Its old position among current entries is unknown; do not guess a new order.
+ */
+export function localChapterCatalog(chapters, chapter) {
+  const rows = Array.isArray(chapters) ? chapters.map(row => ({...row})) : [];
+  if (chapter?.url && !rows.some(row => row.url === chapter.url)) rows.push({...chapter, localOnly: true});
+  return rows;
+}
 
 /** v2 shares book catalogs, lists small summaries and commits blobs with counts.
  * Changed content keeps previous generations until the replacement completes.
@@ -77,13 +86,13 @@ export function createDownloadStore({indexedDB = globalThis.indexedDB, name = 's
   function write(tx, row) {tx.objectStore('chapters').put(row); tx.objectStore('summaries').put(summary(row)); return row;}
   async function catalog(tx, book, chapters) {
     const id = sourceEntryKey(book), rows = tx.objectStore('catalogs');
-    if (chapters?.length) rows.put({id, book: compactBook(book), chapters: catalogChapters(chapters), updatedAt: Date.now()});
+    if (Array.isArray(chapters)) rows.put({id, book: compactBook(book), chapters: catalogChapters(chapters), updatedAt: Date.now()});
     return id;
   }
   async function hydrate(tx, row) {
     if (!row) return null;
     const data = await request(tx.objectStore('catalogs').get(row.catalogId));
-    return {...row, chapters: data?.chapters || [row.chapter]};
+    return {...row, chapters: localChapterCatalog(data?.chapters, row.chapter)};
   }
   function hasCatalog(tx, id) {
     return new Promise((resolve, reject) => {

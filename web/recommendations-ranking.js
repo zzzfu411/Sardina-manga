@@ -66,7 +66,11 @@ export function rankRecommendations(candidates, {profile = buildRecommendationPr
       theme ? `与你的书架同含“${theme.theme}”线索` : '';
     const exposure = feedback?.exposure(book);
     const exposurePenalty = exposure ? 3 * Math.exp(-Math.max(0, now - exposure.at) / (7 * 86400000)) : 0;
-    const recentFailure = Object.values(book.readingHealth || {}).some(row => row?.status === 'error' && now - Date.parse(row.checkedAt) >= 0 && now - Date.parse(row.checkedAt) < 15 * 60000);
+    const recentFailure = Object.entries(book.readingHealth || {}).some(([kind, row]) => {
+      if (!['chapter', 'image'].includes(kind)) return false;
+      const failedAt = Date.parse(row?.lastFailureAt || (row?.status === 'error' ? row.checkedAt : ''));
+      return now - failedAt >= 0 && now - failedAt < 15 * 60000;
+    });
     return {...candidate, score: affinity + (book.recommendationKind === 'popular' ? 1 : .8) - exposurePenalty - (recentFailure ? 1.5 : 0), exposurePenalty,
       preferenceReason: preference, reason: [preference, originReason(book)].filter(Boolean).join(' · '),
       exposed: Boolean(exposure), index, author: authors(book)[0] || ''};

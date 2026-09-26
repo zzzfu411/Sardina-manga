@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_IMAGE_REQUESTS, clampPage, clampOffset, restorePosition, normalizeRatio, imageCandidates, prefetchPageCount, progressSnapshot, createChapterScope} from '../web/reader-model.js';
+import {MAX_IMAGE_REQUESTS, clampPage, clampOffset, restorePosition, normalizeRatio, imageCandidates, prefetchPageCount, progressSnapshot, createChapterScope, createReadingFeedback} from '../web/reader-model.js';
 
 test('old shelves with only a page restore, and chapter mismatch never borrows a position', () => {
   assert.deepEqual(restorePosition({chapterUrl: 'old', page: 42}, 'old', 209), {page: 42, pageOffset: 0});
@@ -73,4 +73,32 @@ test('layout ratios accept wide and long manga pages but reject corrupt size cac
   assert.equal(normalizeRatio(0.7), 0.7);
   assert.equal(normalizeRatio(12), 12);
   for (const value of [0, -1, 1000, Infinity, null, 'bad']) assert.equal(normalizeRatio(value), 1.42);
+});
+
+test('reading quality preserves a failure and reports recovery only for the failed page once', () => {
+  const failures = [], recoveries = [];
+  const feedback = createReadingFeedback({sessionId: 'reading-a', onFailure: detail => failures.push(detail), onRecovery: detail => recoveries.push(detail)});
+  const bad = {chapterUrl: 'chapter-1', pageIndex: 4, kind: 'image_decode'};
+  assert.equal(feedback.recover({...bad, kind: 'image_decoded'}), false);
+  assert.equal(feedback.fail(bad), true);
+  assert.equal(feedback.fail(bad), false);
+  assert.equal(feedback.fail({...bad, kind: 'image_network'}), false);
+  assert.equal(feedback.recover({...bad, chapterUrl: 'chapter-2'}), false);
+  assert.equal(feedback.recover({...bad, pageIndex: 5}), false);
+  assert.equal(feedback.recover({...bad, kind: 'image_decoded'}), true);
+  assert.equal(feedback.recover({...bad, kind: 'image_decoded'}), false);
+  assert.deepEqual(failures, [{...bad, sessionId: 'reading-a'}]);
+  assert.deepEqual(recoveries, [{...bad, kind: 'image_decoded', sessionId: 'reading-a', failureKind: 'image_decode'}]);
+});
+
+test('chapter failure only recovers after a page in that chapter decodes, without erasing the failure', () => {
+  const events = [];
+  const feedback = createReadingFeedback({sessionId: 'same-on-retry', onFailure: detail => events.push(['failure', detail]), onRecovery: detail => events.push(['recovery', detail])});
+  feedback.fail({chapterUrl: 'chapter-a', pageIndex: null, kind: 'chapter'});
+  assert.equal(feedback.recover({chapterUrl: 'chapter-b', pageIndex: 0, kind: 'image_decoded'}), false);
+  feedback.fail({chapterUrl: 'chapter-a', pageIndex: null, kind: 'chapter'});
+  feedback.recover({chapterUrl: 'chapter-a', pageIndex: 2, kind: 'image_decoded'});
+  assert.deepEqual(events.map(([kind]) => kind), ['failure', 'recovery']);
+  assert.equal(events[0][1].sessionId, events[1][1].sessionId);
+  assert.equal(events[1][1].failureKind, 'chapter');
 });

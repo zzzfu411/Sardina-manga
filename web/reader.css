@@ -139,7 +139,7 @@ dialog.reader-shell.ry-reader-focused[data-mode="paged"] {grid-template-rows: mi
 .ry-reader-focused[data-mode="paged"] .ry-reader-page-controls {margin-left: 0;}
 .reader-shell.ry-reader-focused[data-mode="paged"] .ry-reader-focus-exit {top: calc(12px + env(safe-area-inset-top)); bottom: auto;}
 .reader-shell .ry-reader-catalog-shade {position: absolute; z-index: 5; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: #10233d80;}
-.ry-reader-catalog {position: absolute; z-index: 6; inset: 0 0 0 auto; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); width: min(460px, 100%); padding: calc(24px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) 24px; background: #f8fbff; box-shadow: -8px 0 36px #0b203d30;}
+.ry-reader-catalog {position: absolute; z-index: 6; inset: 0 0 0 auto; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; width: min(460px, 100%); padding: calc(24px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) 24px; background: #f8fbff; box-shadow: -8px 0 36px #0b203d30;}
 .ry-reader-catalog-head {display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px;}
 .ry-reader-catalog-head h2 {font-size: 21px; margin: 0; color: var(--ry-ink);}
 .ry-reader-settings {position: absolute; z-index: 6; top: calc(88px + env(safe-area-inset-top)); right: max(20px, env(safe-area-inset-right)); width: min(380px, calc(100% - 32px)); max-height: calc(100dvh - 120px - env(safe-area-inset-top)); overflow: auto; overscroll-behavior: contain; padding: 24px; border: 1px solid var(--ry-line); border-radius: 14px; background: var(--ry-chrome); box-shadow: 0 14px 48px #0b203d38;}
@@ -209,3 +209,6 @@ dialog.reader-shell.ry-reader-focused[data-mode="paged"] {grid-template-rows: mi
   .reader-shell .ry-reader-header .ry-reader-button {padding: 9px 8px;}
 }
 @media (prefers-reduced-motion: reduce) {.reader-shell *, .reader-shell *::before {animation: none !important; scroll-behavior: auto !important;}}
+
+.ry-reader-catalog-pagination {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px;}
+.ry-reader-catalog-pagination[hidden] {display: none;}

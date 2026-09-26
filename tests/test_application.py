@@ -25,10 +25,10 @@ class Adapters(unittest.TestCase):
     def test_chapter_retry_can_refresh_expired_image_urls(self):
         app = Application()
         body = {'siteId': 'mangabz', 'chapterUrl': 'https://www.mangabz.com/m11380/'}
-        with patch.object(p, 'images', side_effect=[['old'], ['fresh']]) as images:
-            self.assertEqual(app.post('/api/chapter-images', body)['images'], ['old'])
-            self.assertEqual(app.post('/api/chapter-images', body)['images'], ['old'])
-            self.assertEqual(app.post('/api/chapter-images', {**body, 'refresh': True})['images'], ['fresh'])
+        with patch.object(p, 'images', side_effect=[['https://image.mangabz.com/old.png'], ['https://image.mangabz.com/fresh.png']]) as images:
+            self.assertEqual(app.post('/api/chapter-images', body)['images'], ['https://image.mangabz.com/old.png'])
+            self.assertEqual(app.post('/api/chapter-images', body)['images'], ['https://image.mangabz.com/old.png'])
+            self.assertEqual(app.post('/api/chapter-images', {**body, 'refresh': True})['images'], ['https://image.mangabz.com/fresh.png'])
             self.assertEqual(images.call_count, 2)
             with self.assertRaises(ValueError):
                 app.post('/api/chapter-images', {**body, 'refresh': 'yes'})
