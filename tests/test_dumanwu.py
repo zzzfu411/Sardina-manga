@@ -56,3 +56,25 @@ class DumanwuAdapterTests(unittest.TestCase):
         self.assertEqual(meta["author"], "岸本齐史")
         self.assertIn("九尾妖狐", meta["description"])
         self.assertTrue(meta["coverUrl"].startswith("https://p6.ecombdimg.com/"))
+
+    def test_real_start_link_controls_mixed_number_directory_without_resorting_extras(self):
+        page = (FIX / 'dumanwu-order.html').read_text()
+        extra = (FIX / 'dumanwu-morechapter.json').read_bytes()
+        with patch.object(n, '_page', return_value=page), patch.object(n, '_post_form', return_value=extra):
+            rows = p.details('dumanwu', URL)['chapters']
+        self.assertEqual(rows[0]['url'], URL + 'NczEzEH.html')
+        self.assertEqual([row['name'] for row in rows[:2]], ['外传:第1话 Hero', '外传:第2话 兵之书'])
+        self.assertEqual([row['name'] for row in rows[-4:]],
+                         ['第710话 双瞳中所见到的', '698 鸣人与佐助⑤', '699 和解之印', '700 漩涡鸣人！！'])
+        self.assertEqual([row['order'] for row in rows], list(range(8)))
+
+    def test_missing_or_ambiguous_start_does_not_invent_dumanwu_order(self):
+        original = (FIX / 'dumanwu-order.html').read_text()
+        extra = (FIX / 'dumanwu-morechapter.json').read_bytes()
+        for page in [original.replace('开始阅读', '继续阅读'),
+                     original.replace('<div class="stat-read-box">',
+                                      '<div class="stat-read-box"><a href="/vzUMvRF/IVpdIdWi.html">开始阅读</a>')]:
+            with self.subTest(page=page[:30]), patch.object(n, '_post_form', return_value=extra):
+                rows = n.dumanwu_chapters(URL, page=page)
+            self.assertEqual(rows[0]['name'], '700 漩涡鸣人！！')
+            self.assertEqual(rows[-1]['name'], '外传:第1话 Hero')

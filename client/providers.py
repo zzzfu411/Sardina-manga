@@ -286,12 +286,13 @@ def details(site, url):
         page = gui._get(url) if site == "manhuagui" else n._page(url, origin)
         meta = detail_metadata(site, page, url)
         rows = {"baozimh": n.baozimh_chapters, "manhuazhijia": n.manhuazhijia_chapters,
-                "tuku": n.tuku_chapters, "rumanhua": n.rum_chapters, "dumanwu": n.rum_chapters,
+                "tuku": n.tuku_chapters, "rumanhua": n.rum_chapters, "dumanwu": n.dumanwu_chapters,
                 "manhuagui": gui.gui_chapters}[site](url, page=page)
         if site == "manhuagui":
             rows.sort(key=lambda r: int(r["id"]))
         if site in {"baozimh", "manhuazhijia", "rumanhua", "dumanwu"} and not (
-                site in {"rumanhua", "dumanwu"} and n._rum_order_direction(rows, page, url) == 1):
+                site == "rumanhua" and n._rum_order_direction(rows, page, url) == 1
+                or site == "dumanwu" and rows and n._rum_start_url(page, url) == rows[0]["url"]):
             # A source-confirmed Rum sequence already includes unnumbered
             # preludes and interleaved extras. Reclassifying only some of its
             # bare-number titles would move later chapters into earlier slots.

@@ -613,6 +613,19 @@ def rum_search(keyword: str, origin: str = RUM_ORIGIN) -> list[dict[str, Any]]:
     return out
 
 
+def _rum_start_url(page: str, detail_url: str) -> str | None:
+    """Read the source's explicit start link, without guessing from chapter IDs."""
+    panels = re.findall(r'''<div\b[^>]*class=["'][^"']*\bstat-read-box\b[^"']*["'][^>]*>(.*?)</div>''', page, re.S)
+    if len(panels) != 1:
+        return None
+    starts = set()
+    for anchor in re.finditer(r"<a\b([^>]*)>(.*?)</a>", panels[0], re.S):
+        href = re.search(r'''\bhref\s*=\s*(["'])(.*?)\1''', anchor[1], re.S)
+        if href and _strip_tags(anchor[2]) == "开始阅读":
+            starts.add(urllib.parse.urljoin(detail_url, html.unescape(href[2])))
+    return next(iter(starts)) if len(starts) == 1 else None
+
+
 def _rum_order_direction(rows: list[dict[str, Any]], page: str, detail_url: str) -> int:
     """Return -1/1 for confirmed descending/ascending order, or 0 if unknown.
 
@@ -624,15 +637,8 @@ def _rum_order_direction(rows: list[dict[str, Any]], page: str, detail_url: str)
     """
     if len(rows) < 3:
         return 0
-    panels = re.findall(r'''<div\b[^>]*class=["'][^"']*\bstat-read-box\b[^"']*["'][^>]*>(.*?)</div>''', page, re.S)
-    if len(panels) != 1:
-        return 0
-    starts = set()
-    for anchor in re.finditer(r"<a\b([^>]*)>(.*?)</a>", panels[0], re.S):
-        href = re.search(r'''\bhref\s*=\s*(["'])(.*?)\1''', anchor[1], re.S)
-        if href and _strip_tags(anchor[2]) == "开始阅读":
-            starts.add(urllib.parse.urljoin(detail_url, html.unescape(href[2])))
-    if len(starts) != 1:
+    start = _rum_start_url(page, detail_url)
+    if not start:
         return 0
     numbers = []
     for row in rows:
@@ -640,9 +646,9 @@ def _rum_order_direction(rows: list[dict[str, Any]], page: str, detail_url: str)
         if match:
             numbers.append(Decimal(match[1]))
     if len(numbers) >= 3:
-        if starts == {rows[-1]["url"]} and numbers[0] > numbers[-1] and all(a >= b for a, b in zip(numbers, numbers[1:])):
+        if start == rows[-1]["url"] and numbers[0] > numbers[-1] and all(a >= b for a, b in zip(numbers, numbers[1:])):
             return -1
-        if starts == {rows[0]["url"]} and numbers[0] < numbers[-1] and all(a <= b for a, b in zip(numbers, numbers[1:])):
+        if start == rows[0]["url"] and numbers[0] < numbers[-1] and all(a <= b for a, b in zip(numbers, numbers[1:])):
             return 1
     return 0
 
@@ -729,6 +735,18 @@ def rum_images(chapter_url: str) -> list[str]:
 
 def dumanwu_search(keyword: str) -> list[dict[str, Any]]:
     return rum_search(keyword, origin=DUMANWU_ORIGIN)
+
+
+def dumanwu_chapters(detail_url: str, *, page: str | None = None) -> list[dict[str, Any]]:
+    if page is None:
+        page = _page(detail_url, _rum_origin(detail_url) + "/")
+    rows = rum_chapters(detail_url, page=page)
+    # Dumanwu mixes numbered chapters and extras in its descending directory
+    # (e.g. 700, 699, 698, 710). Its explicit start link identifies the reading
+    # endpoint; keep that source sequence rather than sorting selected titles.
+    if rows and _rum_start_url(page, detail_url) == rows[-1]["url"]:
+        rows.reverse()
+    return rows
 
 
 # --- 歪歪 comicbox ---
