@@ -37,7 +37,7 @@ class Adapters(unittest.TestCase):
         coverage = compare_sources(p.sites())
         self.assertEqual(coverage['coveredCount'], 12)
         self.assertEqual(coverage['missing'], [])
-        self.assertEqual(set(coverage['additional']), set(p.APK_PROVIDERS))
+        self.assertEqual(set(coverage['additional']), set(p.APK_PROVIDERS) | {'dumanwu'})
         without_comicbox = [s for s in p.sites() if s['siteId'] != 'comicbox']
         previous = compare_sources(without_comicbox)
         self.assertGreater(previous['totalCount'], len(REFERENCE_SOURCES))

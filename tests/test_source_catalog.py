@@ -44,6 +44,21 @@ class SourceCatalogTests(unittest.TestCase):
         self.assertTrue(all(not row['searchEnabled'] for row in data['entries']))
         self.assertEqual(data['activeSources'], [])
 
+    def test_dumanwu_imported_rule_maps_to_its_executable_source(self):
+        from client.discovery import sources
+        data = catalog.catalog(providers.sites(), discovery_sources=sources())
+        entry = next(row for row in data['entries'] if row['entryId'] == 'vomic:16')
+        self.assertEqual(entry['siteId'], 'dumanwu')
+        self.assertEqual(entry['status'], 'integrated')
+        self.assertTrue(entry['searchEnabled'])
+        self.assertEqual(entry['mappedName'], '读漫屋')
+        active = next(row for row in data['activeSources'] if row['siteId'] == 'dumanwu')
+        self.assertEqual(active['discoveryModes'], ['popular', 'latest'])
+        disabled = catalog.catalog([], mode='mangayun')
+        entry = next(row for row in disabled['entries'] if row['entryId'] == 'vomic:16')
+        self.assertEqual(entry['status'], 'pending')
+        self.assertFalse(entry['searchEnabled'])
+
     def test_duplicate_unimplemented_entry_stays_a_duplicate_without_search_access(self):
         snapshot = {'updatedAt': '2026-09-21', 'ruleEntryCount': 1, 'entries': [
             {'entryId': 'fixture:1', 'name': '同一来源备用规则', 'origin': 'https://source.example',

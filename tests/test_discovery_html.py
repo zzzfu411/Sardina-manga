@@ -13,6 +13,7 @@ FILES = {
     'dm5': ('dm5-popular', 'dm5-latest'), 'mangabz': ('mangabz-classify', 'mangabz-latest'),
     'baozimh': ('baozimh', 'baozimh'), 'manhuazhijia': ('manhuazhijia-rank', 'manhuazhijia-latest'),
     'tuku': ('tuku-rank', 'tuku'), 'rumanhua': ('rumanhua-popular', 'rumanhua-latest'),
+    'dumanwu': ('dumanwu-popular', 'dumanwu-latest'),
     'comicbox': ('comicbox-rank', 'comicbox'),
 }
 
@@ -159,6 +160,20 @@ class HtmlDiscoveryTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             fetch('comicbox', source=changed)
 
+    def test_dumanwu_keeps_its_own_identity_and_separates_rank_from_updates(self):
+        popular = fetch('dumanwu')
+        latest = fetch('dumanwu', 'latest')
+        self.assertEqual(popular['sourceUrl'], 'http://dumanwu1.com/rank/2')
+        self.assertEqual(latest['sourceUrl'], 'http://dumanwu1.com/rank/5')
+        self.assertEqual([row['rank'] for row in popular['items']], [1, 2, 3])
+        for data in (popular, latest):
+            self.assertEqual(data['siteName'], '读漫屋')
+            self.assertTrue(all(row['detailUrl'].startswith('http://dumanwu1.com/') for row in data['items']))
+            self.assertTrue(all(row['coverUrl'].startswith('https://p6.ecombdimg.com/') for row in data['items']))
+        self.assertTrue(all('rank' not in row and 'updatedAtText' not in row for row in latest['items']))
+        with self.assertRaises(d.DiscoveryError):
+            fetch('dumanwu', 'latest', source=fixture('dumanwu-popular'))
+
     def test_comicbox_ad_slots_do_not_become_ranked_cards(self):
         source = fixture('comicbox-rank')
         advert = '<div data-ad-slot="test"><a class="sp-rank-card" href="https://evil.test/book/1"><span class="sp-rank-card-title">广告</span></a></div>'
@@ -173,6 +188,7 @@ class HtmlDiscoveryTests(unittest.TestCase):
             'manhuazhijia': ['/chapter/1', '/top', '/comic/one?x=1'],
             'tuku': ['/chapter123/', '/rank/', '/manga-1/#x'],
             'rumanhua': ['/rank/2', '/abcde12/123.html', '/abcde12/?p=1'],
+            'dumanwu': ['/rank/2', '/abcde12/123.html', '/abcde12/?p=1', 'http://rumanhua2.com/abcde12/'],
             'comicbox': ['/chapter/1', '/free-chapter/1', '/booklist', '/book/1?x=1'],
         }
         for site, urls in examples.items():

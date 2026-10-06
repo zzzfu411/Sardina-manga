@@ -18,7 +18,7 @@ const TRADITIONAL = Object.freeze({
 
 export const SOURCE_PRIORITY = Object.freeze([
   'hipmh', 'manhuazhijia', 'baozimh', 'mangacopy', 'manhuagui', 'tuku',
-  'rumanhua', 'mangabz', 'dm5', 'komiic', 'manben', 'comicbox',
+  'rumanhua', 'dumanwu', 'mangabz', 'dm5', 'komiic', 'manben', 'comicbox',
 ]);
 
 const ALIASES = new Map([

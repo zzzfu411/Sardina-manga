@@ -22,8 +22,12 @@ SOURCES = {
     "manben": ("漫本", "www.manben.com"),
     "tuku": ("图库漫画", "www.tuku.cc"),
     "rumanhua": ("如漫画", "rumanhua2.com"),
+    "dumanwu": ("读漫屋", "dumanwu1.com"),
     "komiic": ("Komiic", "komiic.com"),
     "comicbox": ("歪歪漫画", "www.comicbox.xyz"),
+}
+HOST_ALIASES = {
+    "dumanwu": ("www.dumanwu1.com", "m.dumanwu1.com", "dumanwu.org", "www.dumanwu.org"),
 }
 
 # Executable adapters are registered explicitly. The extracted APK/rule files
@@ -36,6 +40,8 @@ for module in APK_ADAPTERS:
     SOURCES.update(module.SOURCES)
 EXTRA_IMAGE_DOMAINS = tuple(dict.fromkeys(domain for module in APK_ADAPTERS for domain in module.IMAGE_DOMAINS))
 IMAGE_REFERERS = {site: ref for module in APK_ADAPTERS for site, ref in getattr(module, "IMAGE_REFERERS", {}).items()}
+IMAGE_REFERERS["dumanwu"] = "http://dumanwu1.com/"
+IMAGE_REFERERS["rumanhua"] = "http://rumanhua2.com/"
 SOURCE_NOTICES = {site: note for module in APK_ADAPTERS for site, note in getattr(module, "SOURCE_NOTICES", {}).items()}
 
 
@@ -47,6 +53,7 @@ def validate_url(site: str, url: str) -> str:
     hosts = {host, "www." + host}
     if site == "hipmh":
         hosts.add("m.hipmh.com")
+    hosts.update(HOST_ALIASES.get(site, ()))
     if site in APK_PROVIDERS:
         hosts.update(getattr(APK_PROVIDERS[site], "HOST_ALIASES", {}).get(site, ()))
     if (p.scheme not in ("http", "https") or p.hostname not in hosts
@@ -100,7 +107,8 @@ def search(site: str, keyword: str):
         rows = dm.search(site, keyword, limit=50)
     else:
         rows = {"baozimh": n.baozimh_search, "manhuazhijia": n.manhuazhijia_search,
-                "tuku": n.tuku_search, "rumanhua": n.rum_search, "manhuagui": gui.gui_search}[site](keyword)
+                "tuku": n.tuku_search, "rumanhua": n.rum_search, "dumanwu": n.dumanwu_search,
+                "manhuagui": gui.gui_search}[site](keyword)
     return [dict(title=_text(r.get("title")) or "未命名漫画", detailUrl=r["url"], coverUrl=_text(r.get("cover")),
                  author=_text(r.get("author")), latestChapter=_text(r.get("latest")),
                  description=_text(r.get("description", r.get("desc"))), status=_text(r.get("status")),
@@ -278,11 +286,12 @@ def details(site, url):
         page = gui._get(url) if site == "manhuagui" else n._page(url, origin)
         meta = detail_metadata(site, page, url)
         rows = {"baozimh": n.baozimh_chapters, "manhuazhijia": n.manhuazhijia_chapters,
-                "tuku": n.tuku_chapters, "rumanhua": n.rum_chapters, "manhuagui": gui.gui_chapters}[site](url, page=page)
+                "tuku": n.tuku_chapters, "rumanhua": n.rum_chapters, "dumanwu": n.rum_chapters,
+                "manhuagui": gui.gui_chapters}[site](url, page=page)
         if site == "manhuagui":
             rows.sort(key=lambda r: int(r["id"]))
-        if site in {"baozimh", "manhuazhijia", "rumanhua"} and not (
-                site == "rumanhua" and n._rum_order_direction(rows, page, url) == 1):
+        if site in {"baozimh", "manhuazhijia", "rumanhua", "dumanwu"} and not (
+                site in {"rumanhua", "dumanwu"} and n._rum_order_direction(rows, page, url) == 1):
             # A source-confirmed Rum sequence already includes unnumbered
             # preludes and interleaved extras. Reclassifying only some of its
             # bare-number titles would move later chapters into earlier slots.
@@ -316,4 +325,4 @@ def images(site, url):
         q = parse_qs(urlparse(url).query)
         return n.baozimh_chapter_images(q["comic_id"][0], int(q["section_slot"][0]), int(q["chapter_slot"][0]))
     return {"manhuazhijia":n.manhuazhijia_chapter_images, "tuku":n.tuku_chapter_images,
-            "rumanhua":n.rum_images, "manhuagui":gui.gui_chapter_images}[site](url)
+            "rumanhua":n.rum_images, "dumanwu": n.rum_images, "manhuagui":gui.gui_chapter_images}[site](url)

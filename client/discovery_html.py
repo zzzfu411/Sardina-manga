@@ -20,12 +20,13 @@ _SITES = {
     "manhuazhijia": ("漫画之家", "https://www.manhuazhijia.cc"),
     "tuku": ("图库漫画", "https://www.tuku.cc"),
     "rumanhua": ("如漫画", "http://rumanhua2.com"),
+    "dumanwu": ("读漫屋", "http://dumanwu1.com"),
     "comicbox": ("歪歪漫画", "https://www.comicbox.xyz"),
 }
 _COVERS = {
     "dm5": ("cdndm5.com",), "mangabz": ("mangabz.com",), "baozimh": ("baozimh.com",),
     "manhuazhijia": ("bgm.tv", "baozimh.com"), "tuku": ("tuku.cc",),
-    "rumanhua": ("ecombdimg.com",), "comicbox": comicbox.IMAGE_HOSTS,
+    "rumanhua": ("ecombdimg.com",), "dumanwu": ("ecombdimg.com",), "comicbox": comicbox.IMAGE_HOSTS,
 }
 IMAGE_DOMAINS = tuple(dict.fromkeys(host for hosts in _COVERS.values() for host in hosts))
 _BOOKS = {
@@ -35,6 +36,7 @@ _BOOKS = {
     "manhuazhijia": r"/comic/[A-Za-z0-9_-]+",
     "tuku": r"/manga-[1-9][0-9]{0,11}/",
     "rumanhua": r"/[A-Za-z0-9]{7,20}/",
+    "dumanwu": r"/[A-Za-z0-9]{7,20}/",
     "comicbox": r"/book/[1-9][0-9]{0,11}",
 }
 _PERIODS = {"week": "周", "month": "月", "total": "总"}
@@ -47,6 +49,7 @@ def sources():
         "baozimh": ("首页热门漫画", "首页最近更新"),
         "manhuazhijia": ("人气排行榜", "最近更新"),
         "tuku": ("人气榜", "首页最近更新"), "rumanhua": ("人气榜", "最近更新"),
+        "dumanwu": ("人气榜", "最近更新"),
         "comicbox": ("人气排行", "首页最近更新"),
     }
     return [{"siteId": site, "siteName": name, "coverLookup": False, "modes": [
@@ -73,6 +76,7 @@ def _url(site, kind, page):
         "dm5": ("/manhua-rank/?t=4", "/manhua-new/"),
         "baozimh": ("/", "/"), "manhuazhijia": ("/top", "/update"),
         "tuku": ("/rank/", "/"), "rumanhua": ("/rank/2", "/rank/5"),
+        "dumanwu": ("/rank/2", "/rank/5"),
         "comicbox": ("/rank", "/"),
     }
     if site == "mangabz":
@@ -269,7 +273,7 @@ def _tuku(root, kind):
     return rows
 
 
-def _rumanhua(root, kind):
+def _rumanhua(root, kind, site):
     expected = "人气榜" if kind == "popular" else "最近更新"
     if expected not in text_of(root.first("title")):
         raise DiscoveryError("来源列表类型发生变化")
@@ -284,7 +288,7 @@ def _rumanhua(root, kind):
                  "description": text_of(card.first(cls="cartoon-introduction"))}
         if kind == "popular":
             extra["rank"] = _rank(text_of(card.first(cls="rank-default")), len(rows) + 1)
-        rows.append(_row("rumanhua", text_of(link.first("h2")), link.attrs.get("href"), card.first(cls="poster-box"), **extra))
+        rows.append(_row(site, text_of(link.first("h2")), link.attrs.get("href"), card.first(cls="poster-box"), **extra))
     return rows
 
 
@@ -326,9 +330,11 @@ def fetch(site, kind, period, page):
         items = _dm5(root, kind, period)
     elif site == "mangabz":
         items, more = _mangabz(root, kind, page)
+    elif site in {"rumanhua", "dumanwu"}:
+        items = _rumanhua(root, kind, site)
     else:
         items = {"baozimh": _baozimh, "manhuazhijia": _manhuazhijia,
-                 "tuku": _tuku, "rumanhua": _rumanhua, "comicbox": _comicbox}[site](root, kind)
+                 "tuku": _tuku, "comicbox": _comicbox}[site](root, kind)
     if not items:
         raise DiscoveryError("来源未返回可识别的列表，不能确认当前内容为空")
     mode = next(m for s in sources() if s["siteId"] == site for m in s["modes"] if m["kind"] == kind)

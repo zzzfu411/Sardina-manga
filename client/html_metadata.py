@@ -146,11 +146,11 @@ def detail_metadata(site, page, url):
         title = text_of(scope.first("h1"))
         description = text_of(scope.first(cls="multi-ellipsis"))
         cover = image_of(root.first(cls="manga-cover"), url)
-    elif site == "rumanhua":
+    elif site in {"rumanhua", "dumanwu"}:
         scope = root.first(cls="comic-info") or empty
-        title = text_of(scope.first("h1"))
-        description = text_of(root.first(cls="cartoon-introduction"))
-        cover = image_of(scope.first(cls="book-cover"), url)
+        title = text_of(scope.first("h1")) or text_of(root.first("h1")) or text_of(root.first(cls="banner-title"))
+        description = text_of(root.first(cls="cartoon-introduction") or root.first(cls="introduction"))
+        cover = image_of(scope.first(cls="book-cover") or root.first(cls="banner-pic"), url)
     elif site == "mangabz":
         title = text_of(root.first(cls="detail-info-title"))
         description = text_of(root.first(cls="detail-info-content"))

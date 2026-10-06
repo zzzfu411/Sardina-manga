@@ -2,7 +2,7 @@
 """Native (non-MangaYun) clients for aggregator sources.
 
 JSON APIs: hipmh (Comichub), mangacopy, komiic.
-HTML / packer: baozimh, manhuazhijia, tuku, comicbox, rumanhua.
+HTML / packer: baozimh, manhuazhijia, tuku, comicbox, rumanhua, dumanwu.
 manhuagui: client/manhuagui.py (Dean Edwards + LZString splic).
 dm5 / mangabz / manben: client/dm5_family.py (chapterfun.ashx + packer).
 """
@@ -495,13 +495,15 @@ def tuku_chapter_images(chapter_url: str) -> list[str]:
     return list(dict.fromkeys(re.findall(r"https://image\d+\.tuku\.cc/[^\"']+", page)))
 
 
-# --- 如漫画 rumanhua ---
-# Search is POST /s {k: keyword} (GET /search.html is 404). Chapter pages pack
-# image URLs in a Dean Edwards eval -> __c0rst96, decoded by /static/js/all2.js:
-# b64 -> XOR with keys[data-id] -> b64 -> JSON list. Covers stay on ecombdimg;
-# page images are signed shimolife URLs. HTTPS cert on rumanhua2.com is wrong.
+# --- 如漫画 rumanhua / 读漫屋 dumanwu ---
+# Same CMS. Search is POST /s {k: keyword} (GET /search.html is 404). Chapter
+# pages pack image URLs in a Dean Edwards eval -> __c0rst96, decoded by
+# /static/js/all2.js: b64 -> XOR with keys[data-id] -> b64 -> JSON list. Covers
+# stay on ecombdimg; page images are signed shimolife URLs. HTTPS certs on
+# rumanhua2.com and dumanwu1.com do not match; keep the published HTTP origin.
 
 RUM_ORIGIN = "http://rumanhua2.com"
+DUMANWU_ORIGIN = "http://dumanwu1.com"
 _RUM_XOR_KEYS_B64 = [
     "c21raHkyNTg=",  # 0 smkhy258
     "c21rZDk1ZnY=",  # 1 smkd95fv
@@ -593,7 +595,7 @@ def rum_search(keyword: str, origin: str = RUM_ORIGIN) -> list[dict[str, Any]]:
     if code == "201":
         return []
     if code != "200":
-        raise RuntimeError(f"rumanhua search {code}: {d.get('msg')}")
+        raise RuntimeError(f"search {code}: {d.get('msg')}")
     out: list[dict[str, Any]] = []
     for item in d.get("data") or []:
         cid = item.get("id")
@@ -723,6 +725,10 @@ def rum_images(chapter_url: str) -> list[str]:
     if isinstance(payload, list):
         return [u for u in payload if isinstance(u, str) and u.startswith("http")]
     raise RuntimeError(f"unexpected image payload type {type(payload)}")
+
+
+def dumanwu_search(keyword: str) -> list[dict[str, Any]]:
+    return rum_search(keyword, origin=DUMANWU_ORIGIN)
 
 
 # --- 歪歪 comicbox ---
@@ -878,9 +884,10 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("tuku-search"); s.add_argument("q")
     s = sub.add_parser("tuku-chapters"); s.add_argument("manga_id")
     s = sub.add_parser("tuku-images"); s.add_argument("chapter")
-    s = sub.add_parser("rum-search"); s.add_argument("q")
+    s = sub.add_parser("rum-search"); s.add_argument("q"); s.add_argument("--origin", default=RUM_ORIGIN)
     s = sub.add_parser("rum-chapters"); s.add_argument("detail_url")
     s = sub.add_parser("rum-images"); s.add_argument("chapter_url")
+    s = sub.add_parser("dumanwu-search"); s.add_argument("q")
     s = sub.add_parser("box-search"); s.add_argument("q")
     s = sub.add_parser("box-chapters"); s.add_argument("book_url")
     s = sub.add_parser("box-images"); s.add_argument("chapter_url")
@@ -921,7 +928,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "tuku-images":
         print(json.dumps(tuku_chapter_images(args.chapter)[:5], indent=2))
     elif args.cmd == "rum-search":
-        print(json.dumps(rum_search(args.q), ensure_ascii=False, indent=2))
+        print(json.dumps(rum_search(args.q, origin=args.origin), ensure_ascii=False, indent=2))
+    elif args.cmd == "dumanwu-search":
+        print(json.dumps(dumanwu_search(args.q), ensure_ascii=False, indent=2))
     elif args.cmd == "rum-chapters":
         chs = rum_chapters(args.detail_url)
         print(json.dumps({"n": len(chs), "first": chs[:3], "last": chs[-2:]}, ensure_ascii=False, indent=2))

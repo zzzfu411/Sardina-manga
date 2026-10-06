@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-21",
+  "updatedAt": "2026-10-06",
   "ruleEntryCount": 99,
   "entries": [
     {
@@ -166,11 +166,11 @@
       "entryId": "vomic:16",
       "name": "读漫屋【网】",
       "origin": "http://m.dumanwu1.com",
-      "siteId": "",
-      "status": "pending",
-      "reason": "已取得公开搜索接口响应；该 API 尚未独立转写，准确作品、目录和正文图片链路未完整验证。",
+      "siteId": "dumanwu",
+      "status": "integrated",
+      "reason": "已接入独立搜索、作品目录和章节图片，以及人气榜、最近更新和封面。保留源站当前公开的 HTTP 入口。",
       "collection": "你搜 v185",
-      "checkedAt": "2026-09-21"
+      "checkedAt": "2026-10-06"
     },
     {
       "entryId": "vomic:17",
