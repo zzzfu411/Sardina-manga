@@ -2,7 +2,7 @@
 
 [返回 README](../README.md)
 
-以下接口对应默认的 `native` 模式，服务地址为 `http://127.0.0.1:8765`。服务仅接受本机 Host；`POST` 如携带 `Origin`，其值必须与服务地址一致。`POST` 使用 `Content-Type: application/json`，请求体上限为 16 KiB。
+以下接口对应默认的 `native` 模式，默认服务地址为 `http://127.0.0.1:8765`。默认只接受本机 Host；通过 `--public-origin https://manga.example.com` 可额外允许一个 HTTPS 域名。后端仍只监听回环地址，由反向代理提供 HTTPS。`POST` 如携带 `Origin`，其值必须与当前 Host 对应的本机地址或已配置的 HTTPS 地址一致；转发头不参与信任判断。`POST` 使用 `Content-Type: application/json`，请求体上限为 16 KiB。部署方法见 [VPS 部署](DEPLOYMENT.md)。
 
 ## 响应约定
 

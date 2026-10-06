@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sardina manga: local reader with MangaYun-compatible source adapters."""
+"""Sardina manga: browser reader with MangaYun-compatible source adapters."""
 from __future__ import annotations
 
 import argparse
@@ -32,6 +32,24 @@ class SardinaHTTPServer(ThreadingHTTPServer):
     # requests can overflow that socket backlog before handlers are started.
     # This queue is independent of the bounded upstream request budgets.
     request_queue_size = 64
+
+
+def public_origin(value):
+    """Accept one explicit HTTPS origin; never infer trust from proxy headers."""
+    try:
+        parsed = urlparse(value)
+        if (re.search(r'[\s\\]', value) or parsed.scheme != 'https' or not parsed.hostname or parsed.username is not None
+                or parsed.password is not None or parsed.path not in ('', '/')
+                or parsed.params or parsed.query or parsed.fragment
+                or not re.fullmatch(r'[A-Za-z0-9.-]+(?::[0-9]+)?', parsed.netloc)
+                or any(not label or not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?', label)
+                       for label in parsed.hostname.split('.'))
+                or parsed.port == 0):
+            raise ValueError
+        port = parsed.port
+    except ValueError:
+        raise argparse.ArgumentTypeError('公网地址必须是完整的 HTTPS 域名，不含路径、账号或查询参数') from None
+    return 'https://' + parsed.hostname + (f':{port}' if port not in (None, 443) else '')
 
 
 def validate_image(url):
@@ -330,13 +348,32 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError,ConnectionResetError):
             pass
 
+    def request_origin(self):
+        hosts = self.headers.get_all('Host', [])
+        if len(hosts) != 1 or re.search(r'[\s/@?#\\]', hosts[0]):
+            return None
+        try:
+            parsed = urlparse('http://' + hosts[0])
+            port = parsed.port
+            if not parsed.hostname or port == 0 or parsed.path or parsed.params:
+                return None
+        except ValueError:
+            return None
+        configured = getattr(self.server, 'public_origin', None)
+        if configured:
+            public = urlparse(configured)
+            if parsed.hostname == public.hostname and (port or 443) == (public.port or 443):
+                return configured
+        if parsed.hostname in ('localhost', '127.0.0.1', '::1'):
+            return 'http://' + hosts[0]
+        return None
+
     def valid_host(self):
-        host = urlparse("http://" + self.headers.get("Host", "")).hostname
-        return host in ("localhost", "127.0.0.1", "::1")
+        return self.request_origin() is not None
 
     def do_GET(self):
         if not self.valid_host():
-            self.send(403,{"error":"仅接受本机访问"}); return
+            self.send(403,{"error":"访问域名未获允许"}); return
         p = urlparse(self.path)
         try:
             if p.path == "/api/config":
@@ -398,7 +435,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send(502,{"error":str(exc)[:240]})
 
     def do_POST(self):
-        if not self.valid_host() or (self.headers.get("Origin") and self.headers["Origin"] != "http://" + self.headers.get("Host", "")):
+        expected_origin = self.request_origin()
+        origins = self.headers.get_all('Origin', [])
+        if not expected_origin or (origins and origins != [expected_origin]):
             self.send(403,{"error":"请求来源不匹配"}); return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -418,14 +457,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port",type=int,default=8765)
     parser.add_argument("--provider",choices=("native","mangayun"),default="native")
+    parser.add_argument('--public-origin', type=public_origin, help='HTTPS 反向代理的公网地址，例如 https://manga.example.com')
+    parser.add_argument('--state-dir', type=Path, default=ROOT / 'output/runtime', help='漫画源健康状态保存目录')
     args = parser.parse_args()
     import signal
     def stop_service(signum, frame):
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, stop_service)
     server = SardinaHTTPServer(("127.0.0.1",args.port),Handler)
+    server.public_origin = args.public_origin
     server.app = Application(args.provider)
-    server.app.health = SourceHealth(ROOT / 'output/runtime/source-health.json')
+    server.app.health = SourceHealth(args.state_dir / 'source-health.json')
     print(f"Sardina manga http://127.0.0.1:{args.port} / provider={args.provider}",flush=True)
     try:
         server.serve_forever()
