@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <a href="#功能">功能</a> · <a href="#开始使用">开始使用</a> · <a href="#接口">接口</a> · <a href="docs/API.md">API 文档</a>
+  <a href="https://manga.yeuxark.com">在线阅读</a> · <a href="#功能">功能</a> · <a href="#开始使用">本机运行</a> · <a href="docs/DEPLOYMENT.md">部署</a> · <a href="docs/API.md">API 文档</a>
 </p>
 
-Sardina 运行在本机，直接连接漫画源。前端使用原生 JavaScript 和 CSS，后端使用 Python，无需前端构建。
+Sardina 可在本机运行，也可部署为网站，由后端连接漫画源。前端使用原生 JavaScript 和 CSS，后端使用 Python，无需前端构建。
 
 ## 功能
 
