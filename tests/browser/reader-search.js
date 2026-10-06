@@ -86,13 +86,13 @@ async (page, step = () => {}) => {
   await page.goto(base+'/');
   const siteResponse=await page.request.get(base+'/api/sites'),sites=(await siteResponse.json()).data;
   await page.route('**/api/search',route=>{const body=route.request().postDataJSON(),source=sites.find(site=>site.siteId===body.siteId);return json(route,[{...source,results:source===sites.at(-1)?[]:[{...source,title:'三月的狮子',author:'羽海野千花',detailUrl:'https://www.mangabz.com/990025bz/',coverUrl:'https://image.mangabz.com/repair-cover.png'}],...(source===sites.at(-1)?{error:'合成失败样本'}:{})}]);});
-  step('search-25-sources-mobile');
+  step('search-all-sources-mobile');
   await page.setViewportSize({width:393,height:852});await page.goto(base+'/s/'+encodeURIComponent('三月的狮子'));
-  await page.waitForFunction(()=>document.querySelector('#search-status')?.textContent.includes('25 / 25'));
+  await page.waitForFunction(count=>document.querySelector('#search-status')?.textContent.includes(count+' / '+count),sites.length);
   await page.waitForSelector('.search-chapter');
   const geometry=await page.evaluate(()=>({firstChapter:Math.round(document.querySelector('.search-chapter').getBoundingClientRect().top),firstBook:Math.round(document.querySelector('.search-work').getBoundingClientRect().top),overflow:document.documentElement.scrollWidth-innerWidth,status:document.querySelector('#search-status').textContent,sourceButtons:document.querySelectorAll('#source-tabs button').length}));
   assert(geometry.firstChapter<800,'mobile first chapter remains below screen: '+geometry.firstChapter);
-  assert(geometry.overflow<=1,'mobile search overflows');assert(geometry.sourceButtons===26,'source filters disappeared');assert(geometry.status.includes('1 个源失败')&&!geometry.status.includes('部分源未完成'),'contradictory completion message');
+  assert(geometry.overflow<=1,'mobile search overflows');assert(geometry.sourceButtons===sites.length+1,'source filters disappeared');assert(geometry.status.includes('1 个源失败')&&!geometry.status.includes('部分源未完成'),'contradictory completion message');
   await page.screenshot({path:screenshotDir+'/search-393.png'});
   await page.locator('#source-filter-label').click();assert(await page.locator('#source-tabs button').last().isVisible(),'last source is unreachable');
   await page.locator('.search-source-fold summary').first().click();assert(await page.locator('.search-source-fold').first().locator('.search-source').last().isVisible(),'alternative book sources are unreachable');
