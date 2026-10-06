@@ -6,6 +6,7 @@ site-wide author meta tag or a recommendation must not become book metadata.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from html import unescape
 from html.parser import HTMLParser
 import re
 from urllib.parse import urljoin, urlparse
@@ -97,7 +98,7 @@ def image_of(node, base):
     return ""
 
 
-def label_value(root, label):
+def label_value(root, label, *, join_links=False):
     """Read the smallest labelled element, not the entire detail container."""
     pattern = re.compile(r"^(?:" + label + r")\s*[：:]?\s*(.*)$")
     values = []
@@ -109,7 +110,13 @@ def label_value(root, label):
             continue
         match = pattern.match(value)
         if match and match[1]:
-            values.append(match[1].strip())
+            result = match[1].strip()
+            if join_links:
+                links = [link.text() for link in node.all("a") if link.text()]
+                if links and re.sub(r"\s+", "", " ".join(links)) == re.sub(r"\s+", "", result):
+                    result = " / ".join(dict.fromkeys(links))
+                result = unescape(unescape(result))
+            values.append(result)
     return min(values, key=len) if values else ""
 
 
@@ -165,7 +172,7 @@ def detail_metadata(site, page, url):
         cover = image_of(scope.first(cls="cover"), url)
     # Only book-specific metadata fallbacks, never generic name=Author.
     title = title or metas.get("og:novel:book_name", "") or metas.get("og:title", "")
-    author = author or label_value(scope, r"(?:漫画|漫畫)?作\s*者") or metas.get("og:novel:author", "") or metas.get("og:author", "")
+    author = author or label_value(scope, r"(?:漫画|漫畫)?作\s*者", join_links=True) or metas.get("og:novel:author", "") or metas.get("og:author", "")
     status = known_status(label_value(scope, r"(?:漫画|漫畫)?(?:状\s*态|狀\s*態)")) or known_status(metas.get("og:novel:status", ""))
     cover = cover or metas.get("og:image", "")
     if cover:

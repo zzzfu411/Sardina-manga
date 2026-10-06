@@ -341,13 +341,13 @@ def _metadata(site, root, url):
         scope = root.first(cls="cy_intro_l") or _EMPTY
         title = text_of(scope.first("h1"))
         meta = scope.first(cls="cy_xinxi") or _EMPTY
-        author = label_value(meta, "作者")
+        author = label_value(meta, "作者", join_links=True)
         description = text_of(scope.first(cls="cy_desc"))
         cover = _cover(site, scope, url)
         status = known_status(label_value(meta, "状态"))
     elif site == "guazimanhua":
         title = text_of(root.first(cls="mobile-comic-title"))
-        author = label_value(root.first(cls="cinema-strip") or _EMPTY, "作者")
+        author = label_value(root.first(cls="cinema-strip") or _EMPTY, "作者", join_links=True)
         description = text_of(root.first(cls="mobile-comic-desc"))
         cover = _cover(site, root.first(cls="mobile-comic-cover"), url)
         status = known_status(text_of(root.first(cls="mobile-comic-meta")))

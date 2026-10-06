@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {bookKey, buildSearchModel, canonicalTitle, normalizeTitle, normalizeAuthor, rekeyWorkStates, titleRelevance, withAuthorEvidence} from '../web/search-model.js';
+import {bookKey, buildSearchModel, canonicalTitle, metadataText, normalizeTitle, normalizeAuthor, rekeyWorkStates, titleRelevance, withAuthorEvidence} from '../web/search-model.js';
 
 const row = (title, id, fields = {}) => ({title, detailUrl: `https://manga.example/${id}`, ...fields});
 const group = (siteId, rows) => ({siteId, siteName: siteId, results: rows});
@@ -199,4 +199,86 @@ test('when verified author identity rejoins a work, the active user selection wi
   assert.equal(rekeyed.size, 1);
   assert.equal(rekeyed.get(works[0].key).selectedKey, 'b::https://manga.example/2');
   assert.equal(rekeyed.get(works[0].key).reverse, true);
+});
+
+test('author credits decode source entities and normalize separators without splitting English names', () => {
+  const expected = normalizeAuthor('Team Argo / Monohumbug (REDICE STUDIO) / Saenal');
+  for (const value of ['Team Argo+Monohumbug(REDICE STUDIO)，Saenal',
+    'Team Argo,Monohumbug&#40Redice Studio&#41,Saenal,Redice Studio',
+    '作者：Team Argo,Monohumbug&amp;#40Redice Studio&amp;#41,Saenal']) {
+    assert.equal(normalizeAuthor(value), expected, value);
+  }
+  assert.notEqual(normalizeAuthor('Team Argo'), normalizeAuthor('Team Argon'));
+  assert.notEqual(normalizeAuthor('Saenal Team Argo'), normalizeAuthor('Saenal / Team Argo'));
+  assert.equal(normalizeAuthor('未知 / 不詳 / Team'), '');
+  assert.equal(metadataText('&amplitude &amp; &#40 &#x29;'), '&amplitude & ( )');
+  assert.equal(metadataText('&#9999999; &#xD800;'), '&#9999999; &#xD800;');
+  assert.equal(metadataText('&lt;img src=x&gt;'), '<img src=x>');
+});
+
+test('observed equipment search and detail credits stay one work across all 11 sources', () => {
+  const fixture = JSON.parse(readFileSync(new URL('./fixtures/search-equipment.json', import.meta.url)));
+  const original = structuredClone(fixture.groups), evidence = new Map();
+  assert.equal(canonicalTitle('裝備我最強'), canonicalTitle('装备我最强'));
+  function check(groups) {
+    const model = buildSearchModel(groups, '装备');
+    const work = model.works.find(work => work.canonicalTitle === '装备我最强');
+    assert.equal(model.workCount, 2);
+    assert.equal(work.sourceCount, 11);
+    assert.equal(work.books.length, 14);
+    assert.equal(new Set(work.books.map(bookKey)).size, 14);
+    assert.equal(model.works.find(work => work.title.includes('原版自译')).books.length, 1);
+    assert.deepEqual(buildSearchModel([...groups].reverse(), '装备'), model);
+    const exact = buildSearchModel(groups, '装备我最强');
+    assert.equal(exact.workCount, 1);
+    assert.equal(exact.relatedCount, 1);
+  }
+  check(fixture.groups);
+  for (const detail of fixture.details) {
+    evidence.set(bookKey(detail), detail.author);
+    check(withAuthorEvidence(fixture.groups, evidence));
+  }
+  assert.deepEqual(fixture.groups, original);
+});
+
+test('shared partial credits cannot bridge incompatible same-title works', () => {
+  const model = buildSearchModel([
+    group('a', [row('同名漫画', 1, {author: '甲 / 共同作者'})]),
+    group('b', [row('同名漫画', 2, {author: '乙 / 共同作者'})]),
+    group('c', [row('同名漫画', 3, {author: '共同作者'})]),
+    group('d', [row('同名漫画', 4, {author: '未知'})]),
+  ], '同名漫画');
+  assert.equal(model.workCount, 4);
+  assert.ok(model.works.every(work => work.books.length === 1));
+});
+
+test('shared studios and publishers are not two independent author matches', () => {
+  const model = buildSearchModel([
+    group('a', [row('同名漫画', 1, {author: 'Alice / REDICE STUDIO / 示例出版社'})]),
+    group('b', [row('同名漫画', 2, {author: 'Bob / REDICE STUDIO / 示例出版社'})]),
+    group('c', [row('同名漫画', 3, {author: 'REDICE STUDIO'})]),
+  ], '同名漫画');
+  assert.equal(model.workCount, 3);
+});
+
+test('overlapping credit lists cannot transitively merge unrelated author groups', () => {
+  const groups = [
+    group('a', [row('同名漫画', 1, {author: 'Alex / Bea / Cam'})]),
+    group('b', [row('同名漫画', 2, {author: 'Bea / Cam / Dan'})]),
+    group('c', [row('同名漫画', 3, {author: 'Cam / Dan / Eli'})]),
+  ];
+  const model = buildSearchModel(groups, '同名漫画');
+  assert.equal(model.workCount, 2);
+  assert.deepEqual(buildSearchModel([...groups].reverse(), '同名漫画'), model);
+});
+
+test('explicit editions and languages remain separate despite matching credits', () => {
+  const groups = [group('a', [
+    row('同名漫画', 1, {author: 'Alice'}),
+    row('同名漫画', 2, {author: 'Alice', edition: '全彩版'}),
+    row('同名漫画', 3, {author: 'Alice', language: 'en'}),
+  ])];
+  const model = buildSearchModel(groups, '同名漫画');
+  assert.equal(model.workCount, 3);
+  assert.equal(new Set(model.works.map(work => work.key)).size, 3);
 });

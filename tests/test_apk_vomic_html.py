@@ -12,6 +12,12 @@ FIXTURES = json.loads((Path(__file__).parent / "fixtures/apk-vomic-html/pages.js
 
 
 class VomicHtmlTests(unittest.TestCase):
+    def test_double_escaped_author_credits_are_plain_text(self):
+        fixture = FIXTURES['guazimanhua']
+        page = fixture['detail'].replace('普通作者', 'Team Argo,Monohumbug&amp;#40Redice Studio&amp;#41,Saenal')
+        detail = source.parse_details('guazimanhua', page, fixture['book'])
+        self.assertEqual(detail['author'], 'Team Argo,Monohumbug(Redice Studio),Saenal')
+
     def test_all_four_search_scopes_exclude_recommendations_and_duplicates(self):
         for site, fixture in FIXTURES.items():
             with self.subTest(site=site):

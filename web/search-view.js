@@ -1,4 +1,4 @@
-import {bookKey, buildSearchModel, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
+import {bookKey, buildSearchModel, metadataText, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
 
 const abortError = () => new DOMException('请求已取消', 'AbortError');
 
@@ -180,7 +180,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     card.renderedDetail = null; card.renderedReverse = null;
   }
   function renderSources(card) {
-    card.sourceLabel.textContent = `${selectedBook(card).siteName} · 更换来源（${card.work.books.length}）`;
+    card.sourceLabel.textContent = `${selectedBook(card).siteName} · 更换来源（${card.work.sourceCount} 个源）`;
     const seen = new Map(), totals = new Map(), live = new Set();
     for (const book of card.work.books) totals.set(book.siteId, (totals.get(book.siteId) || 0) + 1);
     let cursor = card.sources.firstChild;
@@ -215,7 +215,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     card.match.textContent = work.kind === 'alias' ? '别名匹配' : work.score >= 98 ? `${work.sourceCount} 个源` : '';
     card.match.hidden = !card.match.textContent;
     const items = [];
-    if (safeText(book.author)) items.push(node('span', 'search-author', `作者：${book.author}`));
+    if (metadataText(book.author)) items.push(node('span', 'search-author', `作者：${metadataText(book.author)}`));
     if (safeText(book.status)) items.push(node('span', 'search-status', book.status));
     if (safeText(book.latestChapter)) items.push(node('span', 'search-latest', `更新至 ${book.latestChapter}`));
     card.meta.replaceChildren(...items); card.meta.hidden = !items.length;

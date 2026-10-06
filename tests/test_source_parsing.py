@@ -75,6 +75,12 @@ class SearchHTMLTests(unittest.TestCase):
 
 
 class DetailHTMLTests(unittest.TestCase):
+    def test_separate_author_links_keep_boundaries_and_multiword_names(self):
+        meta = detail_metadata('mangabz', fixture('mangabz-equipment-authors'), 'https://www.mangabz.com/30392bz/')
+        self.assertEqual(meta['author'], 'Saenal / Team Argo')
+        self.assertNotIn('連載', meta['author'])
+        self.assertNotIn('熱血', meta['author'])
+
     def test_observed_metadata_across_html_sources(self):
         expected = {
             "baozimh": ("三月的獅子", "羽海野千花", "連載中"),

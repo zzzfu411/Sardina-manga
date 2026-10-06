@@ -13,7 +13,7 @@ const TRADITIONAL = Object.freeze({
   歲:'岁',點:'点',內:'内',陸:'陆',優:'优',滿:'满',遙:'遥',響:'响',現:'现',
   劉:'刘',陳:'陈',張:'张',馮:'冯',趙:'赵',吳:'吴',楊:'杨',鄭:'郑',賴:'赖',羅:'罗',
   裏:'里',裡:'里',說:'说',謎:'谜',條:'条',環:'环',經:'经',續:'续',繪:'绘',製:'制',
-  諜:'谍',鋼:'钢',煉:'炼',鍊:'炼',過:'过',
+  諜:'谍',鋼:'钢',煉:'炼',鍊:'炼',過:'过',裝:'装',備:'备',強:'强',
 });
 
 export const SOURCE_PRIORITY = Object.freeze([
@@ -38,8 +38,23 @@ const text = value => typeof value === 'string' ? value.trim() : '';
 const compareText = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 const sourceRank = siteId => { const rank = SOURCE_PRIORITY.indexOf(siteId); return rank < 0 ? SOURCE_PRIORITY.length : rank; };
 
+// Some APIs return double-escaped text, including numeric entities without a
+// semicolon. Decode only text; callers render it with textContent, never HTML.
+export function metadataText(value) {
+  const named = {amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', nbsp: ' '};
+  let result = text(value);
+  for (let pass = 0; pass < 2; pass++) {
+    result = result.replace(/&(?:#(\d{1,7});?|#x([a-f\d]{1,6});?|(amp|quot|apos|lt|gt|nbsp);)/gi, (raw, decimal, hex, name) => {
+      if (name) return named[name.toLowerCase()];
+      const code = parseInt(decimal || hex, decimal ? 10 : 16);
+      return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : raw;
+    });
+  }
+  return result.trim();
+}
+
 export function normalizeTitle(value) {
-  return text(value).normalize('NFKC').toLowerCase()
+  return metadataText(value).normalize('NFKC').toLowerCase()
     .replace(/[\p{P}\p{Z}\s]/gu, '')
     .replace(/[\u3400-\u9fff]/gu, char => TRADITIONAL[char] || char);
 }
@@ -62,13 +77,40 @@ export function bookKey(book) {
 
 function authorText(book) {
   const extra = book.extra && typeof book.extra === 'object' ? book.extra : {};
-  return text(book.author) || text(extra.author) || text(extra['作者']);
+  return metadataText(book.author) || metadataText(extra.author) || metadataText(extra['作者']);
 }
 
 export function normalizeAuthor(value) {
-  const clean = text(value).replace(/^(?:作者|漫画|漫畫|绘画|繪畫)\s*[:：]\s*/u, '');
-  if (/^(?:未知|不详|不詳|佚名|暂无|暫無|unknown|n\/a|[-—]+)$/iu.test(clean)) return '';
-  return clean.split(/[,，、/&＆]|\s+and\s+/iu).map(normalizeTitle).filter(Boolean).sort(compareText).join('+');
+  const clean = metadataText(value).normalize('NFKC').replace(/^(?:作者|漫画|漫畫|绘画|繪畫)\s*[:：]\s*/u, '');
+  if (/^n\/a$/iu.test(clean)) return '';
+  const parts = clean.split(/[,，、/&＆+;；|()（）]|\s+and\s+/iu).map(normalizeTitle)
+    .filter(part => part && !/^(?:未知|不详|不詳|佚名|暂无|暫無|unknown|team|studio)$/iu.test(part));
+  return [...new Set(parts)].sort(compareText).join('+');
+}
+
+function authorGroups(known) {
+  const entries = [...known].map(([key, books]) => ({key, books, names: new Set(key.split('+'))})).sort((a, b) => compareText(a.key, b.key));
+  const subset = (a, b) => [...a].every(name => b.has(name));
+  const anchors = entries.filter(entry => !entries.some(other => entry !== other && subset(entry.names, other.names)));
+  const strongMatch = (a, b) => [...a.names].filter(name => b.names.has(name)
+    && !/(?:studios?|工作室|出版社|出版|文化|漫画|动漫)$/u.test(name)).length >= 2;
+  const clusters = [];
+  // Rich credit lists may differ by an extra collaborator/publisher. Require
+  // two shared contributors and agreement with every anchor, not a chain of
+  // pairwise overlaps that could bridge different same-title works.
+  for (const entry of anchors) {
+    const matches = clusters.filter(cluster => cluster.anchors.every(other => strongMatch(entry, other)));
+    if (matches.length === 1) { matches[0].anchors.push(entry); matches[0].books.push(...entry.books); }
+    else clusters.push({key: entry.key, anchors: [entry], books: [...entry.books]});
+  }
+  for (const entry of entries.filter(entry => !anchors.includes(entry))) {
+    const matches = clusters.filter(cluster => cluster.anchors.some(anchor => subset(entry.names, anchor.names)));
+    // A partial credit shared by two different works stays unresolved. It
+    // never becomes evidence for merging those works with each other.
+    if (matches.length === 1) matches[0].books.push(...entry.books);
+    else clusters.push({key: entry.key, anchors: [], books: [...entry.books]});
+  }
+  return clusters;
 }
 
 // Detail metadata is authoritative only when it actually names an author.
@@ -139,8 +181,9 @@ function makeWork(titleKey, authorKey, books, keyword) {
   const best = [...books].sort((a, b) => b.matchScore - a.matchScore || preferredBook(a, b))[0];
   const canonicalQuery = canonicalTitle(keyword);
   const title = ALIASES.get(titleKey) || (titleKey === canonicalQuery && ALIASES.has(canonicalQuery) ? canonicalQuery : best.title);
+  const variant = [normalizeTitle(best.edition), normalizeTitle(best.language)];
   return {
-    key: JSON.stringify([titleKey, authorKey]), canonicalTitle: titleKey,
+    key: JSON.stringify([titleKey, authorKey, ...(variant.some(Boolean) ? variant : [])]), canonicalTitle: titleKey,
     title, authorKey, books, preferred: books[0],
     score: best.matchScore, kind: best.matchKind,
     sourceCount: new Set(books.map(book => book.siteId)).size,
@@ -156,7 +199,7 @@ export function buildSearchModel(groups = [], keyword = '', filter = '') {
     rawCount += rows.length;
     for (const row of rows) {
       if (!row || typeof row !== 'object') continue;
-      const title = text(row.title), detailUrl = text(row.detailUrl), siteId = text(group.siteId) || text(row.siteId);
+      const title = metadataText(row.title), detailUrl = text(row.detailUrl), siteId = text(group.siteId) || text(row.siteId);
       if (!title || !detailUrl || !siteId) continue;
       const relevance = bookRelevance({...row, title}, keyword);
       const book = {...row, title, detailUrl, siteId, siteName: text(group.siteName) || text(row.siteName) || siteId,
@@ -176,24 +219,26 @@ export function buildSearchModel(groups = [], keyword = '', filter = '') {
   const byTitle = new Map();
   for (const book of candidates.values()) {
     const titleKey = canonicalTitle(book.title);
-    if (!byTitle.has(titleKey)) byTitle.set(titleKey, []);
-    byTitle.get(titleKey).push(book);
+    const variantKey = JSON.stringify([titleKey, normalizeTitle(book.edition), normalizeTitle(book.language)]);
+    if (!byTitle.has(variantKey)) byTitle.set(variantKey, {titleKey, books: []});
+    byTitle.get(variantKey).books.push(book);
   }
   const all = [];
-  for (const [titleKey, books] of byTitle) {
+  for (const {titleKey, books} of byTitle.values()) {
     const known = new Map(), unknown = [];
     for (const book of books) {
       const author = normalizeAuthor(book.author);
       if (!author) unknown.push(book);
       else { if (!known.has(author)) known.set(author, []); known.get(author).push(book); }
     }
+    const identities = authorGroups(known);
     // Unknown authors can join a single unambiguous identity, but must not
     // bridge two conflicting authors into one work.
-    if (known.size <= 1) {
-      const author = known.keys().next().value || '';
+    if (identities.length <= 1) {
+      const author = identities[0]?.key || '';
       all.push(makeWork(titleKey, author, books, keyword));
     } else {
-      for (const [author, rows] of known) all.push(makeWork(titleKey, author, rows, keyword));
+      for (const identity of identities) all.push(makeWork(titleKey, identity.key, identity.books, keyword));
       if (unknown.length) all.push(makeWork(titleKey, '', unknown, keyword));
     }
   }
