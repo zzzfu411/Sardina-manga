@@ -27,7 +27,7 @@ from client.request_budget import RequestBudget, ImageBudget, ImageCapacityError
 ROOT = Path(__file__).resolve().parent
 STATIC_FILES = {"/": "index.html", "/favicon.ico": "brand/sardina-097-c.png", "/brand": "brand-preview.html"}
 for _name in (
-    "app.js", "style.css", "logo.svg", "sardina.css", "search-model.js", "search-view.js", "search.css",
+    "app.js", "api.js", "style.css", "logo.svg", "sardina.css", "search-model.js", "search-view.js", "search.css",
     "reader.js", "reader-model.js", "reader-transport.js", "reader.css", "reader-gestures.js",
     "source-catalog.js", "source-catalog.css", "source-preferences.js", "library-model.js", "library.css",
     "library-updates.js", "library-store.js", "library-auto-updates.js", "book-identity.js", "discovery.js",
@@ -372,7 +372,7 @@ class Application:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Sardina/0.4"
+    server_version = "Sardina/0.4.1"
 
     def log_request(self, code="-", size="-"):
         # Image URLs may contain short-lived source tickets or signatures.

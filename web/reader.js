@@ -1,4 +1,4 @@
-import {MAX_IMAGE_REQUESTS, clampPage, clampOffset, restorePosition, normalizeRatio, imageCandidates, progressSnapshot, createChapterScope, normalizeReaderPreferences, readerPreferencesForBook, pageNavigation, pageTurnDelta, readerPageWidth, clampReaderZoom, chapterNavigation, buildReaderPages, createReadingFeedback} from './reader-model.js';
+import {MAX_IMAGE_REQUESTS, clampPage, clampOffset, restorePosition, normalizeRatio, imageCandidates, progressSnapshot, createChapterScope, normalizeReaderPreferences, readerPreferencesForBook, pageTurnDelta, readerPageWidth, clampReaderZoom, chapterNavigation, buildReaderPages, createReadingFeedback} from './reader-model.js';
 import {prefetchPageCount} from './reader-model.js';
 import {createImageLoader} from './image-loader.js';
 import {sourceEntryKey} from './book-identity.js';
@@ -25,6 +25,13 @@ const stored = (name, fallback) => {
   try {return JSON.parse(localStorage.getItem(name)) ?? fallback;} catch {return fallback;}
 };
 const editable = target => target instanceof Element && !!target.closest('input, select, textarea, [contenteditable="true"]');
+function transparentPixel(image) {
+  if (image.naturalWidth !== 1 || image.naturalHeight !== 1) return false;
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0);
+  return context.getImageData(0, 0, 1, 1).data[3] === 0;
+}
 
 /** The application owns routing and the shelf. This module owns one reader session. */
 export function createReader({root, api, imageUrl, imageLoader = createImageLoader(), downloads = null, getProgress, onProgress, onNavigate, onExit, onOpen = () => {}, onClose = () => {}, isChapterRead = () => false, onChapterRead, onRefreshCatalog, onFailure = () => {}, onRecovery = () => {}, toast = () => {}}) {
@@ -298,6 +305,18 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     clearTimeout(current.saveTimer);
     current.saveTimer = setTimeout(() => {if (active(current)) flush();}, 350);
   }
+  function availablePage(current, index, step) {
+    for (let at = index; at >= 0 && at < current.pages.length; at += step) if (!current.pages[at].empty) return at;
+    return null;
+  }
+  function contentPosition(current, position) {
+    const index = clampPage(position.page, current.pages.length), step = current.pageStep || 1;
+    const page = availablePage(current, index, step) ?? availablePage(current, index, -step) ?? index;
+    return {page, pageOffset: page === index ? clampOffset(position.pageOffset) : 0};
+  }
+  function pageNavigation(current) {
+    return {previous: availablePage(current, current.position.page - 1, -1), next: availablePage(current, current.position.page + 1, 1)};
+  }
   function pageAt(current, y) {
     let low = 0, high = current.pages.length - 1;
     while (low < high) {
@@ -305,7 +324,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       if (current.pages[middle].figure.offsetTop <= y) low = middle;
       else high = middle - 1;
     }
-    return low;
+    return availablePage(current, low, 1) ?? availablePage(current, low, -1) ?? low;
   }
   function locate(current) {
     const page = mode === 'paged' ? current.position.page : pageAt(current, scroll.scrollTop);
@@ -314,6 +333,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   }
   function setPosition(current, position) {
     if (!active(current) || !current.pages.length) return;
+    position = contentPosition(current, position);
     const page = clampPage(position.page, current.pages.length), figure = current.pages[page].figure;
     const oldRange = Math.max(0, scroll.scrollWidth - scroll.clientWidth);
     const pan = current.position.page === page && oldRange > 0 ? scroll.scrollLeft / oldRange : .5;
@@ -335,7 +355,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const layoutKey = `${mode}:${fit}:${zoom}:${width}:${viewportWidth}:${viewportHeight}`;
     if (current.layoutKey !== layoutKey) {
       for (const page of current.pages) {
-        page.figure.hidden = paged && page.index !== index;
+        page.figure.hidden = paged && (page.empty || page.index !== index);
         if (!paged) {page.figure.style.width = `${widthForPage(page, viewportWidth, viewportHeight)}px`; page.figure.style.aspectRatio = `1 / ${page.ratio}`;}
       }
     } else if (paged && current.visiblePage !== index) {
@@ -364,12 +384,12 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     current.position = position;
     if (document.activeElement !== pageInput) pageInput.value = String(position.page + 1);
     pageInput.max = String(current.pages.length); progressLabel.textContent = `/ ${current.pages.length} 页`;
-    const loaded = current.pages.filter(page => page.state === 'loaded').length;
+    const loaded = current.pages.filter(page => page.state === 'loaded' || page.empty).length;
     const failed = current.pages.filter(page => page.state === 'error').length;
-    const lastPage = mode === 'paged' && position.page === current.pages.length - 1 ? ' · 本章最后一页' : '';
+    const navigation = pageNavigation(current);
+    const lastPage = mode === 'paged' && navigation.next === null ? ' · 本章最后一页' : '';
     loadStatus.textContent = current.restoring ? `正在打开第 ${position.page + 1} 页${current.pages[position.page]?.state === 'error' ? '，可在页面中重试' : '…'}` : `已加载 ${loaded} / ${current.pages.length} 页${failed ? `，${failed} 页可重试` : ''}${lastPage}`;
     if (current.download?.complete) loadStatus.textContent = '本地阅读 · ' + loadStatus.textContent;
-    const navigation = pageNavigation(position.page, current.pages.length);
     prevPage.disabled = navigation.previous === null; nextPage.disabled = navigation.next === null;
     zoomButton.disabled = !current.pages.length;
     pageInput.disabled = jump.disabled = false;
@@ -458,9 +478,10 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const valid = () => active(current) && page.ticket === ticket && page.state === 'loading';
     function settle(ok, message = '', kind = 'image_decode') {
       if (!valid()) return;
-      const position = current.restoring ? current.restoreTarget : locate(current);
+      let position = current.restoring ? current.restoreTarget : locate(current);
       current.inflight = Math.max(0, current.inflight - 1);
-      page.state = ok ? 'loaded' : 'error'; page.figure.dataset.state = page.state;
+      page.empty = ok && transparentPixel(page.image);
+      page.state = ok ? page.empty ? 'empty' : 'loaded' : 'error'; page.figure.dataset.state = page.state;
       // Once decoded the <img> retains its pixels; the Blob URL and request
       // can be released without retaining the downloaded buffer for the chapter.
       releaseImage(page, !ok);
@@ -471,8 +492,18 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
         page.figure.style.aspectRatio = `1 / ${page.ratio}`;
         if (mode === 'continuous') page.figure.style.width = `${widthForPage(page)}px`;
         page.placeholder.hidden = true;
+        if (page.empty) {
+          // Keep source indices for saved progress and downloaded page keys.
+          page.figure.setAttribute('aria-hidden', 'true'); current.layoutKey = null;
+          if (current.pages.every(item => item.empty)) {
+            clean(current); current.pages = [];
+            chapterError(current, new Error('这个漫画源只返回了空白占位图，请返回详情换源')); return;
+          }
+          position = contentPosition(current, position);
+          if (current.restoring) current.restoreTarget = contentPosition(current, current.restoreTarget);
+        }
         setPosition(current, position);
-        if (current.restoring && page.index === current.restoreTarget.page) {
+        if (current.restoring && current.pages[current.restoreTarget.page].state === 'loaded') {
           current.restoring = false;
           setPosition(current, current.restoreTarget);
         }
@@ -534,6 +565,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
         if (page.state === 'loading') stopImage(current, page);
         if (changed || page.state === 'error') {
           releaseImage(page, true); page.state = 'idle'; page.figure.dataset.state = 'idle';
+          page.empty = false; page.figure.removeAttribute('aria-hidden'); current.layoutKey = null;
           page.retry.hidden = true; page.placeholder.hidden = false;
         }
         page.url = urls[page.index];
@@ -562,7 +594,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const current = session;
     if (!active(current) || !current.pages.length || !Number.isFinite(page)) return;
     flush();
-    const target = {page: clampPage(page, current.pages.length), pageOffset: clampOffset(pageOffset)};
+    current.pageStep = page < current.position.page ? -1 : 1;
+    const target = contentPosition(current, {page, pageOffset});
     current.restoreTarget = target; current.restoring = current.pages[target.page].state !== 'loaded';
     setPosition(current, target); updateProgress(current); queueImages(current); scheduleSave(current);
     scroll.focus({preventScroll: true});
@@ -570,7 +603,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   function movePage(delta) {
     const current = session;
     if (!active(current) || !current.pages.length) return;
-    const navigation = pageNavigation(current.position.page, current.pages.length);
+    const navigation = pageNavigation(current);
     const page = delta < 0 ? navigation.previous : navigation.next;
     if (page !== null) jumpToPage(page, current.pageOffsets.get(page) || 0);
   }
@@ -585,7 +618,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   function chapterReadKey(current) {return `${sourceEntryKey(current.book)}::${current.chapter.url}`;}
   function reachedChapterEnd(current) {
     if (!active(current) || current.restoring || catalogOpen || settingsOpen || document.visibilityState === 'hidden') return false;
-    const last = current.pages.at(-1);
+    const lastIndex = availablePage(current, current.pages.length - 1, -1);
+    const last = lastIndex === null ? null : current.pages[lastIndex];
     if (!last || last.state !== 'loaded' || last.figure.hidden) return false;
     const bounds = last.figure.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
     const visual = globalThis.visualViewport;

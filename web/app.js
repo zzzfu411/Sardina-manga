@@ -1,5 +1,6 @@
 import {createSearchView} from './search-view.js';
 import {createReader} from './reader.js';
+import {api} from './api.js';
 import {createImageLoader} from './image-loader.js';
 import {createDownloads} from './downloads.js';
 import {createSourceCatalog} from './source-catalog.js';
@@ -102,22 +103,6 @@ function rememberProgress(book, progress, progressContext) {
       }
     }).catch(failed);
   } catch (error) {failed(error);}
-}
-async function api(path, body, signal) {
-  const controller = new AbortController(); let timedOut = false;
-  const abort = () => controller.abort();
-  if (signal?.aborted) abort(); else signal?.addEventListener('abort', abort, {once: true});
-  const timeout = setTimeout(() => {timedOut = true; controller.abort();}, 45000);
-  try {
-    const response = await fetch(path, {method: body ? 'POST' : 'GET', headers: body ? {'Content-Type': 'application/json'} : {}, body: body ? JSON.stringify(body) : undefined, signal: controller.signal});
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || `请求失败 (${response.status})`);
-    return payload.data;
-  } catch (error) {
-    if (timedOut) throw new Error('连接超时，请重试或切换漫画源');
-    if (error.name !== 'AbortError' && navigator.onLine === false) throw new Error('当前离线，请阅读已下载章节');
-    throw error;
-  } finally {clearTimeout(timeout); signal?.removeEventListener('abort', abort);}
 }
 function encode(value) { const bytes = new TextEncoder().encode(JSON.stringify(value)); return btoa(Array.from(bytes, b => String.fromCharCode(b)).join('')).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', ''); }
 function decode(value) { return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), c => c.charCodeAt(0)))); }
