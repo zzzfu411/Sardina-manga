@@ -17,7 +17,7 @@ from http.server import ThreadingHTTPServer
 from PIL import Image
 
 from client import providers as p
-from server import Application, Cache, Handler, ImageRedirect, validate_image, image_referer
+from server import Application, Cache, Handler, ImageRedirect, validate_image, image_referer, image_request_url
 from client.source_coverage import compare_sources, REFERENCE_SOURCES
 
 
@@ -268,6 +268,36 @@ class Adapters(unittest.TestCase):
                 ImageRedirect().redirect_request(urllib.request.Request('https://cf.mhgui.com/a'),None,302,'',{},url)
         req = ImageRedirect().redirect_request(urllib.request.Request('https://cf.mhgui.com/a'),None,302,'',{},'https://cf.mhgui.com/b')
         self.assertEqual(req.full_url, 'https://cf.mhgui.com/b')
+
+    def test_unicode_image_url_preserves_signed_query_and_existing_escapes(self):
+        raw = 'https://i.hamreus.com/comic/第 0话/%E5%9B%BE.jpg?cid=512778&key=a%2Fb+v==&name=图'
+        encoded = 'https://i.hamreus.com/comic/%E7%AC%AC%200%E8%AF%9D/%E5%9B%BE.jpg?cid=512778&key=a%2Fb+v==&name=%E5%9B%BE'
+        self.assertEqual(image_request_url(raw), encoded)
+        self.assertEqual(image_request_url(encoded), encoded)
+        for url in ('http://127.0.0.1/第0话.jpg', 'https://hamreus.com.evil.test/第0话.jpg'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                image_request_url(url)
+
+    def test_unicode_image_path_reaches_ascii_http_transport(self):
+        headers = Message(); headers['Content-Type'] = 'image/jpeg'
+        with patch('server.urllib.request.build_opener') as build:
+            response = build.return_value.open.return_value.__enter__.return_value
+            response.headers = headers; response.read.return_value = b'fixture-image'
+            self.assertEqual(Application()._image('manhuagui', 'https://i.hamreus.com/comic/第0话/1.jpg'), (b'fixture-image', 'image/jpeg'))
+            request = build.return_value.open.call_args.args[0]
+            self.assertEqual(request.selector, '/comic/%E7%AC%AC0%E8%AF%9D/1.jpg')
+            # putrequest reproduces the production ASCII encoding failure
+            # without connecting a socket or mocking the HTTP encoder.
+            connection = http.client.HTTPConnection('i.hamreus.com')
+            try:
+                connection.putrequest('GET', request.selector)
+            finally:
+                connection.close()
+
+    def test_unicode_image_redirect_is_encoded_without_double_escaping(self):
+        raw = 'https://i.hamreus.com/第0话/1.jpg?key=a%2Fb+v=='
+        request = ImageRedirect().redirect_request(urllib.request.Request('https://cf.mhgui.com/a'), None, 302, '', {}, raw)
+        self.assertEqual(request.full_url, 'https://i.hamreus.com/%E7%AC%AC0%E8%AF%9D/1.jpg?key=a%2Fb+v==')
 
     def test_dm5_and_manben_image_referer_uses_signed_chapter_id(self):
         self.assertEqual(image_referer('dm5', 'https://cdn.cdndm5.com/other/1.jpg?cid=463652&key=abc'), 'https://www.dm5.com/m463652/')

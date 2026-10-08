@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 import threading
 import time
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 import urllib.request
 
 from client import providers, comicbox_images, komiic, discovery, recommendations
@@ -60,6 +60,13 @@ def validate_image(url):
     return url
 
 
+def image_request_url(url):
+    # Decoded chapter manifests can contain Chinese paths and spaces. urllib
+    # requires an ASCII request target; keep existing escapes and signed query
+    # delimiters intact rather than parsing/rebuilding the query string.
+    return quote(validate_image(url), safe=":/?#[]@!$&'()*+,;=%")
+
+
 def image_referer(site, url):
     if site not in providers.SOURCES:
         return "https://" + urlparse(url).netloc + "/"
@@ -78,8 +85,7 @@ def image_referer(site, url):
 
 class ImageRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        validate_image(newurl)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        return super().redirect_request(req, fp, code, msg, headers, image_request_url(newurl))
 
 
 class Cache:
@@ -188,7 +194,7 @@ class Application:
         if any(host == domain or host.endswith('.' + domain) for domain in comicbox_images.IMAGE_DOMAINS):
             return comicbox_images.fetch_image(url)
         opener = urllib.request.build_opener(ImageRedirect(), urllib.request.HTTPSHandler(context=_ssl_context()))
-        with opener.open(urllib.request.Request(url, headers={'User-Agent': UA, 'Referer': image_referer(site, url)}), timeout=20) as response:
+        with opener.open(urllib.request.Request(image_request_url(url), headers={'User-Agent': UA, 'Referer': image_referer(site, url)}), timeout=20) as response:
             content_type = response.headers.get_content_type()
             if content_type not in ('image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'):
                 raise ValueError('源站没有返回受支持的图片')
