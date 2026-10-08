@@ -11,7 +11,7 @@ async (page, step = () => {}) => {
   await page.route('**/api/recommendations**', route => json(route, {items: [], origins: [], warnings: [], nextBatch: null}));
   await page.route('**/api/book-metadata', route => json(route, {}));
   await page.route('**/api/image?**', route => {
-    const url = new URL(route.request().url()).searchParams.get('url') || '';
+    const url = decodeURIComponent((route.request().url().match(/[?&]url=([^&]+)/) || [])[1] || '');
     if (failFirst && url.includes('touch-0.png')) return route.fulfill({status: 502, contentType: 'application/json', body: JSON.stringify({error: 'fixture image unavailable'})});
     return route.fulfill({contentType: 'image/png', path: '__ROOT__/tests/fixtures/reader-page.png'});
   });
