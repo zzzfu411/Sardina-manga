@@ -372,7 +372,7 @@ class Application:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Sardina/0.4.1"
+    server_version = "Sardina/0.4.2"
 
     def log_request(self, code="-", size="-"):
         # Image URLs may contain short-lived source tickets or signatures.

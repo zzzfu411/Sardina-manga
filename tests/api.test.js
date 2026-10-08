@@ -13,18 +13,18 @@ test('API errors keep a readable message even when a proxy returns text or broke
   await assert.rejects(api('/api/chapter-images', {}), /配额已用尽/);
 });
 
-test('foreground chapter reads retry a temporary failure once, preserving cancellation', async t => {
+test('chapter failures issue one request and respect cancellation', async t => {
   let calls = 0;
   t.mock.method(globalThis, 'fetch', async () => ++calls === 1 ? new Response('error code: 502', {status: 502}) : Response.json({data: {images: ['page']}}));
-  assert.deepEqual(await api('/api/chapter-images', {}), {images: ['page']});
-  assert.equal(calls, 2);
+  await assert.rejects(api('/api/chapter-images', {}), /HTTP 502/);
+  assert.equal(calls, 1);
   calls = 0;
   t.mock.method(globalThis, 'fetch', async () => {calls++; return Response.json({error: 'HTTP Error 403: Forbidden'}, {status: 502});});
   await assert.rejects(api('/api/chapter-images', {}), /漫画源暂时拒绝访问/);
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   calls = 0;
   const controller = new AbortController();
-  t.mock.method(globalThis, 'fetch', async () => {calls++; setTimeout(() => controller.abort(), 20); return new Response('error code: 502', {status: 502});});
+  controller.abort();
   await assert.rejects(api('/api/chapter-images', {}, controller.signal), {name: 'AbortError'});
-  assert.equal(calls, 1);
+  assert.equal(calls, 0);
 });

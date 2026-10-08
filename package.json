@@ -8,5 +8,5 @@
     "test:all": "python3 scripts/check.py --browser",
     "test:browser": "python3 scripts/check.py --browser-only"
   },
-  "version": "0.4.1"
+  "version": "0.4.2"
 }

@@ -35,9 +35,11 @@ async (page, step = () => {}) => {
   }, {book, chapter});
   const loaded = index => page.waitForFunction(i => document.querySelector(`.ry-reader-page[data-page="${i}"]`)?.dataset.state === 'loaded', index);
   const jump = async number => {await page.locator('#reader-page-input').fill(String(number)); await page.locator('#reader-jump').click();};
-  step('recover-text-502-and-skip-leading-placeholder');
-  await page.goto(base + path); await loaded(1);
-  assert(calls === 2, 'transient chapter failure did not retry exactly once');
+  step('manual-retry-text-502-and-skip-leading-placeholder');
+  await page.goto(base + path); await page.locator('.ry-chapter-error').waitFor();
+  assert(calls === 1, 'chapter failure triggered an automatic retry');
+  await page.locator('#reader-retry-chapter').click(); await loaded(1);
+  assert(calls === 2, 'manual retry did not issue exactly one request');
   assert(await page.locator('.ry-reader-page').count() === 8, 'source indices were removed');
   step('collapse-consecutive-placeholders');
   await jump(3); await loaded(4);
@@ -86,8 +88,8 @@ async (page, step = () => {}) => {
   failure = 'always'; const beforeFailure = calls;
   await page.goto(base + path); await page.locator('.ry-chapter-error').waitFor();
   const errorText = await page.locator('.ry-chapter-error').innerText();
-  assert(calls === beforeFailure + 2 && errorText.includes('HTTP 502') && !errorText.includes('expected pattern'), 'permanent failure was not bounded and readable');
+  assert(calls === beforeFailure + 1 && errorText.includes('HTTP 502') && !errorText.includes('expected pattern'), 'permanent failure was not bounded and readable');
   failure = 'none'; await page.locator('#reader-retry-chapter').click(); await loaded(4);
   assert(!errors.length, 'browser errors: ' + errors.join('; '));
-  return {transientRetry: true, readableError: errorText, seam, pagedSkip: true, opaquePixelPreserved: true, offlineIndexResume: true, manualRetry: true, errors};
+  return {singleRequest: true, readableError: errorText, seam, pagedSkip: true, opaquePixelPreserved: true, offlineIndexResume: true, manualRetry: true, errors};
 }

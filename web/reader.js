@@ -120,7 +120,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const directions = choices('reader-direction', '翻页方向', [['ltr', '从左向右'], ['rtl', '从右向左']], value => {direction = value; applyPreferences(); savePreferences();});
   const themes = choices('reader-theme', '阅读背景', [['dark', '深色'], ['light', '浅色']], value => {theme = value; applyPreferences(); savePreferences();});
   const preloads = choices('reader-prefetch', '提前加载', [['auto', '标准'], ['more', '多预读'], ['off', '省流']], value => {prefetch = value; savePreferences(); if (session) queueImages(session);});
-  const preloadHint = make('p', 'ry-reader-setting-hint', '标准提前加载 3–6 页，多预读 6–10 页，章末预读下一章首图；省流只加载可见页。Komiic 在标准模式下按需读取。');
+  const preloadHint = make('p', 'ry-reader-setting-hint', '标准提前加载 3–6 页，多预读 6–10 页；省流只加载可见页。Komiic 在标准模式下按需读取。');
   const modeHint = make('p', 'ry-reader-setting-hint', '逐页模式未放大时可左右滑动翻页，长图可切回连续阅读。');
   const widthLabel = make('label', 'ry-reader-width'); widthLabel.append(make('span', '', '页面宽度'));
   const widthValue = make('output'); widthValue.id = 'reader-width-value'; widthValue.setAttribute('for', 'reader-width'); widthLabel.append(widthValue);
@@ -270,8 +270,6 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     gestures.reset();
     if (!current) return;
     clearTimeout(current.saveTimer); clearTimeout(current.dimensionsTimer); clearTimeout(current.readTimer);
-    current.nextChapter?.controller.abort();
-    current.prefetched?.controller.abort();
     cancelAnimationFrame(current.frame); current.resize?.disconnect();
     for (const page of current.pages) {
       page.ticket++;
@@ -436,31 +434,6 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       const page = current.pages[index];
       if (page.state === 'idle') loadImage(current, page, index >= first && index <= last ? 0 : 1);
     }
-    prefetchNextChapter(current, {enabled: ahead > 0, visibleReady, last});
-  }
-  function prefetchNextChapter(current, {enabled, visibleReady, last}) {
-    const nextIndex = chapterNavigation(current.chapters, current.index).next;
-    const chapter = nextIndex === null ? null : current.chapters[nextIndex];
-    const nearEnd = last >= current.pages.length - 3;
-    if (!enabled || !nearEnd || !chapter || navigator.onLine === false) {
-      current.nextChapter?.controller.abort(); current.nextChapter = null; return;
-    }
-    if (current.nextChapter?.chapterUrl === chapter.url) return;
-    if (!visibleReady) return;
-    current.nextChapter?.controller.abort();
-    const nextChapter = {chapterUrl: chapter.url, controller: new AbortController(), data: null};
-    current.nextChapter = nextChapter;
-    const signal = nextChapter.controller.signal;
-    (async () => {
-      const local = await downloads?.getChapter(current.book, chapter);
-      if (signal.aborted) return;
-      if (local?.complete) {nextChapter.data = {images: local.urls}; return;}
-      const data = await api('/api/chapter-images', {siteId: current.book.siteId, chapterUrl: chapter.url, purpose: 'prefetch'}, signal);
-      if (signal.aborted || !Array.isArray(data?.images) || !data.images.length) return;
-      nextChapter.data = data;
-      const first = data.images[0];
-      if (typeof first === 'string' && /^https?:\/\//i.test(first)) await imageLoader.load(imageUrl(first, current.book.siteId), {signal, priority: 1});
-    })().catch(() => { /* A background miss is retried as foreground work when opened. */ });
   }
   function releaseImage(page, removeSource = false) {
     page.image.onload = page.image.onerror = null;
@@ -785,14 +758,10 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     if (!chapter?.url) return;
     flush(); const previous = session;
     const sameBook = previous && sourceEntryKey(previous.book) === sourceEntryKey(book);
-    const prefetched = !fresh && sameBook && previous.nextChapter?.data && previous.nextChapter.chapterUrl === chapter.url ? previous.nextChapter : null;
-    // Transfer a ready manifest and its first-image consumer together. The
-    // visible page can share that request instead of cancelling it mid-transfer.
-    if (prefetched) previous.nextChapter = null;
     if (!sameBook) manualUnread.clear();
     const request = scope.start(); clean(previous);
     loadPreferences(book);
-    const current = {scope: request, book: {...book}, chapters: [...chapters], chapter: {...chapter}, index, pages: [], inflight: 0, frame: 0, position: {page: 0, pageOffset: 0}, pageOffsets: new Map(), restoring: false, progressContext, prefetched};
+    const current = {scope: request, book: {...book}, chapters: [...chapters], chapter: {...chapter}, index, pages: [], inflight: 0, frame: 0, position: {page: 0, pageOffset: 0}, pageOffsets: new Map(), restoring: false, progressContext};
     current.feedback = feedback || createReadingFeedback({sessionId: crypto.randomUUID(), onFailure: detail => onFailure({...book}, detail), onRecovery: detail => onRecovery({...book}, detail)});
     current.manifestRefreshed = fresh; session = current; setCatalog(false, false); setSettings(false, false); catalogSearch.value = ''; catalogPage = 0;
     title.textContent = book.title || '漫画'; chapterLabel.textContent = [book.siteName || book.siteId || '', chapter.name || `第 ${index + 1} 章`, chapter.language].filter(Boolean).join(' · ');
@@ -813,7 +782,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       current.download = await downloads?.getChapter(book, chapter);
       if (!current.download?.urls.length) current.download = null;
       if (!active(current)) return;
-      const data = current.download && !fresh ? {images: current.download.urls} : prefetched?.data || await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url, ...(fresh ? {refresh: true} : {})}, request.controller.signal);
+      const data = current.download && !fresh ? {images: current.download.urls} : await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url, ...(fresh ? {refresh: true} : {})}, request.controller.signal);
       if (!active(current)) return;
       const urls = (Array.isArray(data?.images) ? data.images : []).filter(url => typeof url === 'string' && /^https?:\/\//i.test(url));
       if (!urls.length) throw new Error('这个漫画源没有返回可用图片，请重试或返回详情换源。');
