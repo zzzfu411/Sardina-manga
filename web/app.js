@@ -23,14 +23,22 @@ const state = {page: 'home', discoverTab: 'recommend', sites: [], groups: [], ke
 const navigation = createRouteHistory({history: window.history, location});
 const currentPath = () => location.pathname + location.search;
 let displayedPath = currentPath();
+let routeRestoreVersion = 0, awaitingReaderRestore = 0;
 let libraryStore;
 try {libraryStore = createLibraryStore({storage: localStorage});}
 catch {libraryStore = {books: [], issues: ['浏览器无法读取记录，请检查存储权限'], async save() {throw new Error('浏览器无法保存记录，请导出书架备份');}, flush() {}, async sync() {return shelf;}, recovery() {return '{}';}};}
 let shelf = libraryStore.books, shelfSaveGeneration = 0;
-let groupedShelfInput = null, groupedShelf = [];
+let groupedShelfInput = null, groupedShelfContext = [], groupedShelf = [];
 function shelfGroups() {
-  if (groupedShelfInput !== shelf) {groupedShelf = groupLibrary(shelf); groupedShelfInput = shelf;}
+  const contextInputs = [...state.groups.map(group => group.results), recommendations.getWorkContext()];
+  if (groupedShelfInput !== shelf || contextInputs.length !== groupedShelfContext.length || contextInputs.some((rows, index) => rows !== groupedShelfContext[index])) {
+    groupedShelf = groupLibrary(shelf, relationContext()); groupedShelfInput = shelf; groupedShelfContext = contextInputs;
+  }
   return groupedShelf;
+}
+function relationContext() {return [...shelf, ...state.groups.flatMap(group => group.results || []), ...recommendations.getWorkContext()];}
+function relatedBooks(book, books = shelf) {
+  return findRelatedBooks(book, books, relationContext());
 }
 let autoUpdates = readStore('revyunman.autoUpdates.v1', false) === true;
 const storedAttempts = readStore('revyunman.autoUpdateAttempts.v1', {});
@@ -109,6 +117,7 @@ function decode(value) { return JSON.parse(new TextDecoder().decode(Uint8Array.f
 function bookToken(book) { return encode([book.siteId, book.detailUrl, {title: book.title, coverUrl: book.coverUrl || ''}]); }
 function bookRoute(book) { return '/m/' + bookToken(book); }
 function route(path, replace = false) {
+  routeRestoreVersion++;
   closeAuxiliary(); navigation.navigate(path, {replace, background: resultRoute()}); displayedPath = currentPath();
 }
 function discoverPath(tab = state.discoverTab, selection = discovery.getSelection()) {
@@ -416,7 +425,7 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
       saveShelf(saveOptions);
     }
     renderDetail();
-    const related = resumeFrom && key(resumeFrom) !== key(state.book) && findRelatedBooks(state.book, [resumeFrom]).length ? resumeFrom : null;
+    const related = resumeFrom && key(resumeFrom) !== key(state.book) && relatedBooks(state.book, [resumeFrom]).length ? resumeFrom : null;
     if (related?.chapterUrl) {
       const match = matchChapterProgress(related, state.chapters);
       if (match) {
@@ -483,16 +492,24 @@ function renderDetail() {
   if (b.unavailableReason) text.append(el('p', 'source-unavailable', b.unavailableReason));
   const actions = el('div', 'detail-actions'); const saved = shelf.find(x => key(x) === key(b)); const resumeIndex = state.chapters.findIndex(c => c.url === saved?.chapterUrl);
   const start = button(resumeIndex >= 0 ? '继续阅读' : '开始阅读', 'primary', () => readChapter(Math.max(0, resumeIndex), {resume: resumeIndex >= 0})); start.disabled = !state.chapters.length;
-  const collect = button('', 'quiet', () => {
-    const current = shelf.find(item => key(item) === key(b)), favorite = !(current && current.favorite !== false);
-    remember(b, {favorite}); updateCollect(); toast(favorite ? '已加入收藏' : '已取消收藏，阅读进度已保留');
+  const collect = button('', 'quiet', async () => {
+    const related = relatedBooks(b), favorite = !related.some(item => item.favorite !== false);
+    const ids = new Set(related.map(key));
+    const stamp = related.reduce((value, item) => Math.max(value, (Number(item.favoriteChangedAt) || 0) + 1), Date.now());
+    if (favorite && !ids.has(key(b))) {
+      shelf = [rememberBook(null, b, {favorite}, stamp), ...shelf]; ids.add(key(b));
+    }
+    shelf = shelf.map(item => ids.has(key(item)) ? {...item, favorite, favoriteChangedAt: stamp} : item);
+    collect.disabled = true; updateCollect();
+    const saved = await saveShelf(); collect.disabled = false; updateCollect();
+    if (saved) toast(favorite ? '已加入收藏' : '已取消收藏，阅读进度已保留');
   });
   function updateCollect() {
-    const current = shelf.find(item => key(item) === key(b)), collected = !!current && current.favorite !== false;
+    const collected = relatedBooks(b).some(item => item.favorite !== false);
     collect.textContent = collected ? '取消收藏' : '加入收藏'; collect.setAttribute('aria-pressed', String(collected));
   }
   updateCollect();
-  const relatedProgress = findRelatedBooks(b, shelf).filter(item => key(item) !== key(b) && item.chapterUrl).sort((a, b) => (b.readAt || b.openedAt || 0) - (a.readAt || a.openedAt || 0))[0];
+  const relatedProgress = relatedBooks(b).filter(item => key(item) !== key(b) && item.chapterUrl).sort((a, b) => (b.readAt || b.openedAt || 0) - (a.readAt || a.openedAt || 0))[0];
   if (relatedProgress && resumeIndex < 0) {
     const match = matchChapterProgress(relatedProgress, state.chapters);
     const resumeOther = button(match ? `接着看：${state.chapters[match.index].name}` : '查看其他源的阅读位置', 'quiet', () => {
@@ -614,7 +631,9 @@ async function readChapter(index, {resume = false, push = true} = {}) {
   if (!state.chapters[index] || !state.book) return;
   $('#detail-dialog').close();
   const progressContext = captureProgressContext(state.book);
-  await reader.open({book: {...state.book}, chapters: [...state.chapters], index, resume, push, progressContext});
+  const opened = reader.open({book: {...state.book}, chapters: [...state.chapters], index, resume, push, progressContext});
+  // The reader is now in the top layer; restore its overlays before waiting for images.
+  syncOverlays(); await opened;
 }
 function closeReader(push = true) {
   const wasOpen = reader.isOpen();
@@ -626,8 +645,10 @@ function closeReader(push = true) {
   }
 }
 async function restoreRoute() {
+  const version = ++routeRestoreVersion, path = currentPath();
   displayedPath = currentPath(); closeAuxiliary();
   const parts = location.pathname.split('/').filter(Boolean);
+  awaitingReaderRestore = parts[0] === 'read' ? version : 0;
   closeReader(false); closeDetail(false); $('#shelf-dialog').close();
   try {
     if (parts[0] === 's') return await search(decodeURIComponent(parts.slice(1).join('/')), false);
@@ -644,10 +665,14 @@ async function restoreRoute() {
         const query = decodeURIComponent(background.slice(3));
         if (query !== state.keyword || !state.groups.length) void search(query, false); else setPage('search');
       } else setPage('home');
-      return await openBook(book, {push: false, chapterUrl: parts[0] === 'read' ? decode(parts[2]) : null});
+      const opened = openBook(book, {push: false, chapterUrl: parts[0] === 'read' ? decode(parts[2]) : null});
+      syncOverlays(); return await opened;
     }
     state.search?.abort(); state.search = null; cancelRetries(); searchView.reset(); state.keyword = ''; document.title = 'Sardina'; setPage('home');
-  } catch (e) {toast(`无法打开链接：${e.message}`); route('/', true); setPage('home'); document.title = 'Sardina';}
+  } catch (e) {
+    if (version !== routeRestoreVersion || currentPath() !== path) return;
+    toast(`无法打开链接：${e.message}`); route('/', true); setPage('home'); document.title = 'Sardina';
+  } finally {if (version === routeRestoreVersion) {awaitingReaderRestore = 0; syncOverlays();}}
 }
 function goHome(event) {event?.preventDefault(); state.search?.abort(); state.search = null; cancelRetries(); closeReader(false); closeDetail(false); state.keyword = ''; searchView.reset(); document.title = 'Sardina'; route('/'); setPage('home'); window.scrollTo({top: 0, behavior: 'instant'});}
 function showDiscover(tab = 'recommend', {push = true, scroll = true, selection = {}} = {}) {
@@ -682,6 +707,9 @@ function syncOverlays() {
   if (!names.includes('shelf')) $('#shelf-dialog').close();
   if (!names.includes('downloads')) downloads.close();
   if (!names.includes('sources')) sourceCatalog.close();
+  // A reading deep link first loads its details; opening overlays before the
+  // reader itself would leave them underneath its later showModal().
+  if (awaitingReaderRestore && awaitingReaderRestore === routeRestoreVersion && !reader.isOpen()) return;
   for (const name of names) {
     if (name === 'shelf' && !$('#shelf-dialog').open) showShelf({restore: true});
     if (name === 'downloads' && !$('#downloads-dialog').open) downloads.open(null, {restore: true});
@@ -718,7 +746,7 @@ $('#detail-dialog').addEventListener('cancel', e => {e.preventDefault(); closeDe
 for (const id of ['detail-dialog', 'shelf-dialog']) $('#' + id).addEventListener('click', e => {if (e.target !== e.currentTarget) return; const r = e.currentTarget.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) id === 'detail-dialog' ? closeDetail() : closeOverlay('shelf');});
 window.addEventListener('popstate', () => {
   if (currentPath() === displayedPath) {syncOverlays(); return;}
-  const restored = restoreRoute(); syncOverlays(); void restored.then(syncOverlays);
+  void restoreRoute();
 });
 const READER_PREFS = 'revyunman.reader.preferences.v2', BOOK_READER_PREFS = 'revyunman.reader.books.v1';
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -769,7 +797,7 @@ async function init() {
   if (libraryStore.issues.length) toast(libraryStore.issues.join('；'));
   void api('/api/home-sections').then(home => coverWall.setBooks(home.featured || [])).catch(() => {});
   try {state.sites = await api('/api/sites');} catch {toast('漫画源连接失败，可从书架打开已下载的章节');}
-  const restored = restoreRoute(); syncOverlays(); await restored; syncOverlays();
+  await restoreRoute();
   maybeAutoUpdate();
 }
 init();

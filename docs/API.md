@@ -26,7 +26,7 @@
 | `POST /api/search` | `keyword`：1–100 字；`siteId`：可选，省略时搜索全部已启用源 | 按源分组的数组，每组含 `siteId`、`siteName`、`results`、`elapsedMs`；失败组附带 `error` |
 | `POST /api/details` | `siteId`、`detailUrl`；可选 `refresh: true` | 作品资料及 `chapters`；受限来源可能附带 `unavailableReason` |
 | `POST /api/chapter-images` | `siteId`、`chapterUrl`；可选 `refresh: true` | `images` 数组，按阅读顺序排列 |
-| `POST /api/book-metadata` | `siteId`、`detailUrl` | 轻量作品资料，不读取整本目录；仅部分源支持 |
+| `POST /api/book-metadata` | `siteId`、`detailUrl`；可选 `refresh: true` | 轻量作品资料，不读取整本目录；刷新时重新获取不完整资料，仅部分源支持 |
 
 调用顺序：从 `/api/sites` 取得 `siteId`，搜索结果中取得 `detailUrl`，详情的 `chapters[].url` 用作 `chapterUrl`。地址必须与对应来源匹配。
 

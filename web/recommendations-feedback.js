@@ -1,4 +1,4 @@
-import {sameWork, sourceEntryKey, workIdentity, workAuthorKey} from './book-identity.js';
+import {createWorkRelations, sourceEntryKey, workIdentity, workAuthorKey} from './book-identity.js';
 
 export const RECOMMENDATION_FEEDBACK_KEY = 'revyunman.recommendations.v1';
 export const FEEDBACK_LIMITS = Object.freeze({dismissed: 300, exposures: 600, exposureDays: 28});
@@ -44,7 +44,7 @@ function bound(state, now) {
 const exposureIn = (state, book, now) => state.exposures.find(row => row.at > now - FEEDBACK_LIMITS.exposureDays * DAY &&
   (row.key === workIdentity(book) || row.entryKey === sourceEntryKey(book))) || null;
 
-function apply(state, operation, now) {
+function apply(state, operation, now, context = []) {
   state.revisionAt = Math.max(state.revisionAt, operation.at);
   if (operation.type === 'preference') {
     if (compare(operation, state.preferenceStamp) > 0) {
@@ -69,14 +69,16 @@ function apply(state, operation, now) {
     if (compare(operation, state.preferenceStamp) > 0) {
       state.personalization = operation.personalization; state.preferenceStamp = stamp(operation);
     }
+    const relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, ...operation.books]);
     for (const book of operation.books) {
-      state.dismissed = [{book, ...stamp(operation), removed: false}, ...state.dismissed.filter(row => !sameWork(row.book, book))];
+      state.dismissed = [{book, ...stamp(operation), removed: false}, ...state.dismissed.filter(row => !relations.sameWork(row.book, book))];
     }
   } else if (operation.type === 'dismiss' || operation.type === 'undo') {
-    const previous = state.dismissed.filter(row => sameWork(row.book, operation.book));
+    const relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, operation.book]);
+    const previous = state.dismissed.filter(row => relations.sameWork(row.book, operation.book));
     if (compare(operation, state.dismissalFloor) <= 0 || previous.some(row => compare(row, operation) >= 0)) return state;
     state.dismissed = [{book: operation.book, ...stamp(operation), removed: operation.type === 'undo'},
-      ...state.dismissed.filter(row => !sameWork(row.book, operation.book))];
+      ...state.dismissed.filter(row => !relations.sameWork(row.book, operation.book))];
     if (operation.type === 'dismiss') state.metrics.dismissals = count(state.metrics.dismissals + 1);
   } else if (operation.type === 'exposure') {
     const previous = exposureIn(state, operation.book, operation.at);
@@ -96,6 +98,7 @@ function apply(state, operation, now) {
 export function createRecommendationFeedback({storage, now = Date.now, locks = globalThis.navigator?.locks,
   events = globalThis, actorId = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)} = {}) {
   let warning = '', corrupt = false, state = empty(), clock = 0, sequence = 0, queue = Promise.resolve(), observedRaw;
+  let workContext = [], relationCache = null;
   const openedBooks = new Map(), listeners = new Set(), pending = [];
   const storedRaw = () => storage?.getItem(RECOMMENDATION_FEEDBACK_KEY) || null;
   try {if (storage === undefined) storage = globalThis.localStorage; observedRaw = storedRaw(); state = read(observedRaw);}
@@ -112,7 +115,7 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
     try {
       const raw = storedRaw(); if (raw === observedRaw) return;
       const next = read(raw);
-      for (const operation of pending) apply(next, operation, now());
+      for (const operation of pending) apply(next, operation, now(), workContext);
       changed = JSON.stringify(next) !== JSON.stringify(state);
       adopt(next); observedRaw = raw;
     } catch {corrupt = true; warning = '本地推荐记录未能读取，原记录已保留；可在推荐设置中清空后重建。'; changed = true;}
@@ -124,12 +127,12 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
     try {
       let next;
       try {next = read();} catch {if (!operations.some(operation => operation.type === 'clear')) throw new Error('corrupt'); next = empty();}
-      for (const operation of operations) apply(next, operation, now());
+      for (const operation of operations) apply(next, operation, now(), workContext);
       const serialized = JSON.stringify(next);
       if (!storage?.setItem) throw new Error('unavailable');
       storage.setItem(RECOMMENDATION_FEEDBACK_KEY, serialized); observedRaw = serialized;
       pending.splice(0, operations.length); corrupt = false; warning = '';
-      for (const operation of pending) apply(next, operation, now());
+      for (const operation of pending) apply(next, operation, now(), workContext);
       adopt(next);
     } catch (error) {
       if (error.message === 'corrupt') {corrupt = true; warning = '本地推荐记录未能读取，原记录已保留；可在推荐设置中清空后重建。';}
@@ -139,7 +142,7 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
   }
   function submit(type, data = {}) {
     const operation = {type, ...data, epoch: {...state.epoch}, at: clock = Math.max(now(), state.revisionAt + 1, clock + 1), id: `${actorId}:${++sequence}`};
-    pending.push(operation); adopt(apply(copy(state), operation, now()));
+    pending.push(operation); adopt(apply(copy(state), operation, now(), workContext));
     if (locks?.request) queue = queue.catch(() => {}).then(() => locks.request('revyunman-recommendations-v2', commit));
     else commit();
     return operation.id;
@@ -152,8 +155,19 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
     if ((event.key === RECOMMENDATION_FEEDBACK_KEY || event.key === null) && (!event.storageArea || event.storageArea === storage)) sync(true);
   };
   events?.addEventListener?.('storage', onStorage);
+  function relationsFor(book) {
+    if (relationCache?.rows !== state.dismissed || relationCache?.context !== workContext) {
+      const books = [...state.dismissed.map(row => row.book), ...workContext];
+      relationCache = {rows: state.dismissed, context: workContext, books, relations: createWorkRelations(books)};
+    }
+    return relationCache.relations.has(book) ? relationCache.relations : createWorkRelations([...relationCache.books, book]);
+  }
   return {
-    isDismissed(book) {return state.dismissed.some(row => !row.removed && sameWork(row.book, book));},
+    setWorkContext(books) {workContext = books;},
+    isDismissed(book) {
+      const relations = relationsFor(book);
+      return state.dismissed.some(row => !row.removed && relations.sameWork(row.book, book));
+    },
     exposure: book => exposureIn(state, book, now()),
     dismiss(book) {if (validBook(book)) {sync(); submit('dismiss', {book: minimalBook(book)});}},
     undo(book) {if (validBook(book)) {sync(); submit('undo', {book: minimalBook(book)});}},

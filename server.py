@@ -255,6 +255,9 @@ class Application:
 
     def book_metadata(self, body):
         site, url = body.get("siteId"), body.get("detailUrl")
+        refresh = body.get("refresh", False)
+        if type(refresh) is not bool:
+            raise ValueError("刷新参数无效")
         if self.mode != "native" or site not in providers.METADATA_SITES:
             raise ValueError("此源暂不支持轻量作品资料")
         providers.validate_url(site, url)
@@ -265,7 +268,7 @@ class Application:
                 return self.source_request(site, 'metadata', lambda: providers.metadata(site, url))
             finally:
                 self.book_metadata_slots.release()
-        return self.book_metadata_cache.get((site, url), 6 * 3600, load)
+        return self.book_metadata_cache.get((site, url), 6 * 3600, load, refresh=refresh)
 
     def discovery_cover(self, body):
         if self.mode != "native":

@@ -53,16 +53,8 @@ export function workIdentity(book) {
 }
 
 /** Missing authors must never bridge two unrelated same-title works. */
-export function sameWork(left, right) {
-  if (!left || !right) return false;
-  if (sourceEntryKey(left) === sourceEntryKey(right)) return true;
-  if (!searchTitleKey(left.title) || searchTitleKey(left.title) !== searchTitleKey(right.title) ||
-      editionKey(left.edition) !== editionKey(right.edition) || languageKey(left.language) !== languageKey(right.language)) return false;
-  const a = workAuthorKey(left.author).split('+').filter(Boolean), b = workAuthorKey(right.author).split('+').filter(Boolean);
-  if (!a.length || !b.length) return false;
-  if (a.join('+') === b.join('+')) return true;
-  const shared = a.filter(name => b.includes(name));
-  return shared.length > 0 && (a.every(name => b.includes(name)) || b.every(name => a.includes(name))) || shared.length >= 2;
+export function sameWork(left, right, context = []) {
+  return Boolean(left && right && createWorkRelations([...context, left, right]).sameWork(left, right));
 }
 
 /** Group using the same credit evidence as search. Unknown authors stay separate;
@@ -79,4 +71,28 @@ export function groupWorks(books = []) {
   const order = new Map(entries.map((book, index) => [sourceEntryKey(book), index]));
   return groups.map(group => ({...group, books: group.books.sort((a, b) => order.get(sourceEntryKey(a)) - order.get(sourceEntryKey(b)))}))
     .sort((a, b) => order.get(sourceEntryKey(a.books[0])) - order.get(sourceEntryKey(b.books[0])));
+}
+
+/** Relations must retain all known conflicting credits, not just each pair. */
+export function createWorkRelations(books = []) {
+  const entries = new Map(), owners = new Map();
+  for (const book of books) {
+    if (!book || typeof book !== 'object') continue;
+    const key = sourceEntryKey(book), previous = entries.get(key);
+    // A sparse feed for a saved URL cannot erase its known identity evidence.
+    entries.set(key, previous ? {...previous, ...book,
+      title: text(book.title) || previous.title, author: workAuthorKey(book.author) ? book.author : previous.author,
+      edition: text(book.edition) || previous.edition, language: text(book.language) || previous.language} : book);
+  }
+  const groups = groupWorks([...entries.values()]);
+  for (const group of groups) for (const book of group.books) owners.set(sourceEntryKey(book), group);
+  return {
+    groups,
+    has: book => owners.has(sourceEntryKey(book)),
+    related: book => owners.get(sourceEntryKey(book))?.books || [],
+    sameWork(left, right) {
+      const a = sourceEntryKey(left), b = sourceEntryKey(right);
+      return a === b || owners.has(a) && owners.get(a) === owners.get(b);
+    },
+  };
 }

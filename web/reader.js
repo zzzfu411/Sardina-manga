@@ -246,6 +246,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     // Chrome overlays the canvas, so toggling it does not resize or reposition
     // the comic. Pointer users keep focus on the reading surface.
     if (root.open) (!focused && focusControls ? focusButton : scroll).focus({preventScroll: true});
+    refreshChapterVisibility();
     if (session) requestFrame(session);
   }
   function active(current) {return session === current && scope.isCurrent(current?.scope) && root.open;}
@@ -579,7 +580,6 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const navigation = chapterNavigation(current.chapters, current.index);
     const index = delta < 0 ? navigation.previous : navigation.next;
     if (index === null) return;
-    if (delta > 0 && reachedChapterEnd(current)) markChapterRead(current);
     open({book: current.book, chapters: current.chapters, index, resume: false, push: true, progressContext: current.progressContext, feedback: current.feedback});
   }
   function chapterReadKey(current) {return `${sourceEntryKey(current.book)}::${current.chapter.url}`;}
@@ -588,8 +588,15 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const last = current.pages.at(-1);
     if (!last || last.state !== 'loaded' || last.figure.hidden) return false;
     const bounds = last.figure.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
-    const visibleBottom = Math.min(viewport.bottom, globalThis.visualViewport ? visualViewport.offsetTop + visualViewport.height : viewport.bottom);
-    return bounds.bottom > viewport.top && bounds.top < visibleBottom && bounds.bottom <= visibleBottom + 2;
+    const visual = globalThis.visualViewport;
+    const top = Math.max(viewport.top, visual?.offsetTop || 0), bottom = Math.min(viewport.bottom, visual ? visual.offsetTop + visual.height : viewport.bottom);
+    const left = Math.max(viewport.left, visual?.offsetLeft || 0), right = Math.min(viewport.right, visual ? visual.offsetLeft + visual.width : viewport.right);
+    // Native modal backdrops make the underlying reader inert without changing
+    // its geometry. Hit testing also works when several dialogs remain open.
+    if (document.elementFromPoint((left + right) / 2, (top + bottom) / 2)?.closest('dialog') !== root) return false;
+    const visibleTop = header.getClientRects().length ? Math.max(top, header.getBoundingClientRect().bottom) : top;
+    const visibleBottom = toolbar.getClientRects().length ? Math.min(bottom, toolbar.getBoundingClientRect().top) : bottom;
+    return bounds.bottom > visibleTop && bounds.top < visibleBottom && bounds.bottom <= visibleBottom + 2;
   }
   function markChapterRead(current) {
     if (typeof onChapterRead !== 'function' || current.autoReadDone || manualUnread.has(chapterReadKey(current)) || isChapterRead(current.book, current.chapter)) return;
@@ -610,6 +617,11 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       current.readTimer = null;
       if (reachedChapterEnd(current)) markChapterRead(current);
     }, 800);
+  }
+  function refreshChapterVisibility() {
+    if (!session) return;
+    clearTimeout(session.readTimer); session.readTimer = null;
+    scheduleChapterRead(session);
   }
   function updateChapterRead() {
     if (!session) return;
@@ -657,6 +669,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     if (!catalogOpen) catalogList.replaceChildren();
     catalogButton.setAttribute('aria-expanded', String(catalogOpen)); settingsButton.setAttribute('aria-expanded', String(settingsOpen));
     for (const element of [header, scroll, toolbar, exitFocus]) element.inert = catalogOpen || settingsOpen;
+    refreshChapterVisibility();
   }
   function catalogRows() {
     if (!session) return [];
@@ -921,7 +934,13 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     else if (session) requestFrame(session);
   });
   window.addEventListener('pagehide', () => {gestures.reset(); flush();});
-  globalThis.visualViewport?.addEventListener('resize', applySwipeAvailability);
+  // Opening or closing another native dialog must interrupt the visible dwell,
+  // including short visits which finish before the old timer would have fired.
+  new MutationObserver(records => {
+    if (records.some(record => record.target instanceof HTMLDialogElement)) refreshChapterVisibility();
+  }).observe(document.body, {subtree: true, attributes: true, attributeFilter: ['open']});
+  globalThis.visualViewport?.addEventListener('resize', () => {applySwipeAvailability(); refreshChapterVisibility();});
+  globalThis.visualViewport?.addEventListener('scroll', refreshChapterVisibility);
   applyPreferences();
   return {open, close, flush, updateCatalog, refreshReadingState, isOpen: () => !!root.open};
 }

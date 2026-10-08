@@ -1,7 +1,7 @@
 export const READING_STATES = {reading: '在读', later: '想读', finished: '已读'};
-import {groupWorks, sourceEntryKey} from './book-identity.js';
+import {createWorkRelations, sourceEntryKey} from './book-identity.js';
 import {searchTitleKey} from './search-results-model.js';
-import {metadataText} from './search-model.js';
+import {metadataText, normalizeTitle} from './search-model.js';
 import {simplifySearchText} from './search-characters.js';
 export const bookKey = sourceEntryKey;
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
@@ -11,6 +11,7 @@ export const readingState = book => Object.hasOwn(READING_STATES, book?.readingS
 export const readTime = book => hasProgress(book) ? time(book.readAt) || time(book.openedAt) : 0;
 const progressFields = ['chapterUrl', 'chapterName', 'page', 'pageOffset', 'totalPages', 'readAt'];
 const normalized = value => searchTitleKey(String(value || ''));
+const literal = value => normalizeTitle(simplifySearchText(metadataText(value).normalize('NFKC')).replace(/\p{Cf}/gu, ''));
 const validUrl = value => {try {const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password;} catch {return false;}};
 
 export function normalizeChapterStates(value) {
@@ -71,25 +72,27 @@ export function libraryCounts(books) {
 }
 
 export function filterLibrary(books, {query = '', state = 'all', sort = 'recent'} = {}) {
-  const needle = normalized(query).trim();
+  const needle = normalized(query).trim(), literalNeedle = literal(query);
   return books.filter(book => (state === 'all' || readingState(book) === state) &&
     (!needle || [book, ...(book.variants || [])].some(item => [item.title, ...(item.alternateTitles || []), item.author, item.siteName, item.siteId]
-      .some(value => normalized(value).includes(needle)))))
+      .some(value => literal(value).includes(literalNeedle) || normalized(value).includes(needle)))))
     .sort(sort === 'title' ? (a, b) => a.title.localeCompare(b.title, 'zh-CN') :
       (a, b) => (readTime(b) || time(b.openedAt)) - (readTime(a) || time(a.openedAt)));
 }
 
-export function groupLibrary(books) {
-  return groupWorks(books).map(group => {
-    const variants = [...group.books].sort((a, b) => (readTime(b) || time(b.openedAt)) - (readTime(a) || time(a.openedAt)));
-    return {key: group.key, book: variants[0], variants};
+export function groupLibrary(books, context = books) {
+  const saved = new Map(books.map(book => [bookKey(book), book]));
+  return createWorkRelations([...context, ...books]).groups.flatMap(group => {
+    const variants = group.books.map(book => saved.get(bookKey(book))).filter(Boolean)
+      .sort((a, b) => (readTime(b) || time(b.openedAt)) - (readTime(a) || time(a.openedAt)));
+    return variants.length ? [{key: group.key, book: variants[0], variants}] : [];
   });
 }
 
-export function findRelatedBooks(book, books) {
+export function findRelatedBooks(book, books, context = books) {
   const key = bookKey(book), saved = new Map(books.map(item => [bookKey(item), item]));
-  const related = groupWorks([book, ...books.filter(item => bookKey(item) !== key)]).find(group => group.books.some(item => bookKey(item) === key));
-  return (related?.books || []).map(item => saved.get(bookKey(item))).filter(Boolean);
+  const related = createWorkRelations([...context, ...books.filter(item => bookKey(item) !== key), book]).related(book);
+  return related.map(item => saved.get(bookKey(item))).filter(Boolean);
 }
 
 const chapterText = value => simplifySearchText(metadataText(value).normalize('NFKC')).toLowerCase();
@@ -97,7 +100,7 @@ const chapterName = value => chapterText(value).replace(/^chapter\s*/iu, '第').
 function chapterNumber(value) {
   const name = chapterText(value).replace(/^chapter\s*/iu, '第');
   // Specials and volume editions may reuse the regular chapter numbering.
-  if (/番外|外传|公告|宣传|序章|前传|卷|季|部|上篇|下篇|上半|下半/u.test(name)) return null;
+  if (/番外|外传|公告|宣传|序章|前传|卷|季|部|[上中下前后](?:篇|半)|[（(【\[]\s*[上中下前后]\s*[）)】\]]|(?:话|章|回|集)\s*[上中下]\s*$|\bpart\s*\d+/u.test(name)) return null;
   const match = name.match(/^(?:第\s*)?([\d零〇一二两三四五六七八九十百千]+(?:\.\d+)?)(?:\s*[话章回集]|\s+|[-_:：]|$)/u);
   if (!match) return null;
   if (/^\d/.test(match[1])) return Number.isFinite(Number(match[1])) ? Number(match[1]) : null;
