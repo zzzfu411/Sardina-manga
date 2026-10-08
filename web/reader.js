@@ -150,8 +150,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const shade = action('reader-catalog-shade', '', () => {if (settingsOpen) setSettings(false); else setCatalog(false);}, '关闭面板'); shade.className = 'ry-reader-catalog-shade'; shade.hidden = true; shade.tabIndex = -1;
   root.append(header, exitFocus, scroll, toolbar, shade, catalog, settings);
   const gestures = createReaderGestures({
-    onTap: point => {if (active(point.session) && !catalogOpen && !settingsOpen) setFocused(!focused, false);},
-    onDoubleTap: point => {if (active(point.session) && !catalogOpen && !settingsOpen) setZoom(zoom === 1 ? 2 : 1, {target: point.zoomTarget, clientX: point.x, clientY: point.y});},
+    onTap: () => setFocused(!focused, false),
+    onDoubleTap: point => setZoom(zoom === 1 ? 2 : 1, {target: point.zoomTarget, clientX: point.x, clientY: point.y}),
   });
 
   function savePreferences() {
@@ -751,7 +751,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const interactive = target?.closest('button, a, input, select, textarea, label, [role="button"], [contenteditable="true"]');
     return {id: event.pointerId, type: event.pointerType, button: event.button, x: event.clientX, y: event.clientY, time: event.timeStamp,
       eligible: active(session) && !catalogOpen && !settingsOpen && scroll.contains(target) && !interactive,
-      zoomTarget: target?.closest('.ry-reader-page[data-state="loaded"]'), session};
+      zoomTarget: target?.closest('.ry-reader-page[data-state="loaded"]')};
   }
   // Track the whole dialog, including a second finger landing on a toolbar.
   root.addEventListener('pointerdown', event => gestures.down(gesturePoint(event)), {capture: true, passive: true});

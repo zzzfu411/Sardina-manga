@@ -1,11 +1,11 @@
 // Resolve a single tap only after the short double-tap window. Never consume
 // native pointer events: scrolling, pinch zoom and the long-press menu stay native.
-export function createReaderGestures({onTap, onDoubleTap, schedule = setTimeout, unschedule = clearTimeout}) {
+export function createReaderGestures({onTap, onDoubleTap}) {
   const pointers = new Set();
   const delay = 260, movement = 8, hold = 400;
   let candidate = null, pending = null, timer = null;
   function clearPending() {
-    if (timer !== null) unschedule(timer);
+    clearTimeout(timer);
     timer = null; pending = null;
   }
   function cancel() {candidate = null; clearPending();}
@@ -16,7 +16,7 @@ export function createReaderGestures({onTap, onDoubleTap, schedule = setTimeout,
     const second = pending && point.time - pending.time <= delay && point.type === pending.type
       && Math.hypot(point.x - pending.x, point.y - pending.y) <= 28;
     if (second) {
-      if (timer !== null) unschedule(timer);
+      clearTimeout(timer);
       timer = null;
     } else if (pending) {
       const first = pending; clearPending(); onTap(first);
@@ -42,7 +42,7 @@ export function createReaderGestures({onTap, onDoubleTap, schedule = setTimeout,
       else onTap(point);
     } else {
       pending = point;
-      timer = schedule(() => {const tap = pending; timer = null; pending = null; if (tap) onTap(tap);}, delay);
+      timer = setTimeout(() => {timer = null; pending = null; onTap(point);}, delay);
     }
   }
   function pointerCancel(point) {pointers.delete(point.id); cancel();}

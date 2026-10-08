@@ -40,12 +40,6 @@ async (page, step = () => {}) => {
   try {
     await page.goto(base + '/');
     const path = await page.evaluate(async ({book, chapters}) => {
-      const {sourceEntryKey} = await import('/book-identity.js');
-      const key = sourceEntryKey(book);
-      localStorage.removeItem('revyunman.library.v2.book.' + encodeURIComponent(key));
-      const prefs = JSON.parse(localStorage.getItem('revyunman.reader.books.v1') || '{}'); delete prefs[key];
-      localStorage.setItem('revyunman.reader.books.v1', JSON.stringify(prefs));
-      localStorage.setItem('revyunman.reader.preferences.v2', JSON.stringify({mode: 'continuous', fit: 'width', focused: false, zoom: 1, prefetch: 'auto'}));
       const encode = value => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(value)))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
       return '/read/' + encode([book.siteId, book.detailUrl, {title: book.title}]) + '/' + encode(chapters[0].url);
     }, {book, chapters});
