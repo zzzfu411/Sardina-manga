@@ -467,7 +467,7 @@ class HTTPTests(unittest.TestCase):
                 connection.close()
 
     def test_module_static_routes_are_exact_and_have_correct_mime(self):
-        names = ('search-model.js', 'search-view.js', 'search.css', 'reader.js', 'reader-model.js', 'reader-transport.js', 'reader.css',
+        names = ('search-model.js', 'search-view.js', 'search.css', 'reader.js', 'reader-model.js', 'reader-transport.js', 'reader-gestures.js', 'reader.css',
                  'source-catalog.js', 'source-catalog.css', 'source-preferences.js', 'library-model.js', 'library.css',
                  'library-updates.js', 'discovery.js', 'discovery-model.js', 'discovery.css',
                  'recommendations.js', 'recommendations-model.js', 'recommendations.css', 'cover-wall.js', 'cover-wall.css', 'home.css', 'discovery-covers.js')

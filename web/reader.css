@@ -26,7 +26,7 @@ dialog.reader-shell {
   overscroll-behavior: none;
   font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
-dialog.reader-shell[open] {display: grid; grid-template-rows: auto minmax(0, 1fr) auto;}
+dialog.reader-shell[open] {display: grid; grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);}
 .reader-shell *, .reader-shell *::before, .reader-shell *::after {box-sizing: border-box;}
 .reader-shell [hidden] {display: none !important;}
 .reader-shell button, .reader-shell input {font: inherit;}
@@ -52,6 +52,10 @@ dialog.reader-shell[open] {display: grid; grid-template-rows: auto minmax(0, 1fr
 .reader-shell .ry-reader-primary {background: var(--ry-accent); color: #fff;}
 .reader-shell .ry-reader-primary:not(:disabled):hover {background: #1668da;}
 .ry-reader-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -93,15 +97,19 @@ dialog.reader-shell[open] {display: grid; grid-template-rows: auto minmax(0, 1fr
 .reader-shell[data-mode="paged"] .ry-reader-end {display: none;}
 .reader-shell[data-mode="paged"] .ry-chapter-message {width: 100%; min-height: 0; max-height: 100%; overflow: auto;}
 .ry-page-placeholder {position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 20px; text-align: center; color: #c0ccdc;}
-.ry-reader-page[data-state="error"] .ry-page-placeholder {justify-content: flex-start; overflow: auto;}
+.ry-reader-page[data-state="error"] .ry-page-placeholder {justify-content: flex-start; padding-top: calc(100px + env(safe-area-inset-top)); overflow: auto;}
 .ry-page-number {font-size: 15px; font-weight: 600;}
 .ry-page-status {font-size: 12px; color: #9aaac1;}
 .ry-reader-page[data-state="loading"] .ry-page-number::before {content: ""; display: block; width: 22px; height: 22px; margin: 0 auto 18px; border: 2px solid #667991; border-top-color: #bcd7ff; border-radius: 50%; animation: ry-page-turn 1s linear infinite;}
 .reader-shell .ry-page-retry {margin-top: 3px; color: #d8e8ff; background: #32465f; border-color: #506b8b;}
 .reader-shell .ry-page-retry:not(:disabled):hover {background: #405d80;}
-.ry-reader-end {padding: 45px 20px 58px; text-align: center; color: #a9bad0; font-size: 13px; line-height: 1.8;}
+.ry-reader-end {padding: 45px 20px calc(170px + env(safe-area-inset-bottom)); text-align: center; color: #a9bad0; font-size: 13px; line-height: 1.8;}
 .ry-reader-end p {margin: 0 0 18px;}
 .ry-reader-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -129,15 +137,10 @@ dialog.reader-shell[open] {display: grid; grid-template-rows: auto minmax(0, 1fr
 .ry-chapter-error h2 {font-size: 19px; color: #e2edf9; font-weight: 600;}
 .ry-chapter-error p {overflow-wrap: anywhere; font-size: 13px; color: #afc0d6;}
 .ry-chapter-error {align-content: center;}
-.reader-shell .ry-reader-focus-exit {position: absolute; z-index: 4; right: max(20px, env(safe-area-inset-right)); bottom: calc(20px + env(safe-area-inset-bottom)); min-height: 44px; padding: 10px 16px; border: 1px solid #7992b475; border-radius: 24px; color: #e9f2ff; background: #243b58eb; box-shadow: 0 2px 14px #0003;}
-.reader-shell .ry-reader-focus-exit:hover {background: #2e507d;}
-dialog.reader-shell.ry-reader-focused {grid-template-rows: minmax(0, 1fr);}
+/* A keyboard/screen-reader escape remains available without a floating bubble. */
+.reader-shell .ry-reader-focus-exit {position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap;}
+.reader-shell .ry-reader-focus-exit:focus-visible {z-index: 4; top: calc(12px + env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); width: auto; height: auto; min-height: 44px; padding: 10px 16px; clip-path: none;}
 .ry-reader-focused .ry-reader-header, .ry-reader-focused .ry-reader-toolbar {display: none;}
-dialog.reader-shell.ry-reader-focused[data-mode="paged"] {grid-template-rows: minmax(0, 1fr) auto;}
-.reader-shell.ry-reader-focused[data-mode="paged"] .ry-reader-toolbar {display: flex; justify-content: center;}
-.ry-reader-focused[data-mode="paged"] .ry-reader-chapter-controls {display: none;}
-.ry-reader-focused[data-mode="paged"] .ry-reader-page-controls {margin-left: 0;}
-.reader-shell.ry-reader-focused[data-mode="paged"] .ry-reader-focus-exit {top: calc(12px + env(safe-area-inset-top)); bottom: auto;}
 .reader-shell .ry-reader-catalog-shade {position: absolute; z-index: 5; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: #10233d80;}
 .ry-reader-catalog {position: absolute; z-index: 6; inset: 0 0 0 auto; display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; width: min(460px, 100%); padding: calc(24px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) 24px; background: #f8fbff; box-shadow: -8px 0 36px #0b203d30;}
 .ry-reader-catalog-head {display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px;}
@@ -183,17 +186,18 @@ dialog.reader-shell.ry-reader-focused[data-mode="paged"] {grid-template-rows: mi
   .ry-reader-toolbar {justify-content: space-between; gap: 6px; padding: 8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); min-height: 60px;}
   .reader-shell .ry-reader-toolbar {justify-content: center;}
   .ry-reader-chapter-controls {justify-content: center; flex-wrap: wrap;}
-  .reader-shell .ry-reader-toolbar .ry-reader-button {padding: 9px 10px; font-size: 12px; min-height: 42px;}
+  .reader-shell .ry-reader-toolbar .ry-reader-button {padding: 9px 10px; font-size: 12px; min-height: 44px;}
   .ry-reader-chapter-controls, .ry-reader-page-controls {gap: 6px;}
   .ry-reader-page-controls {margin-left: auto;}
   .reader-shell .ry-reader-page-controls {margin-left: 0;}
   .ry-reader-page-jump {gap: 4px;}
-  .ry-reader-page-jump input {width: 42px; font-size: 12px;}
+  .ry-reader-page-jump input {width: 44px; min-height: 44px; font-size: 16px;}
   .ry-reader-page-jump > span {font-size: 10px;}
   .ry-reader-scroll {scrollbar-gutter: auto;}
   .ry-reader-catalog {padding: calc(18px + env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) 18px;}
   .ry-reader-catalog-head {margin-bottom: 18px;}
-  .reader-shell .ry-reader-focus-exit {right: max(12px, env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom)); font-size: 12px;}
+  .reader-shell .ry-reader-header .ry-reader-button {min-height: 44px;}
+  .ry-reader-catalog-tools input {font-size: 16px;}
   .reader-shell[data-mode="paged"] .ry-reader-toolbar {flex-direction: column; gap: 7px;}
   .reader-shell[data-mode="paged"] .ry-reader-page-controls {justify-content: center; width: 100%; margin-left: 0; gap: 12px;}
   .reader-shell[data-mode="paged"] .ry-reader-chapter-controls {justify-content: center; gap: 8px;}

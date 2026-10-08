@@ -425,6 +425,7 @@ class Handler(BaseHTTPRequestHandler):
                 files["/recommendations-ranking.js"] = "recommendations-ranking.js"
                 files["/route-history.js"] = "route-history.js"
                 files["/page-window.js"] = "page-window.js"
+                files["/reader-gestures.js"] = "reader-gestures.js"
                 files["/cover-pause.js"] = "cover-pause.js"
                 files["/recommendations-metadata.js"] = "recommendations-metadata.js"
                 files["/search-results-model.js"] = "search-results-model.js"

@@ -4,6 +4,7 @@ import {createImageLoader} from './image-loader.js';
 import {sourceEntryKey} from './book-identity.js';
 import {imageIdentity, localChapterCatalog} from './download-store.js';
 import {pageWindow, pageForIndex} from './page-window.js';
+import {createReaderGestures} from './reader-gestures.js';
 
 const PREFS_KEY = 'revyunman.reader.preferences.v2';
 const BOOK_PREFS_KEY = 'revyunman.reader.books.v1';
@@ -52,12 +53,14 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   heading.append(title, chapterLabel, loadStatus);
   const settingsButton = action('reader-settings-open', '设置', () => setSettings(true), '阅读设置');
   settingsButton.setAttribute('aria-expanded', 'false'); settingsButton.setAttribute('aria-controls', 'reader-settings');
-  const focusButton = action('reader-focus', '沉浸', () => setFocused(!focused), '进入沉浸阅读');
+  const focusButton = action('reader-focus', '收起', () => setFocused(!focused), '收起工具栏，轻点画面可重新显示');
   const zoomButton = action('reader-zoom-toggle', '放大', () => setZoom(zoom === 1 ? 2 : 1));
   header.append(back, heading, zoomButton, settingsButton, focusButton);
 
   const scroll = make('div', 'ry-reader-scroll'); scroll.id = 'reader-scroll'; scroll.tabIndex = 0;
   scroll.setAttribute('aria-label', '漫画页面，可滚动阅读');
+  scroll.setAttribute('aria-keyshortcuts', 'Enter F');
+  scroll.setAttribute('aria-describedby', 'reader-gesture-help');
   const canvas = make('div', 'ry-reader-canvas'); canvas.id = 'reader-pages';
   const ending = make('div', 'ry-reader-end'); ending.hidden = true;
   const endLabel = make('p'); endLabel.id = 'chapter-end-label';
@@ -119,10 +122,11 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const zoomValue = make('output'); zoomValue.id = 'reader-zoom-value'; zoomValue.setAttribute('for', 'reader-zoom'); zoomLabel.append(zoomValue);
   const zoomInput = make('input'); zoomInput.id = 'reader-zoom'; zoomInput.type = 'range'; zoomInput.min = '100'; zoomInput.max = '300'; zoomInput.step = '25'; zoomInput.setAttribute('aria-label', '放大比例'); zoomInput.oninput = () => setZoom(Number(zoomInput.value) / 100); zoomLabel.append(zoomInput);
   const zoomHint = make('p', 'ry-reader-setting-hint ry-reader-zoom-hint', '双击图片放大或还原，放大后可拖动查看。手机也可双指缩放。');
+  const gestureHint = make('p', 'ry-reader-setting-hint', '轻点画面可显示或收起工具栏。键盘可按 F，或聚焦画面后按 Enter。'); gestureHint.id = 'reader-gesture-help';
   const preferenceNote = make('p', 'ry-reader-preference-note', '设置仅用于当前这本漫画。');
   const defaults = make('div', 'ry-reader-default-actions');
   defaults.append(action('reader-use-defaults', '恢复默认', useDefaults), action('reader-save-defaults', '设为默认', saveDefaults));
-  settings.append(settingsHead, preferenceNote, modes.field, modeHint, directions.field, preloads.field, preloadHint, fits.field, zoomLabel, zoomHint, themes.field, widthLabel, defaults);
+  settings.append(settingsHead, preferenceNote, modes.field, modeHint, gestureHint, directions.field, preloads.field, preloadHint, fits.field, zoomLabel, zoomHint, themes.field, widthLabel, defaults);
 
   const catalog = make('section', 'ry-reader-catalog'); catalog.id = 'reader-catalog'; catalog.hidden = true;
   catalog.setAttribute('role', 'dialog'); catalog.setAttribute('aria-modal', 'true'); catalog.setAttribute('aria-labelledby', 'reader-catalog-title');
@@ -144,7 +148,11 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   catalogPagination.append(catalogPrevious, catalogCurrent, catalogNext);
   catalog.append(catalogHead, catalogTools, catalogCount, catalogList, catalogPagination);
   const shade = action('reader-catalog-shade', '', () => {if (settingsOpen) setSettings(false); else setCatalog(false);}, '关闭面板'); shade.className = 'ry-reader-catalog-shade'; shade.hidden = true; shade.tabIndex = -1;
-  root.append(header, scroll, toolbar, exitFocus, shade, catalog, settings);
+  root.append(header, exitFocus, scroll, toolbar, shade, catalog, settings);
+  const gestures = createReaderGestures({
+    onTap: point => {if (active(point.session) && !catalogOpen && !settingsOpen) setFocused(!focused, false);},
+    onDoubleTap: point => {if (active(point.session) && !catalogOpen && !settingsOpen) setZoom(zoom === 1 ? 2 : 1, {target: point.zoomTarget, clientX: point.x, clientY: point.y});},
+  });
 
   function savePreferences() {
     if (!session) return;
@@ -226,11 +234,12 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       queueImages(current); scheduleSave(current);
     }
   }
-  function setFocused(value) {
-    const position = session?.pages.length ? session.restoring ? session.restoreTarget : locate(session) : null;
+  function setFocused(value, focusControls = true) {
+    gestures.reset();
     focused = value; applyPreferences(); savePreferences();
-    if (position) setPosition(session, position);
-    if (root.open) (focused ? exitFocus : focusButton).focus({preventScroll: true});
+    // Chrome overlays the canvas, so toggling it does not resize or reposition
+    // the comic. Pointer users keep focus on the reading surface.
+    if (root.open) (!focused && focusControls ? focusButton : scroll).focus({preventScroll: true});
     if (session) requestFrame(session);
   }
   function active(current) {return session === current && scope.isCurrent(current?.scope) && root.open;}
@@ -244,6 +253,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     try {localStorage.setItem(SIZES_KEY, JSON.stringify(dimensions));} catch { /* Position is saved independently of this optional layout cache. */ }
   }
   function clean(current) {
+    gestures.reset();
     if (!current) return;
     clearTimeout(current.saveTimer); clearTimeout(current.dimensionsTimer);
     cancelAnimationFrame(current.frame); current.resize?.disconnect();
@@ -565,7 +575,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       catalogList.querySelector('[aria-current="true"]')?.scrollIntoView({block: 'nearest'});
     } else {
       catalogList.replaceChildren();
-      if (restoreFocus && root.open) (focused ? exitFocus : catalogButton).focus({preventScroll: true});
+      if (restoreFocus && root.open) (focused ? scroll : catalogButton).focus({preventScroll: true});
     }
   }
   function setSettings(value, restoreFocus = true) {
@@ -573,9 +583,10 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     if (settingsOpen) catalogOpen = false;
     syncPanels();
     if (settingsOpen) modes.inputs.find(input => input.checked)?.focus({preventScroll: true});
-    else if (restoreFocus && root.open) (focused ? exitFocus : settingsButton).focus({preventScroll: true});
+    else if (restoreFocus && root.open) (focused ? scroll : settingsButton).focus({preventScroll: true});
   }
   function syncPanels() {
+    gestures.reset();
     catalog.hidden = !catalogOpen; settings.hidden = !settingsOpen; shade.hidden = !catalogOpen && !settingsOpen;
     if (!catalogOpen) catalogList.replaceChildren();
     catalogButton.setAttribute('aria-expanded', String(catalogOpen)); settingsButton.setAttribute('aria-expanded', String(settingsOpen));
@@ -724,7 +735,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     }
   }
 
-  scroll.addEventListener('scroll', () => {if (session) requestFrame(session);}, {passive: true});
+  scroll.addEventListener('scroll', () => {gestures.cancel(); if (session) requestFrame(session);}, {passive: true});
   function manualScroll() {
     const current = session;
     if (mode !== 'continuous') return;
@@ -732,12 +743,26 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       current.restoring = false; current.position = locate(current); requestFrame(current);
     }
   }
-  scroll.addEventListener('wheel', manualScroll, {passive: true});
+  scroll.addEventListener('wheel', () => {gestures.cancel(); manualScroll();}, {passive: true});
   scroll.addEventListener('touchmove', manualScroll, {passive: true});
   scroll.addEventListener('pointerdown', event => {if (event.target === scroll) manualScroll();});
+  function gesturePoint(event) {
+    const target = event.target instanceof Element ? event.target : null;
+    const interactive = target?.closest('button, a, input, select, textarea, label, [role="button"], [contenteditable="true"]');
+    return {id: event.pointerId, type: event.pointerType, button: event.button, x: event.clientX, y: event.clientY, time: event.timeStamp,
+      eligible: active(session) && !catalogOpen && !settingsOpen && scroll.contains(target) && !interactive,
+      zoomTarget: target?.closest('.ry-reader-page[data-state="loaded"]'), session};
+  }
+  // Track the whole dialog, including a second finger landing on a toolbar.
+  root.addEventListener('pointerdown', event => gestures.down(gesturePoint(event)), {capture: true, passive: true});
+  root.addEventListener('pointermove', event => gestures.move(gesturePoint(event)), {capture: true, passive: true});
+  root.addEventListener('pointerup', event => gestures.up(gesturePoint(event)), {capture: true, passive: true});
+  root.addEventListener('pointercancel', event => gestures.pointerCancel(gesturePoint(event)), {capture: true, passive: true});
+  root.addEventListener('pointerleave', event => {if (event.pointerType === 'mouse') gestures.reset();});
+  root.addEventListener('contextmenu', () => gestures.cancel());
+  window.addEventListener('blur', () => gestures.reset());
   scroll.addEventListener('dblclick', event => {
-    if (!(event.target instanceof Element) || !event.target.closest('.ry-reader-page[data-state="loaded"]')) return;
-    event.preventDefault(); setZoom(zoom === 1 ? 2 : 1, event);
+    if (gesturePoint(event).eligible) event.preventDefault();
   });
   scroll.addEventListener('pointerdown', event => {
     if (event.pointerType !== 'mouse' || event.button !== 0 || !(event.target instanceof Element) || !event.target.closest('.ry-reader-page[data-state="loaded"]')) return;
@@ -748,6 +773,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     if (!drag || drag.id !== event.pointerId || event.pointerType !== 'mouse' || !(event.buttons & 1)) return;
     const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
     if (Math.abs(dx) + Math.abs(dy) < 4) return;
+    gestures.cancel(); manualScroll();
     scroll.setPointerCapture(event.pointerId); event.preventDefault();
     scroll.scrollLeft = drag.left - dx; scroll.scrollTop = drag.top - dy;
   });
@@ -782,6 +808,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   });
   root.addEventListener('keydown', event => {
     if (!root.open || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    gestures.reset();
     if (catalogOpen || settingsOpen) {
       if (event.key === 'Escape') {
         // Search inputs can consume Escape to clear themselves before the
@@ -805,7 +832,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       if (mode === 'paged') movePage(pageTurnDelta(event.key, direction));
       else moveChapter(event.key === 'ArrowLeft' ? -1 : 1);
     }
-    else if (event.key.toLowerCase() === 'f') {event.preventDefault(); setFocused(!focused);}
+    else if (event.key.toLowerCase() === 'f' || (event.key === 'Enter' && event.target === scroll)) {event.preventDefault(); setFocused(!focused);}
     else if (event.key.toLowerCase() === 'c') {event.preventDefault(); setCatalog(true);}
     else if (['+', '=', '-', '0'].includes(event.key)) {event.preventDefault(); setZoom(event.key === '0' ? 1 : zoom + (event.key === '-' ? -.25 : .25));}
     else if (event.key === 'PageDown' || event.key === 'PageUp' || (event.key === ' ' && event.target === scroll)) {
@@ -815,8 +842,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       else {manualScroll(); scroll.scrollBy({top: scroll.clientHeight * (event.key === 'PageUp' ? -0.85 : 0.85), behavior: 'auto'});}
     } else if ((event.key === 'Home' || event.key === 'End') && event.target === scroll) {event.preventDefault(); jumpToPage(event.key === 'Home' ? 0 : (session?.pages.length || 1) - 1);}
   });
-  document.addEventListener('visibilitychange', () => {if (document.visibilityState === 'hidden') flush();});
-  window.addEventListener('pagehide', flush);
+  document.addEventListener('visibilitychange', () => {if (document.visibilityState === 'hidden') {gestures.reset(); flush();}});
+  window.addEventListener('pagehide', () => {gestures.reset(); flush();});
   applyPreferences();
   return {open, close, flush, updateCatalog, refreshReadingState, isOpen: () => !!root.open};
 }

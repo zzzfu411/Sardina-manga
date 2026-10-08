@@ -14,7 +14,7 @@ import threading
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-SCENARIOS = ('downloads', 'reader-search', 'performance', 'reaudit', 'search-grouping', 'search-titles')
+SCENARIOS = ('downloads', 'reader-search', 'performance', 'reaudit', 'search-grouping', 'search-titles', 'reader-touch')
 DIAGNOSTIC_MARKER = 'SARDINA_CHECK_DIAGNOSTICS:'
 
 
@@ -96,8 +96,12 @@ def instrument_browser(source, name, output):
     directory = json.dumps(str(output))
     label = json.dumps(name)
     marker = json.dumps(DIAGNOSTIC_MARKER)
-    return '''async page => {
-  const directory=__DIRECTORY__, name=__LABEL__, context=page.context();
+    return '''async driverPage => {
+  // Each scenario owns its cookies, storage, routes and init scripts. Reusing
+  // the CLI's page lets earlier API mocks silently change later checks.
+  const context=await driverPage.context().browser().newContext();
+  const page=await context.newPage();
+  const directory=__DIRECTORY__, name=__LABEL__;
   const diagnostic={scenario:name,stage:'setup',stages:[],console:[],requestFailures:[],pageErrors:[],pages:[]};
   const step=value=>{diagnostic.stage=value;diagnostic.stages.push({name:value,at:Date.now()});};
   const listeners=[];
@@ -124,6 +128,7 @@ def instrument_browser(source, name, output):
   }finally{
     if(traced)await context.tracing.stop().catch(()=>{});
     context.off('page',attach);for(const [p,event,handler] of listeners)p.off(event,handler);
+    await context.close();
   }
 }
 '''.replace('__DIRECTORY__', directory).replace('__LABEL__', label).replace('__MARKER__', marker).replace('__SOURCE__', source.strip().rstrip(';'))
