@@ -82,4 +82,5 @@
 .source-filter-panel button,.search-source{min-height:44px}
 .search-source-fold{grid-column:1/-1;min-width:0;margin:4px 0 10px;border-bottom:1px solid var(--line)}
 .search-source-fold .search-source-list{margin:4px 0 12px}
+.search-source-credit{display:block;max-width:24ch;margin-top:4px;font-size:10px;font-weight:400;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:560px){.source-filter-panel{margin-bottom:20px}.search-source-fold{margin:0}.search-source-fold>summary{font-size:12px}.search-chapter,.search-all-chapters,.search-order{min-height:44px}}

@@ -421,6 +421,8 @@ class Handler(BaseHTTPRequestHandler):
                 files["/page-window.js"] = "page-window.js"
                 files["/cover-pause.js"] = "cover-pause.js"
                 files["/recommendations-metadata.js"] = "recommendations-metadata.js"
+                files["/search-results-model.js"] = "search-results-model.js"
+                files["/search-characters.js"] = "search-characters.js"
                 for name in ("image-loader.js", "download-store.js", "download-model.js", "downloads.js", "downloads.css"):
                     files["/" + name] = name
                 file = files.get(p.path)

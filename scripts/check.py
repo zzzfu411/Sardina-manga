@@ -14,7 +14,7 @@ import threading
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-SCENARIOS = ('downloads', 'reader-search', 'performance', 'reaudit', 'search-grouping')
+SCENARIOS = ('downloads', 'reader-search', 'performance', 'reaudit', 'search-grouping', 'search-titles')
 DIAGNOSTIC_MARKER = 'SARDINA_CHECK_DIAGNOSTICS:'
 
 

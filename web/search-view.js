@@ -1,4 +1,5 @@
-import {bookKey, buildSearchModel, metadataText, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
+import {bookKey, metadataText, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
+import {buildSearchResults} from './search-results-model.js';
 
 const abortError = () => new DOMException('请求已取消', 'AbortError');
 
@@ -133,7 +134,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     return {rawCount: model.rawCount, workCount: model.workCount, relatedCount: model.relatedCount, hiddenCount: model.hiddenCount};
   }
   function rebuildModel() {
-    model = buildSearchModel(withAuthorEvidence(groups, authorEvidence), keyword, filter);
+    model = buildSearchResults(withAuthorEvidence(groups, authorEvidence), keyword, filter);
     const remapped = rekeyWorkStates([...model.works, ...model.related, ...model.hidden], cards.values());
     const retained = new Set(remapped.values());
     for (const card of cards.values()) {
@@ -194,10 +195,14 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
         card.sourceButtons.set(key, source);
       }
       const total = totals.get(book.siteId);
-      source.textContent = `${book.siteName}${total > 1 ? ` · 条目 ${nth}` : ''}`;
+      const label = `${book.siteName}${total > 1 ? ` · 条目 ${nth}` : ''}`;
+      const author = metadataText(book.author);
+      source.replaceChildren(node('span', 'search-source-name', label));
+      if (card.work.hasDifferentCredits) source.append(node('small', 'search-source-credit', author || '作者未提供'));
       source.title = [total > 1 ? `同一来源的第 ${nth} / ${total} 个条目` : book.siteName,
-        `源站书名：${book.title}`, book.latestChapter ? `最新章节：${book.latestChapter}` : ''].filter(Boolean).join('\n');
-      source.setAttribute('aria-label', total > 1 ? `${book.siteName}，条目 ${nth} / ${total}，${book.title}` : book.siteName);
+        `源站书名：${book.title}`, author ? `作者：${author}` : '', book.latestChapter ? `最新章节：${book.latestChapter}` : ''].filter(Boolean).join('\n');
+      source.setAttribute('aria-label', [total > 1 ? `${book.siteName}，条目 ${nth} / ${total}，${book.title}` : book.siteName,
+        card.work.hasDifferentCredits && author ? `作者：${author}` : ''].filter(Boolean).join('，'));
       source.setAttribute('aria-pressed', String(key === card.selectedKey));
       source.dataset.site = book.siteId;
       if (source === cursor) cursor = cursor.nextSibling;
@@ -216,11 +221,17 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     card.match.hidden = !card.match.textContent;
     const items = [];
     if (metadataText(book.author)) items.push(node('span', 'search-author', `作者：${metadataText(book.author)}`));
+    if (safeText(book.edition)) items.push(node('span', 'search-edition', metadataText(book.edition)));
+    if (safeText(book.language)) items.push(node('span', 'search-language', metadataText(book.language)));
     if (safeText(book.status)) items.push(node('span', 'search-status', book.status));
     if (safeText(book.latestChapter)) items.push(node('span', 'search-latest', `更新至 ${book.latestChapter}`));
     card.meta.replaceChildren(...items); card.meta.hidden = !items.length;
     card.description.textContent = safeText(book.description); card.description.hidden = !card.description.textContent;
-    const coverBook = safeText(book.coverUrl) ? book : work.books.find(item => safeText(item.coverUrl));
+    // A same-title display group can include genuinely different works. Do not
+    // borrow a cover from a conflicting identity when this entry lacks one.
+    const identity = work.identityByBook.get(bookKey(book));
+    const coverBook = safeText(book.coverUrl) ? book : work.books.find(item => safeText(item.coverUrl)
+      && work.identityByBook.get(bookKey(item)) === identity);
     const coverUrl = coverBook && /^https?:\/\//.test(coverBook.coverUrl) ? imageUrl(coverBook.coverUrl, coverBook.siteId) : '';
     if (coverUrl !== card.coverSrc) {
       card.coverSrc = coverUrl; card.cover.querySelector('img')?.remove(); card.fallback.hidden = false;
