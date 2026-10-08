@@ -1,5 +1,4 @@
-import {normalizeAuthor} from './search-model.js';
-import {workIdentity} from './book-identity.js';
+import {groupWorks, workAuthorKey} from './book-identity.js';
 
 const text = value => typeof value === 'string' ? value.trim() : '';
 const THEMES = {
@@ -16,7 +15,7 @@ export function contentFeatures(book) {
   const metadata = [text(book?.title), text(book?.description), ...tags].join(' ').normalize('NFKC').toLowerCase().slice(0, 6000);
   return Object.entries(THEMES).filter(([, words]) => words.some(word => metadata.includes(word))).map(([theme]) => theme);
 }
-const authors = book => normalizeAuthor(book?.author).split('+').filter(Boolean);
+const authors = book => workAuthorKey(book?.author).split('+').filter(Boolean);
 
 export function preferenceWeight(book) {
   if (book?.favorite === true) return book.readingState === 'finished' ? 4.5 : book.readAt ? 4 : 3;
@@ -25,16 +24,13 @@ export function preferenceWeight(book) {
 }
 
 export function buildRecommendationProfile(shelf = []) {
-  const profile = {authors: new Map(), themes: new Map()}, seen = new Set();
+  const profile = {authors: new Map(), themes: new Map()};
   // Bound profile construction for large imported libraries; explicit favorites
   // and their most recent action take precedence over automatically added reads.
   const books = shelf.filter(book => book && typeof book === 'object').sort((a, b) =>
     Number(b.favorite === true) - Number(a.favorite === true) ||
     Number(b.favoriteChangedAt || b.readAt || b.openedAt || 0) - Number(a.favoriteChangedAt || a.readAt || a.openedAt || 0)).slice(0, 500);
-  for (const book of books) {
-    const key = workIdentity(book);
-    if (seen.has(key)) continue;
-    seen.add(key);
+  for (const {books: [book]} of groupWorks(books)) {
     const weight = preferenceWeight(book), evidence = {title: text(book.title), explicit: book.favorite === true};
     for (const [map, features] of [[profile.authors, authors(book)], [profile.themes, contentFeatures(book)]]) {
       for (const feature of features) {

@@ -39,7 +39,7 @@ export function createDownloadManager({store, api, imageUrl, loadImage, validate
       if (!record || (job.record?.token && record.token !== job.record.token)) throw new Error('此下载已删除或变更，请重新选择章节');
       if (!record.complete) {
         job.refresh ||= !!record.urls.length;
-        const data = await api('/api/chapter-images', {siteId: job.book.siteId, chapterUrl: job.chapter.url, ...(job.refresh ? {refresh: true} : {})}, signal); check();
+        const data = await api('/api/chapter-images', {siteId: job.book.siteId, chapterUrl: job.chapter.url, purpose: 'download', ...(job.refresh ? {refresh: true} : {})}, signal); check();
         record = await store.prepare({...job, expectedGeneration: record.generation, urls: data?.images || []}); check();
       }
       job.record = record; job.status = 'downloading'; notify();

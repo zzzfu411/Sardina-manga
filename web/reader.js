@@ -37,6 +37,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   let dimensions = stored(SIZES_KEY, {});
   if (!dimensions || typeof dimensions !== 'object' || Array.isArray(dimensions)) dimensions = {};
   const scope = createChapterScope();
+  const manualUnread = new Set();
   let session = null, catalogOpen = false, settingsOpen = false, catalogReverse = false, catalogPage = 0, drag = null;
   const catalogPageSize = 80;
 
@@ -112,8 +113,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const directions = choices('reader-direction', '翻页方向', [['ltr', '从左向右'], ['rtl', '从右向左']], value => {direction = value; applyPreferences(); savePreferences();});
   const themes = choices('reader-theme', '阅读背景', [['dark', '深色'], ['light', '浅色']], value => {theme = value; applyPreferences(); savePreferences();});
   const preloads = choices('reader-prefetch', '提前加载', [['auto', '标准'], ['more', '多预读'], ['off', '省流']], value => {prefetch = value; savePreferences(); if (session) queueImages(session);});
-  const preloadHint = make('p', 'ry-reader-setting-hint', '标准提前加载 3–6 页，多预读 6–10 页；省流只加载可见页。Komiic 在标准模式下按需读取。');
-  const modeHint = make('p', 'ry-reader-setting-hint', '逐页适合页漫，长图可切回连续阅读。');
+  const preloadHint = make('p', 'ry-reader-setting-hint', '标准提前加载 3–6 页，多预读 6–10 页，章末预读下一章首图；省流只加载可见页。Komiic 在标准模式下按需读取。');
+  const modeHint = make('p', 'ry-reader-setting-hint', '逐页模式未放大时可左右滑动翻页，长图可切回连续阅读。');
   const widthLabel = make('label', 'ry-reader-width'); widthLabel.append(make('span', '', '页面宽度'));
   const widthValue = make('output'); widthValue.id = 'reader-width-value'; widthValue.setAttribute('for', 'reader-width'); widthLabel.append(widthValue);
   const widthInput = make('input'); widthInput.id = 'reader-width'; widthInput.type = 'range'; widthInput.min = '480'; widthInput.max = '1200'; widthInput.step = '20'; widthInput.value = String(width); widthInput.setAttribute('aria-label', '阅读宽度');
@@ -152,6 +153,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   const gestures = createReaderGestures({
     onTap: () => setFocused(!focused, false),
     onDoubleTap: point => setZoom(zoom === 1 ? 2 : 1, {target: point.zoomTarget, clientX: point.x, clientY: point.y}),
+    onSwipe: key => {if (root.dataset.swipe === 'true') movePage(pageTurnDelta(key, direction));},
   });
 
   function savePreferences() {
@@ -180,6 +182,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   }
   function applyPreferences() {
     root.dataset.theme = theme; root.dataset.mode = mode; root.dataset.direction = direction; root.dataset.fit = fit; root.dataset.zoomed = String(zoom > 1); root.classList.toggle('ry-reader-focused', focused);
+    applySwipeAvailability();
     root.style.setProperty('--ry-reader-width', `${width}px`);
     for (const input of modes.inputs) input.checked = input.value === mode;
     for (const input of directions.inputs) input.checked = input.value === direction;
@@ -194,6 +197,9 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     prevPage.hidden = nextPage.hidden = mode !== 'paged';
     scroll.setAttribute('aria-label', mode === 'paged' ? '漫画页面，可用左右方向键翻页' : '漫画页面，可滚动阅读');
     focusButton.setAttribute('aria-pressed', String(focused)); exitFocus.hidden = !focused;
+  }
+  function applySwipeAvailability() {
+    root.dataset.swipe = String(mode === 'paged' && zoom === 1 && (globalThis.visualViewport?.scale || 1) <= 1.01);
   }
   function setFit(value) {
     const current = session, position = current?.pages.length ? current.restoring ? current.restoreTarget : locate(current) : null;
@@ -225,7 +231,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const current = session;
     const position = current?.pages.length ? current.restoring ? current.restoreTarget : locate(current) : null;
     flush();
-    if (position && mode === 'continuous') current.pageOffsets.set(position.page, position.pageOffset);
+    if (position) current.pageOffsets.set(position.page, position.pageOffset);
     mode = nextMode; applyPreferences(); savePreferences();
     if (position && active(current)) {
       current.restoreTarget = {...position}; current.restoring = current.pages[position.page].state !== 'loaded';
@@ -255,7 +261,9 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   function clean(current) {
     gestures.reset();
     if (!current) return;
-    clearTimeout(current.saveTimer); clearTimeout(current.dimensionsTimer);
+    clearTimeout(current.saveTimer); clearTimeout(current.dimensionsTimer); clearTimeout(current.readTimer);
+    current.nextChapter?.controller.abort();
+    current.prefetched?.controller.abort();
     cancelAnimationFrame(current.frame); current.resize?.disconnect();
     for (const page of current.pages) {
       page.ticket++;
@@ -267,6 +275,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   }
   function close() {
     flush(); const previous = session; scope.stop(); clean(previous); session = null;
+    manualUnread.clear();
     setCatalog(false, false); setSettings(false, false); canvas.replaceChildren(); ending.hidden = true;
     if (root.open) {root.close(); onClose();}
   }
@@ -277,7 +286,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const progress = progressSnapshot({chapter: current.chapter, total: current.pages.length, position, restoring: current.restoring, loaded: current.pages[position.page]?.state === 'loaded'});
     if (!progress) return;
     current.position = position;
-    if (mode === 'continuous') current.pageOffsets.set(position.page, position.pageOffset);
+    current.pageOffsets.set(position.page, position.pageOffset);
     // Each callback carries the book snapshot from this chapter, never a shared global book.
     const signature = JSON.stringify(progress);
     if (signature === current.lastSavedProgress) return;
@@ -298,8 +307,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     return low;
   }
   function locate(current) {
-    if (mode === 'paged') return {...current.position};
-    const page = pageAt(current, scroll.scrollTop);
+    const page = mode === 'paged' ? current.position.page : pageAt(current, scroll.scrollTop);
     const figure = current.pages[page]?.figure;
     return {page, pageOffset: figure ? clampOffset((scroll.scrollTop - figure.offsetTop) / Math.max(1, figure.offsetHeight)) : 0};
   }
@@ -364,6 +372,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     prevPage.disabled = navigation.previous === null; nextPage.disabled = navigation.next === null;
     zoomButton.disabled = !current.pages.length;
     pageInput.disabled = jump.disabled = false;
+    scheduleChapterRead(current);
   }
   function requestFrame(current) {
     if (!active(current) || current.frame) return;
@@ -406,6 +415,31 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       const page = current.pages[index];
       if (page.state === 'idle') loadImage(current, page, index >= first && index <= last ? 0 : 1);
     }
+    prefetchNextChapter(current, {enabled: ahead > 0, visibleReady, last});
+  }
+  function prefetchNextChapter(current, {enabled, visibleReady, last}) {
+    const nextIndex = chapterNavigation(current.chapters, current.index).next;
+    const chapter = nextIndex === null ? null : current.chapters[nextIndex];
+    const nearEnd = last >= current.pages.length - 3;
+    if (!enabled || !nearEnd || !chapter || navigator.onLine === false) {
+      current.nextChapter?.controller.abort(); current.nextChapter = null; return;
+    }
+    if (current.nextChapter?.chapterUrl === chapter.url) return;
+    if (!visibleReady) return;
+    current.nextChapter?.controller.abort();
+    const nextChapter = {chapterUrl: chapter.url, controller: new AbortController(), data: null};
+    current.nextChapter = nextChapter;
+    const signal = nextChapter.controller.signal;
+    (async () => {
+      const local = await downloads?.getChapter(current.book, chapter);
+      if (signal.aborted) return;
+      if (local?.complete) {nextChapter.data = {images: local.urls}; return;}
+      const data = await api('/api/chapter-images', {siteId: current.book.siteId, chapterUrl: chapter.url, purpose: 'prefetch'}, signal);
+      if (signal.aborted || !Array.isArray(data?.images) || !data.images.length) return;
+      nextChapter.data = data;
+      const first = data.images[0];
+      if (typeof first === 'string' && /^https?:\/\//i.test(first)) await imageLoader.load(imageUrl(first, current.book.siteId), {signal, priority: 1});
+    })().catch(() => { /* A background miss is retried as foreground work when opened. */ });
   }
   function releaseImage(page, removeSource = false) {
     page.image.onload = page.image.onerror = null;
@@ -545,7 +579,37 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const navigation = chapterNavigation(current.chapters, current.index);
     const index = delta < 0 ? navigation.previous : navigation.next;
     if (index === null) return;
+    if (delta > 0 && reachedChapterEnd(current)) markChapterRead(current);
     open({book: current.book, chapters: current.chapters, index, resume: false, push: true, progressContext: current.progressContext, feedback: current.feedback});
+  }
+  function chapterReadKey(current) {return `${sourceEntryKey(current.book)}::${current.chapter.url}`;}
+  function reachedChapterEnd(current) {
+    if (!active(current) || current.restoring || catalogOpen || settingsOpen || document.visibilityState === 'hidden') return false;
+    const last = current.pages.at(-1);
+    if (!last || last.state !== 'loaded' || last.figure.hidden) return false;
+    const bounds = last.figure.getBoundingClientRect(), viewport = scroll.getBoundingClientRect();
+    const visibleBottom = Math.min(viewport.bottom, globalThis.visualViewport ? visualViewport.offsetTop + visualViewport.height : viewport.bottom);
+    return bounds.bottom > viewport.top && bounds.top < visibleBottom && bounds.bottom <= visibleBottom + 2;
+  }
+  function markChapterRead(current) {
+    if (typeof onChapterRead !== 'function' || current.autoReadDone || manualUnread.has(chapterReadKey(current)) || isChapterRead(current.book, current.chapter)) return;
+    current.autoReadDone = true;
+    try {
+      onChapterRead({...current.book}, {...current.chapter}, true, {automatic: true, progressContext: current.progressContext});
+      updateChapterRead(); renderCatalog();
+    } catch {toast('章节状态未能保存，可使用工具栏重试');}
+  }
+  function scheduleChapterRead(current) {
+    // Preloaded off-screen pages never complete a chapter. Its visible end
+    // must remain on screen briefly; manual undo lasts this reading session.
+    if (!reachedChapterEnd(current)) {
+      clearTimeout(current.readTimer); current.readTimer = null; return;
+    }
+    if (current.readTimer || current.autoReadDone || manualUnread.has(chapterReadKey(current)) || isChapterRead(current.book, current.chapter)) return;
+    current.readTimer = setTimeout(() => {
+      current.readTimer = null;
+      if (reachedChapterEnd(current)) markChapterRead(current);
+    }, 800);
   }
   function updateChapterRead() {
     if (!session) return;
@@ -561,6 +625,8 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       // Submit the action the user saw even if another tab changed the shelf.
       const read = readButton.getAttribute('aria-pressed') !== 'true';
       onChapterRead({...current.book}, {...current.chapter}, read);
+      if (read) manualUnread.delete(chapterReadKey(current));
+      else manualUnread.add(chapterReadKey(current));
       updateChapterRead(); renderCatalog();
       toast(read ? '本章已标为已读' : '本章已标为未读');
     } catch {toast('章节状态未能保存，请重试');}
@@ -670,9 +736,16 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
   async function open({book, chapters, index, resume = false, push = true, fresh = false, progressContext, feedback}) {
     const chapter = chapters?.[index];
     if (!chapter?.url) return;
-    flush(); const previous = session; const request = scope.start(); clean(previous);
+    flush(); const previous = session;
+    const sameBook = previous && sourceEntryKey(previous.book) === sourceEntryKey(book);
+    const prefetched = !fresh && sameBook && previous.nextChapter?.data && previous.nextChapter.chapterUrl === chapter.url ? previous.nextChapter : null;
+    // Transfer a ready manifest and its first-image consumer together. The
+    // visible page can share that request instead of cancelling it mid-transfer.
+    if (prefetched) previous.nextChapter = null;
+    if (!sameBook) manualUnread.clear();
+    const request = scope.start(); clean(previous);
     loadPreferences(book);
-    const current = {scope: request, book: {...book}, chapters: [...chapters], chapter: {...chapter}, index, pages: [], inflight: 0, frame: 0, position: {page: 0, pageOffset: 0}, pageOffsets: new Map(), restoring: false, progressContext};
+    const current = {scope: request, book: {...book}, chapters: [...chapters], chapter: {...chapter}, index, pages: [], inflight: 0, frame: 0, position: {page: 0, pageOffset: 0}, pageOffsets: new Map(), restoring: false, progressContext, prefetched};
     current.feedback = feedback || createReadingFeedback({sessionId: crypto.randomUUID(), onFailure: detail => onFailure({...book}, detail), onRecovery: detail => onRecovery({...book}, detail)});
     current.manifestRefreshed = fresh; session = current; setCatalog(false, false); setSettings(false, false); catalogSearch.value = ''; catalogPage = 0;
     title.textContent = book.title || '漫画'; chapterLabel.textContent = [book.siteName || book.siteId || '', chapter.name || `第 ${index + 1} 章`, chapter.language].filter(Boolean).join(' · ');
@@ -693,7 +766,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       current.download = await downloads?.getChapter(book, chapter);
       if (!current.download?.urls.length) current.download = null;
       if (!active(current)) return;
-      const data = current.download && !fresh ? {images: current.download.urls} : await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url, ...(fresh ? {refresh: true} : {})}, request.controller.signal);
+      const data = current.download && !fresh ? {images: current.download.urls} : prefetched?.data || await api('/api/chapter-images', {siteId: book.siteId, chapterUrl: chapter.url, ...(fresh ? {refresh: true} : {})}, request.controller.signal);
       if (!active(current)) return;
       const urls = (Array.isArray(data?.images) ? data.images : []).filter(url => typeof url === 'string' && /^https?:\/\//i.test(url));
       if (!urls.length) throw new Error('这个漫画源没有返回可用图片，请重试或返回详情换源。');
@@ -751,6 +824,7 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
     const interactive = target?.closest('button, a, input, select, textarea, label, [role="button"], [contenteditable="true"]');
     return {id: event.pointerId, type: event.pointerType, button: event.button, x: event.clientX, y: event.clientY, time: event.timeStamp,
       eligible: active(session) && !catalogOpen && !settingsOpen && scroll.contains(target) && !interactive,
+      canSwipe: event.pointerType === 'touch' && root.dataset.swipe === 'true' && event.clientX > 24 && event.clientX < innerWidth - 24,
       zoomTarget: target?.closest('.ry-reader-page[data-state="loaded"]')};
   }
   // Track the whole dialog, including a second finger landing on a toolbar.
@@ -842,8 +916,12 @@ export function createReader({root, api, imageUrl, imageLoader = createImageLoad
       else {manualScroll(); scroll.scrollBy({top: scroll.clientHeight * (event.key === 'PageUp' ? -0.85 : 0.85), behavior: 'auto'});}
     } else if ((event.key === 'Home' || event.key === 'End') && event.target === scroll) {event.preventDefault(); jumpToPage(event.key === 'Home' ? 0 : (session?.pages.length || 1) - 1);}
   });
-  document.addEventListener('visibilitychange', () => {if (document.visibilityState === 'hidden') {gestures.reset(); flush();}});
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {gestures.reset(); flush(); clearTimeout(session?.readTimer); if (session) session.readTimer = null;}
+    else if (session) requestFrame(session);
+  });
   window.addEventListener('pagehide', () => {gestures.reset(); flush();});
+  globalThis.visualViewport?.addEventListener('resize', applySwipeAvailability);
   applyPreferences();
   return {open, close, flush, updateCatalog, refreshReadingState, isOpen: () => !!root.open};
 }

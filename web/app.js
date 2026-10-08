@@ -3,10 +3,10 @@ import {createReader} from './reader.js';
 import {createImageLoader} from './image-loader.js';
 import {createDownloads} from './downloads.js';
 import {createSourceCatalog} from './source-catalog.js';
-import {READING_STATES, bookKey, readingState, rememberBook, setReadingState, libraryCounts, filterLibrary, continueBook, mergeShelfBackup, serializeShelfBackup, readShelfBackup, MAX_BACKUP_BYTES, markChapterRead, isChapterRead} from './library-model.js';
+import {READING_STATES, bookKey, readingState, rememberBook, setReadingState, libraryCounts, filterLibrary, continueBook, mergeShelfBackup, serializeShelfBackup, readShelfBackup, MAX_BACKUP_BYTES, markChapterRead, isChapterRead, groupLibrary, findRelatedBooks, matchChapterProgress} from './library-model.js';
 import {createLibraryStore, SHELF_PREFIX} from './library-store.js';
 import {dueUpdateBooks} from './library-auto-updates.js';
-import {loadSourcePreferences, sortSources} from './source-preferences.js';
+import {loadSourcePreferences, saveSourcePreferences, sortSources} from './source-preferences.js';
 import {createDiscovery} from './discovery.js';
 import {createRecommendations} from './recommendations.js';
 import {createCoverWall} from './cover-wall.js';
@@ -14,16 +14,24 @@ import {createLibraryUpdates, acknowledgeCatalog, normalizeCatalogState} from '.
 import {pageWindow} from './page-window.js';
 import {createRouteHistory} from './route-history.js';
 import {createCoverPause} from './cover-pause.js';
+import {normalizeReaderPreferences} from './reader-model.js';
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const button = (text, cls, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
 const readStore = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 const state = {page: 'home', discoverTab: 'recommend', sites: [], groups: [], keyword: '', filter: '', shelfFilter: 'all', shelfPage: 0, detailView: null, sourcePreferences: loadSourcePreferences(), search: null, retries: new Map(), detailSeq: 0, detailRequest: null, book: null, chapters: [], chapter: null};
 const navigation = createRouteHistory({history: window.history, location});
+const currentPath = () => location.pathname + location.search;
+let displayedPath = currentPath();
 let libraryStore;
 try {libraryStore = createLibraryStore({storage: localStorage});}
 catch {libraryStore = {books: [], issues: ['浏览器无法读取记录，请检查存储权限'], async save() {throw new Error('浏览器无法保存记录，请导出书架备份');}, flush() {}, async sync() {return shelf;}, recovery() {return '{}';}};}
 let shelf = libraryStore.books, shelfSaveGeneration = 0;
+let groupedShelfInput = null, groupedShelf = [];
+function shelfGroups() {
+  if (groupedShelfInput !== shelf) {groupedShelf = groupLibrary(shelf); groupedShelfInput = shelf;}
+  return groupedShelf;
+}
 let autoUpdates = readStore('revyunman.autoUpdates.v1', false) === true;
 const storedAttempts = readStore('revyunman.autoUpdateAttempts.v1', {});
 const autoAttempts = storedAttempts && typeof storedAttempts === 'object' && !Array.isArray(storedAttempts) ? Object.fromEntries(Object.entries(storedAttempts).filter(([, value]) => Number.isFinite(value) && value >= 0)) : {};
@@ -36,7 +44,7 @@ history = history.filter(x => typeof x === 'string').slice(0, 8);
 const key = bookKey;
 function persist(name, data) { try { localStorage.setItem(name, JSON.stringify(data)); } catch { toast('浏览器无法保存记录，请导出书架备份'); } }
 function toast(message) { const t = $('#toast'); const modal = [...document.querySelectorAll('dialog[open]')].at(-1); (modal || document.body).append(t); t.textContent = message; t.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => t.hidden = true, 4000); }
-function shelfChanged() {$('#shelf-count').textContent = shelf.length; renderContinueReading(); renderShelfUpdateControls(); recommendations.shelfChanged?.();}
+function shelfChanged() {$('#shelf-count').textContent = shelfGroups().length; renderContinueReading(); renderShelfUpdateControls(); recommendations.shelfChanged?.();}
 function saveShelf(options = {}) {
   const generation = ++shelfSaveGeneration; shelfChanged();
   const failed = error => {toast(`${error.message || '保存失败'}；当前记录仍可导出备份`); return false;};
@@ -66,7 +74,7 @@ function rememberProgress(book, progress, progressContext) {
   const saved = rememberBook(old, old ? book : {...book, favorite: false}, progress);
   shelf = [saved, ...shelf.filter(item => key(item) !== id)];
   const generation = ++shelfSaveGeneration;
-  $('#shelf-count').textContent = shelf.length; renderContinueReading();
+  $('#shelf-count').textContent = shelfGroups().length; renderContinueReading();
   recommendations.recordRead?.(book, progress);
   if (!libraryStore.updateBook) {saveShelf(passiveSave(book, progressContext)); return;}
   const failed = error => toast(`${error.message || '保存失败'}；当前记录仍可导出备份`);
@@ -92,6 +100,7 @@ async function api(path, body, signal) {
     return payload.data;
   } catch (error) {
     if (timedOut) throw new Error('连接超时，请重试或切换漫画源');
+    if (error.name !== 'AbortError' && navigator.onLine === false) throw new Error('当前离线，请阅读已下载章节');
     throw error;
   } finally {clearTimeout(timeout); signal?.removeEventListener('abort', abort);}
 }
@@ -100,9 +109,21 @@ function decode(value) { return JSON.parse(new TextDecoder().decode(Uint8Array.f
 function bookToken(book) { return encode([book.siteId, book.detailUrl, {title: book.title, coverUrl: book.coverUrl || ''}]); }
 function bookRoute(book) { return '/m/' + bookToken(book); }
 function route(path, replace = false) {
-  navigation.navigate(path, {replace, background: resultRoute()});
+  closeAuxiliary(); navigation.navigate(path, {replace, background: resultRoute()}); displayedPath = currentPath();
 }
-function discoverPath(tab = state.discoverTab) {return tab === 'recommend' ? '/discover' : `/discover/${tab}`;}
+function discoverPath(tab = state.discoverTab, selection = discovery.getSelection()) {
+  if (tab === 'recommend') return '/discover';
+  if (selection?.kind !== tab || !selection.siteId) return `/discover/${tab}`;
+  const query = new URLSearchParams({source: selection.siteId, ...(selection.period ? {period: selection.period} : {}), page: String(selection.page || 1)});
+  return `/discover/${tab}?${query}`;
+}
+function discoverySelection(url = new URL(location.href)) {
+  const selection = {};
+  if (url.searchParams.has('source')) selection.siteId = url.searchParams.get('source');
+  if (url.searchParams.has('period')) selection.period = url.searchParams.get('period');
+  if (url.searchParams.has('page')) selection.page = Number(url.searchParams.get('page'));
+  return selection;
+}
 function resultRoute() { return state.page === 'discover' ? discoverPath() : state.page === 'search' && state.keyword ? '/s/' + encodeURIComponent(state.keyword) : '/'; }
 function setPage(page) {
   state.page = page; document.body.dataset.page = page;
@@ -115,10 +136,14 @@ function setPage(page) {
   if (page !== 'discover') {discovery.hide(); recommendations.hide();}
 }
 function imageUrl(url, site) { return '/api/image?' + new URLSearchParams({url, siteId: site || ''}); }
-const sourceCatalog = createSourceCatalog({root: $('#source-catalog-dialog'), api, onPreferencesChange: preferences => {state.sourcePreferences = preferences;}});
+const sourceCatalog = createSourceCatalog({root: $('#source-catalog-dialog'), api, onPreferencesChange: preferences => {state.sourcePreferences = preferences;}, onShow: () => navigation.openOverlay('sources'), onRequestClose: () => closeOverlay('sources')});
 $('#source-catalog-open').onclick = () => sourceCatalog.open();
 const coverWall = createCoverWall({root: $('#atlas'), imageUrl, control: $('#wall-motion'), onOpenBook: book => openBook(book)});
-const discovery = createDiscovery({root: $('#discovery'), api, imageUrl, onOpenBook: book => openBook(book), embedded: true});
+const discovery = createDiscovery({root: $('#discovery'), api, imageUrl, onOpenBook: book => openBook(book), embedded: true,
+  onSelectionChange: (selection, {replace}) => {
+    if (state.page !== 'discover' || state.discoverTab !== selection.kind || !location.pathname.startsWith('/discover') || navigation.overlays().length) return;
+    route(discoverPath(selection.kind, selection), replace);
+  }});
 const recommendations = createRecommendations({root: $('#recommendations'), api, imageUrl, onOpenBook: book => openBook(book), getShelf: () => shelf});
 const libraryUpdates = createLibraryUpdates({api,
   getBook: id => {const book = shelf.find(book => key(book) === id); return book && progressAllowed(book, updateContexts.get(id)) ? book : null;},
@@ -139,12 +164,12 @@ const libraryUpdates = createLibraryUpdates({api,
   onStatus: status => {updateRun = status; renderShelfUpdateControls();}
 });
 const searchView = createSearchView({root: $('#result-grid'), api, imageUrl,
-  onOpenBook: (book, detail) => openBook(book, {detail}),
+  onOpenBook: (book, detail) => openBook(book, {detail, resumeFrom: state.switchFrom}),
   onReadChapter: (book, chapter, detail) => openBook(book, {chapterUrl: chapter.url, detail}),
   onMetrics: metrics => updateSearchStatus(metrics)
 });
 const imageLoader = createImageLoader();
-const downloads = createDownloads({api, imageUrl, imageLoader, toast,
+const downloads = createDownloads({api, imageUrl, imageLoader, toast, onShow: () => navigation.openOverlay('downloads'), onRequestClose: () => closeOverlay('downloads'),
   onOpen: record => openBook(record.book, {chapterUrl: record.chapter.url, resume: true, detail: {...record.book, chapters: record.chapters, savedOffline: true}}),
 });
 const coverPause = createCoverPause({root: document, exclude: $('#reader-dialog')});
@@ -157,9 +182,11 @@ const reader = createReader({root: $('#reader-dialog'), api, imageUrl, imageLoad
   onFailure: (book, detail) => recommendations.recordFailure?.(book, detail),
   onRecovery: (book, detail) => recommendations.recordRecovery?.(book, detail),
   isChapterRead: (book, chapter) => isChapterRead(shelf.find(item => key(item) === key(book)), chapter),
-  onChapterRead: (book, chapter, read) => {
-    const old = shelf.find(item => key(item) === key(book)) || remember(book);
-    shelf = shelf.map(item => key(item) === key(book) ? markChapterRead(old, chapter, read) : item); saveShelf();
+  onChapterRead: (book, chapter, read, {automatic = false, progressContext} = {}) => {
+    if (automatic && !progressAllowed(book, progressContext)) return;
+    const options = automatic ? passiveSave(book, progressContext) : {};
+    const old = shelf.find(item => key(item) === key(book)) || remember(book, {}, options);
+    shelf = shelf.map(item => key(item) === key(book) ? markChapterRead(old, chapter, read) : item); saveShelf(options);
   },
   onNavigate: (book, chapter, {push}) => {
     state.chapter = chapter;
@@ -179,7 +206,7 @@ function cover(book) {
   }
   return wrap;
 }
-function card(book, isShelf = false) {
+function card(book, isShelf = false, variants = [book]) {
   const article = el('article', 'book-card');
   if (isShelf) article.dataset.bookKey = key(book);
   const openCard = () => openBook(book, {resume: isShelf && !hasCatalogChange(shelf.find(item => key(item) === key(book)) || book)});
@@ -187,27 +214,38 @@ function card(book, isShelf = false) {
   open.replaceChildren(...c.childNodes); open.append(el('span', 'source-badge', book.siteName || book.siteId));
   article.append(open, button(book.title, 'book-title', openCard), el('p', 'book-meta', isShelf ? (book.chapterName ? `${book.chapterName} · 第${(book.page || 0) + 1}页` : '还未开始阅读') : book.latestChapter || book.author || '点击查看章节'));
   if (isShelf) {
-    if (book.favorite === false) article.append(el('p', 'book-history-note', '阅读记录'));
-    const del = button('×', 'remove-book', () => removeShelfBook(book));
+    if (variants.every(item => item.favorite === false)) article.append(el('p', 'book-history-note', '阅读记录'));
+    const del = button('×', 'remove-book', () => removeShelfBook(book, variants));
     del.setAttribute('aria-label', `移出书架：${book.title}`);
     const status = el('select', 'book-reading-state'); status.setAttribute('aria-label', `《${book.title}》的阅读状态`); status.dataset.bookKey = key(book);
     for (const [value, text] of Object.entries(READING_STATES)) {const option = el('option', '', text); option.value = value; status.append(option);}
     status.value = readingState(book);
     status.onchange = () => {
-      shelf = shelf.map(item => key(item) === key(book) ? setReadingState(item, status.value) : item); saveShelf();
+      const ids = new Set(variants.map(key));
+      shelf = shelf.map(item => ids.has(key(item)) ? setReadingState(item, status.value) : item); saveShelf();
       if (state.shelfFilter === 'all') {renderShelfCounts(); return;}
       renderShelf();
       const next = [...$('#shelf-grid').querySelectorAll('.book-reading-state')].find(item => item.dataset.bookKey === key(book));
       if (next) next.focus({preventScroll: true}); else $('#shelf-filters').querySelector('[aria-pressed="true"]').focus();
     };
-    const updateNote = el('p', 'book-update-note'); updateNote.dataset.bookKey = key(book); fillUpdateNote(updateNote, book);
+    const updateNote = el('p', 'book-update-note'); updateNote.dataset.bookKey = key(book); fillUpdateNote(updateNote, book, variants);
     article.append(updateNote, status, del);
+    if (variants.length > 1) {
+      const sources = el('details', 'book-sources'), summary = el('summary', '', `${variants.length} 个来源`), rows = el('div', 'book-source-list');
+      for (const source of variants) {
+        const row = button('', 'book-source', () => openBook(source, {resume: true, resumeFrom: book}));
+        row.append(el('strong', '', source.siteName || source.siteId), el('span', '', source.chapterName || '尚未阅读'));
+        row.setAttribute('aria-label', `使用${source.siteName || source.siteId}继续阅读《${book.title}》`); rows.append(row);
+      }
+      sources.append(summary, rows); article.append(sources);
+    }
   }
   return article;
 }
 function hasCatalogChange(book) { return ['new', 'changed'].includes(book.catalogState?.change); }
-function fillUpdateNote(note, book) {
-  const meta = book.catalogState, error = updateErrors.get(key(book));
+function fillUpdateNote(note, book, related = [book]) {
+  const changed = related.find(hasCatalogChange), meta = (changed || book).catalogState;
+  const error = related.map(item => updateErrors.get(key(item))).find(Boolean);
   const status = meta?.change === 'new' ? '有新章节' : meta?.change === 'changed' ? '目录有变化' : meta ? '已记录目录' : '';
   note.textContent = [status, meta ? `${meta.chapterCount} 章` : '', error ? '检查失败' : ''].filter(Boolean).join(' · ');
   note.hidden = !note.textContent;
@@ -215,21 +253,22 @@ function fillUpdateNote(note, book) {
   note.title = [meta?.checkedAt ? `上次成功检查：${new Date(meta.checkedAt).toLocaleString('zh-CN')}` : '', error || ''].filter(Boolean).join('\n');
 }
 function renderShelfUpdateNotes() {
+  const groups = new Map(shelfGroups().map(group => [key(group.book), group]));
   for (const note of $('#shelf-grid').querySelectorAll('.book-update-note')) {
-    const book = shelf.find(item => key(item) === note.dataset.bookKey); if (book) fillUpdateNote(note, book);
+    const group = groups.get(note.dataset.bookKey); if (group) fillUpdateNote(note, group.book, group.variants);
   }
 }
 function renderShelfUpdateControls() {
   const check = $('#shelf-check-updates');
   check.textContent = updateRun?.running ? '停止检查' : '检查更新'; check.disabled = !shelf.length && !updateRun?.running;
   const retry = $('#shelf-retry-updates'); retry.hidden = !shelf.some(book => updateErrors.has(key(book))); retry.disabled = !!updateRun?.running;
-  $('#shelf-updated-count').textContent = shelf.filter(hasCatalogChange).length;
+  $('#shelf-updated-count').textContent = shelfGroups().filter(group => group.variants.some(hasCatalogChange)).length;
   if (!updateRun) return;
   const head = updateRun.running ? '正在检查' : updateRun.cancelled ? '已停止' : '检查完成';
-  $('#shelf-update-status').textContent = [`${head} ${updateRun.completed} / ${updateRun.total} 本`,
-    updateStats.new ? `${updateStats.new} 本有新章节` : '', updateStats.changed ? `${updateStats.changed} 本目录有变化` : '',
-    updateStats.baseline ? `${updateStats.baseline} 本首次记录` : '', updateRun.failed ? `${updateRun.failed} 本失败` : '',
-    updateRun.skipped ? `${updateRun.skipped} 本已跳过` : ''].filter(Boolean).join(' · ');
+  $('#shelf-update-status').textContent = [`${head} ${updateRun.completed} / ${updateRun.total} 条记录`,
+    updateStats.new ? `${updateStats.new} 个来源有新章节` : '', updateStats.changed ? `${updateStats.changed} 个来源目录有变化` : '',
+    updateStats.baseline ? `${updateStats.baseline} 个来源首次记录` : '', updateRun.failed ? `${updateRun.failed} 个来源失败` : '',
+    updateRun.skipped ? `${updateRun.skipped} 条已跳过` : ''].filter(Boolean).join(' · ');
 }
 function checkShelfUpdates(books = shelf) {
   if (libraryUpdates.isRunning()) {libraryUpdates.stop(); return;}
@@ -297,7 +336,8 @@ function stopSearch() {
   state.groups.forEach(g => { if (g.loading) {g.loading = false; g.error = '已停止搜索';} }); renderResults();
 }
 function cancelRetries() {for (const controller of state.retries.values()) controller.abort(); state.retries.clear();}
-async function search(keyword, push = true) {
+async function search(keyword, push = true, {resumeFrom = null} = {}) {
+  state.switchFrom = resumeFrom;
   keyword = keyword.trim(); if (!keyword) {toast('请输入漫画名称'); return;}
   closeReader(false); closeDetail(false); $('#shelf-dialog').close();
   state.search?.abort(); cancelRetries(); searchView.reset(); const controller = new AbortController(); state.search = controller;
@@ -337,7 +377,7 @@ function closeDetail(push = true) {
   const wasOpen = $('#detail-dialog').open; $('#detail-dialog').close();
   if (push && wasOpen) {navigation.close('page', resultRoute()); document.title = pageTitle();}
 }
-async function openBook(book, {resume = false, push = true, chapterUrl = null, detail: prefetchedDetail = null} = {}) {
+async function openBook(book, {resume = false, push = true, chapterUrl = null, detail: prefetchedDetail = null, resumeFrom = null} = {}) {
   state.catalogRequest?.abort(); closeReader(false); $('#shelf-dialog').close(); state.detailSeq++; const seq = state.detailSeq;
   state.detailRequest?.abort(); const controller = new AbortController(); state.detailRequest = controller;
   const old = shelf.find(b => key(b) === key(book)); state.book = {...old, ...book}; state.chapters = [];
@@ -376,13 +416,22 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
       saveShelf(saveOptions);
     }
     renderDetail();
-    const target = chapterUrl || (resume && shelf.find(item => key(item) === key(state.book))?.chapterUrl);
+    const related = resumeFrom && key(resumeFrom) !== key(state.book) && findRelatedBooks(state.book, [resumeFrom]).length ? resumeFrom : null;
+    if (related?.chapterUrl) {
+      const match = matchChapterProgress(related, state.chapters);
+      if (match) {
+        toast(`已定位到${state.chapters[match.index].name}，换源从本章第一页开始`);
+        await readChapter(match.index, {resume: false, push}); return;
+      }
+      toast(`未能确定“${related.chapterName || '上次章节'}”的对应章节，请在目录中选择`);
+    }
+    const target = related ? chapterUrl : chapterUrl || (resume && shelf.find(item => key(item) === key(state.book))?.chapterUrl);
     if (target) { const index = state.chapters.findIndex(c => c.url === target); if (index >= 0) await readChapter(index, {resume: resume || !push, push}); else toast('原章节已不在当前目录中，请重新选择'); }
     if (localDetail && seq === state.detailSeq && navigator.onLine !== false) void refreshBookCatalog({quiet: true}).catch(() => {});
   } catch (e) {
     if (seq !== state.detailSeq) return;
     recommendations.recordFailure?.(book);
-    const error = el('div'); showError(error, `目录加载失败：${e.message}`, () => openBook(book, {resume, push: false, chapterUrl}));
+    const error = el('div'); showError(error, `目录加载失败：${e.message}`, () => openBook(book, {resume, push: false, chapterUrl, resumeFrom}));
     error.firstChild.append(button('搜索其他源', 'quiet', () => search(book.title))); root.replaceChildren(header, error);
   } finally {if (state.detailRequest === controller) state.detailRequest = null;}
 }
@@ -443,9 +492,18 @@ function renderDetail() {
     collect.textContent = collected ? '取消收藏' : '加入收藏'; collect.setAttribute('aria-pressed', String(collected));
   }
   updateCollect();
+  const relatedProgress = findRelatedBooks(b, shelf).filter(item => key(item) !== key(b) && item.chapterUrl).sort((a, b) => (b.readAt || b.openedAt || 0) - (a.readAt || a.openedAt || 0))[0];
+  if (relatedProgress && resumeIndex < 0) {
+    const match = matchChapterProgress(relatedProgress, state.chapters);
+    const resumeOther = button(match ? `接着看：${state.chapters[match.index].name}` : '查看其他源的阅读位置', 'quiet', () => {
+      if (match) {toast('换源从本章第一页开始'); readChapter(match.index);}
+      else toast(`上次在${relatedProgress.siteName || relatedProgress.siteId}读到“${relatedProgress.chapterName || '未知章节'}”，请选择对应章节`);
+    });
+    actions.append(resumeOther);
+  }
   const download = button('下载章节', 'quiet', () => downloads.open({book: b, chapters: state.chapters, chapter: state.chapters[Math.max(0, resumeIndex)]})); download.disabled = !state.chapters.length;
   const update = button('更新目录', 'quiet', async () => {update.disabled = true; try {await refreshBookCatalog();} catch (error) {toast(error.message);} finally {update.disabled = false;}});
-  actions.append(start, collect, download, update, button('换源查找', 'quiet', () => search(b.title))); text.append(actions); info.append(cover(b), text); body.append(info);
+  actions.append(start, collect, download, update, button('换源查找', 'quiet', () => search(b.title, true, {resumeFrom: shelf.find(item => key(item) === key(b)) || b}))); text.append(actions); info.append(cover(b), text); body.append(info);
   const tools = el('div', 'chapter-tools'), chapters = el('div', 'chapters'), filter = el('input', 'detail-chapter-query');
   filter.placeholder = '查找章节'; filter.setAttribute('aria-label', '查找章节'); filter.value = view.query;
   const summary = el('p', 'chapter-list-summary'); summary.setAttribute('role', 'status'); summary.setAttribute('aria-live', 'polite');
@@ -488,7 +546,7 @@ function renderDetail() {
   dialog.onscroll = () => {view.scrollTop = dialog.scrollTop;};
 }
 function renderShelfCounts() {
-  const counts = libraryCounts(shelf), filters = $('#shelf-filters');
+  const counts = libraryCounts(shelfGroups().map(group => group.book)), filters = $('#shelf-filters');
   if (!filters.children.length) for (const [value, text] of Object.entries({all: '全部', ...READING_STATES})) {
     const filter = button('', '', () => {state.shelfFilter = value; state.shelfPage = 0; renderShelf();}); filter.dataset.state = value; filter.dataset.label = text; filters.append(filter);
   }
@@ -506,7 +564,7 @@ function renderRemoval() {
   const undo = button('撤销', 'quiet', async () => {
     if (removedBook !== entry) return;
     clearTimeout(removalTimer); removedBook = null; renderRemoval();
-    shelf = mergeShelfBackup(shelf, [entry.book]);
+    shelf = mergeShelfBackup(shelf, entry.variants);
     const saved = await saveShelf(); renderShelf();
     const restored = [...$('#shelf-grid').children].find(item => item.dataset.bookKey === key(entry.book));
     (restored?.querySelector('.book-title') || $('#shelf-query')).focus({preventScroll: true});
@@ -518,10 +576,10 @@ function renderRemoval() {
   root.onfocusout = root.onpointerleave = () => {clearTimeout(removalTimer); expire();};
   clearTimeout(removalTimer); expire();
 }
-function removeShelfBook(book) {
-  const current = shelf.find(item => key(item) === key(book)); if (!current) return;
-  removedBook = {book: current};
-  shelf = shelf.filter(item => key(item) !== key(book)); updateErrors.delete(key(book));
+function removeShelfBook(book, variants = [book]) {
+  const ids = new Set(variants.map(key)), records = shelf.filter(item => ids.has(key(item))); if (!records.length) return;
+  removedBook = {book, variants: records};
+  shelf = shelf.filter(item => !ids.has(key(item))); for (const id of ids) updateErrors.delete(id);
   saveShelf(); renderRemoval(); renderShelf(); $('#shelf-undo button').focus({preventScroll: true});
 }
 function renderShelf() {
@@ -529,11 +587,12 @@ function renderShelf() {
   const focusKey = focused?.closest('.book-card')?.dataset.bookKey;
   const focusClass = ['book-reading-state', 'book-cover', 'book-title', 'remove-book'].find(name => focused?.classList.contains(name));
   const query = $('#shelf-query').value, onlyUpdated = $('#shelf-only-updated').checked, onlyFavorites = $('#shelf-only-favorites').checked;
-  const books = filterLibrary(shelf, {query, state: state.shelfFilter, sort: $('#shelf-sort').value}).filter(book => (!onlyUpdated || hasCatalogChange(book)) && (!onlyFavorites || book.favorite !== false));
+  const groups = shelfGroups(), groupedBooks = groups.map(({book, variants}) => ({...book, variants}));
+  const books = filterLibrary(groupedBooks, {query, state: state.shelfFilter, sort: $('#shelf-sort').value}).filter(book => (!onlyUpdated || book.variants.some(hasCatalogChange)) && (!onlyFavorites || book.variants.some(item => item.favorite !== false)));
   const window = pageWindow(books, {page: state.shelfPage, size: 48}); state.shelfPage = window.page;
   renderShelfCounts(); grid.replaceChildren();
-  $('#shelf-list-summary').textContent = books.length > 48 ? `显示 ${window.start + 1}–${window.end} / ${books.length} 本 · 书架共 ${shelf.length} 本` : `显示 ${books.length} / ${shelf.length} 本`;
-  window.items.forEach(b => grid.append(card(b, true)));
+  $('#shelf-list-summary').textContent = books.length > 48 ? `显示 ${window.start + 1}–${window.end} / ${books.length} 本 · 书架共 ${groups.length} 本` : `显示 ${books.length} / ${groups.length} 本`;
+  window.items.forEach(item => {const group = groups.find(group => key(group.book) === key(item)); grid.append(card(group.book, true, group.variants));});
   if (!books.length) {
     const empty = el('div', 'empty');
     if (!shelf.length) empty.append(el('strong', '', '书架还是空的'), el('p', '', '收藏漫画，或开始阅读后在这里继续。'), button('去找漫画', 'primary', findManga));
@@ -567,18 +626,20 @@ function closeReader(push = true) {
   }
 }
 async function restoreRoute() {
+  displayedPath = currentPath(); closeAuxiliary();
   const parts = location.pathname.split('/').filter(Boolean);
   closeReader(false); closeDetail(false); $('#shelf-dialog').close();
   try {
     if (parts[0] === 's') return await search(decodeURIComponent(parts.slice(1).join('/')), false);
-    if (parts[0] === 'discover') return showDiscover(['popular', 'latest'].includes(parts[1]) ? parts[1] : 'recommend', {push: false, scroll: false});
+    if (parts[0] === 'discover') return showDiscover(['popular', 'latest'].includes(parts[1]) ? parts[1] : 'recommend', {push: false, scroll: false, selection: discoverySelection()});
     if ((parts[0] === 'm' || parts[0] === 'read') && parts[1]) {
       const [siteId, detailUrl, meta] = decode(parts[1]); if (!state.sites.some(s => s.siteId === siteId)) throw new Error('未接入该漫画源');
       const found = shelf.find(b => key(b) === key({siteId, detailUrl}));
       const book = found ? {...found, detailUrl} : {siteId, detailUrl, title: typeof meta?.title === 'string' ? meta.title : '漫画', coverUrl: typeof meta?.coverUrl === 'string' ? meta.coverUrl : '', siteName: state.sites.find(s => s.siteId === siteId).siteName};
       const background = window.history.state?.background;
-      if (typeof background === 'string' && /^\/discover(?:\/(popular|latest))?$/.test(background)) {
-        showDiscover(background.split('/')[2] || 'recommend', {push: false, scroll: false});
+      if (typeof background === 'string' && /^\/discover(?:\/(popular|latest))?(?:\?.*)?$/.test(background)) {
+        const url = new URL(background, location.origin);
+        showDiscover(url.pathname.split('/')[2] || 'recommend', {push: false, scroll: false, selection: discoverySelection(url)});
       } else if (typeof background === 'string' && background.startsWith('/s/')) {
         const query = decodeURIComponent(background.slice(3));
         if (query !== state.keyword || !state.groups.length) void search(query, false); else setPage('search');
@@ -589,7 +650,7 @@ async function restoreRoute() {
   } catch (e) {toast(`无法打开链接：${e.message}`); route('/', true); setPage('home'); document.title = 'Sardina';}
 }
 function goHome(event) {event?.preventDefault(); state.search?.abort(); state.search = null; cancelRetries(); closeReader(false); closeDetail(false); state.keyword = ''; searchView.reset(); document.title = 'Sardina'; route('/'); setPage('home'); window.scrollTo({top: 0, behavior: 'instant'});}
-function showDiscover(tab = 'recommend', {push = true, scroll = true} = {}) {
+function showDiscover(tab = 'recommend', {push = true, scroll = true, selection = {}} = {}) {
   state.search?.abort(); state.search = null; cancelRetries(); closeReader(false); closeDetail(false);
   state.discoverTab = tab; state.keyword = ''; setPage('discover'); document.title = '发现 · Sardina';
   if (push) route(discoverPath());
@@ -597,7 +658,7 @@ function showDiscover(tab = 'recommend', {push = true, scroll = true} = {}) {
     if (link.dataset.discover === tab) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
   }
   if (tab === 'recommend') {discovery.hide(); recommendations.show();}
-  else {recommendations.hide(); discovery.show({kind: tab});}
+  else {recommendations.hide(); discovery.show({kind: tab, ...selection});}
   if (scroll) window.scrollTo({top: 0, behavior: 'instant'});
 }
 $('#home-search').onsubmit = e => {e.preventDefault(); search($('#home-keyword').value);};
@@ -611,8 +672,25 @@ for (const link of document.querySelectorAll('.primary-nav a, .discover-tabs a')
   };
 }
 $('#stop-search').onclick = stopSearch;
-$('.shelf-open').onclick = () => {renderShelf(); $('#shelf-dialog').showModal(); $('#shelf-query').focus(); maybeAutoUpdate();};
-$('#close-shelf').onclick = () => $('#shelf-dialog').close();
+function showShelf({restore = false} = {}) {
+  if (!restore) navigation.openOverlay('shelf');
+  renderShelf(); if (!$('#shelf-dialog').open) $('#shelf-dialog').showModal(); $('#shelf-query').focus(); maybeAutoUpdate();
+}
+function closeAuxiliary() {$('#shelf-dialog').close(); downloads.close(); sourceCatalog.close();}
+function syncOverlays() {
+  const names = navigation.overlays();
+  if (!names.includes('shelf')) $('#shelf-dialog').close();
+  if (!names.includes('downloads')) downloads.close();
+  if (!names.includes('sources')) sourceCatalog.close();
+  for (const name of names) {
+    if (name === 'shelf' && !$('#shelf-dialog').open) showShelf({restore: true});
+    if (name === 'downloads' && !$('#downloads-dialog').open) downloads.open(null, {restore: true});
+    if (name === 'sources' && !$('#source-catalog-dialog').open) sourceCatalog.open({restore: true});
+  }
+}
+function closeOverlay(name) {if (!navigation.closeOverlay(name)) syncOverlays();}
+$('.shelf-open').onclick = () => showShelf();
+$('#close-shelf').onclick = () => closeOverlay('shelf');
 $('#downloads-open').onclick = () => downloads.open();
 for (const [selector, event] of [['#shelf-sort', 'onchange'], ['#shelf-query', 'oninput'], ['#shelf-only-updated', 'onchange'], ['#shelf-only-favorites', 'onchange']]) {
   $(selector)[event] = () => {state.shelfPage = 0; renderShelf();};
@@ -634,29 +712,64 @@ window.addEventListener('storage', async event => {
   if ($('#detail-dialog').open && state.book && state.chapters.length && !reader.isOpen()) renderDetail();
   reader.refreshReadingState?.();
 });
-$('#shelf-dialog').addEventListener('keydown', event => {if (event.key === 'Escape' && !event.isComposing) {event.preventDefault(); $('#shelf-dialog').close();}});
+$('#shelf-dialog').addEventListener('keydown', event => {if (event.key === 'Escape' && !event.isComposing) {event.preventDefault(); closeOverlay('shelf');}});
+$('#shelf-dialog').addEventListener('cancel', event => {event.preventDefault(); closeOverlay('shelf');});
 $('#detail-dialog').addEventListener('cancel', e => {e.preventDefault(); closeDetail();});
-for (const id of ['detail-dialog', 'shelf-dialog']) $('#' + id).addEventListener('click', e => {if (e.target !== e.currentTarget) return; const r = e.currentTarget.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) id === 'detail-dialog' ? closeDetail() : e.currentTarget.close();});
-window.addEventListener('popstate', restoreRoute);
+for (const id of ['detail-dialog', 'shelf-dialog']) $('#' + id).addEventListener('click', e => {if (e.target !== e.currentTarget) return; const r = e.currentTarget.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) id === 'detail-dialog' ? closeDetail() : closeOverlay('shelf');});
+window.addEventListener('popstate', () => {
+  if (currentPath() === displayedPath) {syncOverlays(); return;}
+  const restored = restoreRoute(); syncOverlays(); void restored.then(syncOverlays);
+});
+const READER_PREFS = 'revyunman.reader.preferences.v2', BOOK_READER_PREFS = 'revyunman.reader.books.v1';
+const object = value => value && typeof value === 'object' && !Array.isArray(value);
+function readerBookPreferences(value) {
+  return Object.fromEntries(Object.entries(object(value) ? value : {}).filter(([, prefs]) => object(prefs)).map(([id, prefs]) => [id, normalizeReaderPreferences(prefs)]));
+}
+function exportBackup() {
+  const backup = JSON.parse(serializeShelfBackup(shelf));
+  backup.preferences = {
+    reader: {defaults: normalizeReaderPreferences(readStore(READER_PREFS, null), {light: readStore('revyunman.reader.light', false), width: readStore('revyunman.reader.width', 800)}), books: readerBookPreferences(readStore(BOOK_READER_PREFS, {}))},
+    sources: loadSourcePreferences(), recommendations: recommendations.exportPreferences(), autoUpdates,
+  };
+  const serialized = JSON.stringify(backup, null, 2);
+  if (new TextEncoder().encode(serialized).length > MAX_BACKUP_BYTES) throw new Error('备份文件超过 50 MB 上限');
+  return serialized;
+}
+async function importPreferences(preferences) {
+  if (!object(preferences)) return false;
+  if (object(preferences.reader?.defaults)) localStorage.setItem(READER_PREFS, JSON.stringify(normalizeReaderPreferences(preferences.reader.defaults)));
+  if (object(preferences.reader?.books)) localStorage.setItem(BOOK_READER_PREFS, JSON.stringify({...readerBookPreferences(readStore(BOOK_READER_PREFS, {})), ...readerBookPreferences(preferences.reader.books)}));
+  if (object(preferences.sources)) {
+    const merged = {favoriteIds: [...loadSourcePreferences().favoriteIds, ...(Array.isArray(preferences.sources.favoriteIds) ? preferences.sources.favoriteIds : [])]};
+    if (!saveSourcePreferences(merged)) throw new Error('无法保存常用源设置');
+    state.sourcePreferences = loadSourcePreferences();
+  }
+  if (object(preferences.recommendations)) await recommendations.importPreferences(preferences.recommendations);
+  if (typeof preferences.autoUpdates === 'boolean') {
+    autoUpdates = preferences.autoUpdates; localStorage.setItem('revyunman.autoUpdates.v1', JSON.stringify(autoUpdates)); $('#shelf-auto-updates').checked = autoUpdates;
+    if (!autoUpdates) libraryUpdates.stop();
+  }
+  return true;
+}
 function downloadJson(contents, label) {const blob = new Blob([contents], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = el('a'); a.href = url; a.download = `${label}-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);}
-$('#export-shelf').onclick = () => {saveProgress(); try {downloadJson(serializeShelfBackup(shelf), 'Sardina书架');} catch (error) {toast(error.message);}};
+$('#export-shelf').onclick = () => {saveProgress(); try {downloadJson(exportBackup(), 'Sardina备份');} catch (error) {toast(error.message);}};
 $('#export-shelf-recovery').onclick = () => {try {downloadJson(libraryStore.recovery(), 'Sardina原始恢复记录');} catch (error) {toast(error.message);}};
 $('#import-shelf').onclick = () => $('#shelf-file').click();
 $('#shelf-file').onchange = async e => {
   const file = e.target.files[0]; if (!file) return;
   try {if (file.size > MAX_BACKUP_BYTES) throw new Error('备份文件超过 50 MB 上限');
-    const books = readShelfBackup(await file.text());
-    shelf = mergeShelfBackup(shelf, books); const saved = await saveShelf(); renderShelf(); if (saved) toast(`已合并 ${books.length} 本漫画，保留较新的阅读进度与分类`);
+    const serialized = await file.text(), books = readShelfBackup(serialized);
+    shelf = mergeShelfBackup(shelf, books); const saved = await saveShelf();
+    const restoredPreferences = await importPreferences(JSON.parse(serialized).preferences);
+    renderShelf(); if (saved) toast(`已合并 ${books.length} 条记录${restoredPreferences ? '并恢复设置' : ''}，现有下载已保留`);
   } catch (error) {toast('导入失败：' + error.message);} finally {e.target.value = '';}
 };
 async function init() {
   await saveShelf({intent: 'passive'}); renderHistory();
   if (libraryStore.issues.length) toast(libraryStore.issues.join('；'));
-  const [sites, home] = await Promise.allSettled([api('/api/sites'), api('/api/home-sections')]);
-  if (sites.status === 'fulfilled') state.sites = sites.value;
-  else toast('漫画源连接失败，请刷新重试');
-  if (home.status === 'fulfilled') coverWall.setBooks(home.value.featured || []);
-  await restoreRoute();
+  void api('/api/home-sections').then(home => coverWall.setBooks(home.featured || [])).catch(() => {});
+  try {state.sites = await api('/api/sites');} catch {toast('漫画源连接失败，可从书架打开已下载的章节');}
+  const restored = restoreRoute(); syncOverlays(); await restored; syncOverlays();
   maybeAutoUpdate();
 }
 init();

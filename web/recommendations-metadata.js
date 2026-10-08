@@ -8,7 +8,7 @@ export function createRecommendationMetadata({storage, now = Date.now} = {}) {
   function clean(value) {
     const result = {};
     for (const field of ['author', 'description', 'status']) if (typeof value?.[field] === 'string' && value[field].trim()) result[field] = value[field].trim().slice(0, 4000);
-    for (const field of ['tags', 'genres']) if (Array.isArray(value?.[field])) {
+    for (const field of ['tags', 'genres', 'alternateTitles']) if (Array.isArray(value?.[field])) {
       const tags = value[field].filter(tag => typeof tag === 'string' && tag.trim()).slice(0, 20).map(tag => tag.slice(0, 80));
       if (tags.length) result[field] = tags;
     }
@@ -18,7 +18,9 @@ export function createRecommendationMetadata({storage, now = Date.now} = {}) {
     has: book => !!read(book),
     apply(book) {return {...book, ...clean(read(book)?.value)};},
     remember(book, value) {
-      rows[sourceEntryKey(book)] = {at: now(), value: {...clean(read(book)?.value), ...clean(value)}};
+      const merged = {...clean(read(book)?.value), ...clean(value)};
+      if (!Object.keys(merged).length) return;
+      rows[sourceEntryKey(book)] = {at: now(), value: merged};
       rows = Object.fromEntries(Object.entries(rows).filter(([, row]) => typeof row?.at === 'number' && row.at <= now() && row.at > now() - TTL).sort((a, b) => b[1].at - a[1].at).slice(0, 200));
       try {storage?.setItem(METADATA_KEY, JSON.stringify(rows));} catch { /* Optional metadata never blocks reading. */ }
     },

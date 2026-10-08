@@ -160,5 +160,7 @@ export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf
       }, 500));
     }
   }, {threshold: [.5]}) : null;
-  return {show: () => model.show(), hide: () => model.hide(), shelfChanged: () => model.shelfChanged(), rememberMetadata: (book, value) => model.rememberMetadata(book, value), recordRead: (book, progress) => model.recordRead(book, progress), recordFailure: (book, detail) => model.recordFailure(book, detail), recordRecovery: (book, detail) => model.recordRecovery(book, detail)};
+  return {show: () => model.show(), hide: () => model.hide(), shelfChanged: () => model.shelfChanged(), rememberMetadata: (book, value) => model.rememberMetadata(book, value),
+    exportPreferences: () => model.exportPreferences(), importPreferences: value => model.importPreferences(value),
+    recordRead: (book, progress) => model.recordRead(book, progress), recordFailure: (book, detail) => model.recordFailure(book, detail), recordRecovery: (book, detail) => model.recordRecovery(book, detail)};
 }

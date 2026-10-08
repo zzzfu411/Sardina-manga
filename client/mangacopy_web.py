@@ -176,14 +176,30 @@ def _field(scope, label):
     return ""
 
 
-def details(url):
-    url, slug = _url(url)
-    session = _Session()
-    root = parse_html(session.get(url, ORIGIN + "/"))
+def _metadata(root, url):
     scope = root.first(cls="comicParticulars-title")
     title = text_of(scope.first("h6")) if scope else ""
     if not title:
         raise RuntimeError("拷贝官网未返回作品详情，请在源站查看或切换漫画源")
+    result = {"title": title, "author": _field(scope, "作者"),
+              "description": text_of(root.first(cls="intro")), "status": _field(scope, "狀態|状态"),
+              "coverUrl": image_of(scope.first(cls="comicParticulars-left-img"), url)}
+    tags = [tag for tag in re.split(r"[/,，、\s]+", _field(scope, "題材|题材|類型|类型")) if tag]
+    if tags:
+        result['tags'] = tags[:20]
+    return result
+
+
+def metadata(url):
+    url, _ = _url(url)
+    return _metadata(parse_html(_Session().get(url, ORIGIN + '/')), url)
+
+
+def details(url):
+    url, slug = _url(url)
+    session = _Session()
+    root = parse_html(session.get(url, ORIGIN + "/"))
+    result = _metadata(root, url)
     dnt = root.first(ident="dnt")
     dnts = dnt.attrs.get("value", "") if dnt else ""
     if not re.fullmatch(r"[\x21-\x7e]{1,128}", dnts):
@@ -198,11 +214,7 @@ def details(url):
     if not isinstance(payload, dict) or payload.get("code") not in (200, "200"):
         raise RuntimeError("拷贝官网未允许读取章节目录，请在源站查看或切换漫画源")
     chapters = _directory(_decrypt_json(payload.get("results"), key), slug)
-    result = {"title": title, "author": _field(scope, "作者"),
-              "description": text_of(root.first(cls="intro")),
-              "status": _field(scope, "狀態|状态"),
-              "coverUrl": image_of(scope.first(cls="comicParticulars-left-img"), url),
-              "chapters": chapters, "sourceUrl": url}
+    result.update(chapters=chapters, sourceUrl=url)
     if not chapters:
         result["unavailableReason"] = EMPTY_DIRECTORY
     return result

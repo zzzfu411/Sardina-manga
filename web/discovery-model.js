@@ -81,7 +81,7 @@ export function normalizeDiscoveryResult(payload, selection, sources) {
 }
 
 /** One visible selection owns one request; late responses cannot update a newer selection. */
-export function createDiscoveryModel({api, onChange = () => {}}) {
+export function createDiscoveryModel({api, onChange = () => {}, onSelectionChange = () => {}}) {
   let state = {visible: false, phase: 'idle', sources: [], selection: null, data: null, error: '', errorStage: ''};
   let sourcesLoaded = false, request = null, generation = 0;
   const notify = () => onChange({...state});
@@ -118,6 +118,7 @@ export function createDiscoveryModel({api, onChange = () => {}}) {
       sourcesLoaded = true;
       state = {...state, sources, selection: chooseDiscoverySelection(sources, state.selection || {})};
       if (!state.selection) {state = {...state, phase: 'unavailable'}; notify(); return;}
+      onSelectionChange({...state.selection}, {replace: true});
       await loadList();
     } catch (error) {
       if (!current(run)) return;
@@ -125,16 +126,19 @@ export function createDiscoveryModel({api, onChange = () => {}}) {
     } finally {if (request === run.controller) request = null;}
   }
   return {
-    show({kind} = {}) {
-      const changed = Object.hasOwn(DISCOVERY_KINDS, kind) && state.selection?.kind !== kind;
-      if (changed) {
-        const preferred = {...state.selection, kind, period: '', page: 1};
-        state = {...state, selection: sourcesLoaded ? chooseDiscoverySelection(state.sources, preferred) : preferred,
-          data: null, phase: state.phase === 'sources-loading' ? state.phase : 'idle'};
+    show(preferred = {}) {
+      const kindChanged = Object.hasOwn(DISCOVERY_KINDS, preferred.kind) && state.selection?.kind !== preferred.kind;
+      const requested = {...state.selection, ...(kindChanged ? {period: '', page: 1} : {}), ...preferred};
+      const selection = sourcesLoaded ? chooseDiscoverySelection(state.sources, requested) : requested;
+      const changed = JSON.stringify(selection) !== JSON.stringify(state.selection);
+      if (changed) state = {...state, selection, data: null, phase: state.phase === 'sources-loading' ? state.phase : 'idle'};
+      if (state.visible) {
+        if (changed && sourcesLoaded) {onSelectionChange({...selection}, {replace: true}); return loadList();}
+        return;
       }
-      if (state.visible) {if (changed && sourcesLoaded) return loadList(); return;}
       state = {...state, visible: true};
       if (!sourcesLoaded) return loadSources();
+      if (selection) onSelectionChange({...selection}, {replace: true});
       if (state.data || state.phase === 'error' || state.phase === 'unavailable') {notify(); return;}
       return loadList();
     },
@@ -147,19 +151,19 @@ export function createDiscoveryModel({api, onChange = () => {}}) {
       if (!state.visible || !sourcesLoaded) return;
       const selection = chooseDiscoverySelection(state.sources, {...state.selection, ...changes, page: 1});
       if (!selection || JSON.stringify(selection) === JSON.stringify(state.selection)) return;
-      state = {...state, selection}; return loadList();
+      state = {...state, selection}; onSelectionChange({...selection}, {replace: false}); return loadList();
     },
     refresh() {return sourcesLoaded && state.selection ? loadList(true) : loadSources();},
     retry() {return state.errorStage === 'sources' || !sourcesLoaded ? loadSources() : loadList();},
     previous() {
       if (!state.visible || !state.selection || state.selection.page <= 1 || !['ready', 'error'].includes(state.phase)) return;
       state = {...state, selection: {...state.selection, page: state.selection.page - 1}};
-      return loadList();
+      onSelectionChange({...state.selection}, {replace: false}); return loadList();
     },
     next() {
       if (!state.visible || state.phase !== 'ready' || !state.data?.hasMore) return;
       state = {...state, selection: {...state.selection, page: state.selection.page + 1}};
-      return loadList();
+      onSelectionChange({...state.selection}, {replace: false}); return loadList();
     },
     getState() {return {...state};},
   };

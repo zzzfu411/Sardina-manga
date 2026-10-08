@@ -1,3 +1,4 @@
+import {offlineReady} from './offline.js';
 import {createDownloadStore, downloadKey} from './download-store.js';
 import {createDownloadManager, downloadSelection} from './download-model.js';
 
@@ -5,13 +6,16 @@ const node = (tag, className = '', text = '') => {const element = document.creat
 const button = (text, action) => {const element = node('button', 'quiet', text); element.type = 'button'; element.onclick = action; return element;};
 const size = bytes => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
-export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
+export function createDownloads({api, imageUrl, imageLoader, onOpen, toast, onShow = () => {}, onRequestClose = null}) {
   const store = createDownloadStore();
   let context = null, refreshId = 0, refreshTimer = null;
   const dialog = node('dialog', 'download-dialog'); dialog.id = 'downloads-dialog'; dialog.setAttribute('aria-labelledby', 'downloads-title');
   const head = node('header', 'download-head'), title = node('h2', '', '章节下载'); title.id = 'downloads-title';
-  const close = button('关闭', () => dialog.close()); close.setAttribute('aria-label', '关闭下载管理'); head.append(title, close);
-  const note = node('p', 'muted download-note', '保存在此浏览器，下载完成后可断网阅读。关闭页面会暂停，可稍后继续。');
+  const requestClose = () => onRequestClose ? onRequestClose() : dialog.close();
+  const close = button('关闭', requestClose); close.setAttribute('aria-label', '关闭下载管理'); head.append(title, close);
+  const note = node('p', 'muted download-note');
+  function updateOfflineNote() {note.textContent = offlineReady() ? '已准备离线阅读，可断网重新打开已下载章节。图片保存在此浏览器，不包含在书架备份中。' : '离线启动尚未就绪，请保持联网直至准备完成。章节保存在此浏览器，图片不包含在书架备份中；关闭页面会暂停下载。';}
+  updateOfflineNote(); window.addEventListener('sardina-offline-ready', updateOfflineNote);
   const picker = node('form', 'download-picker'), bookName = node('strong');
   const startLabel = node('label', '', '起始章节'), start = node('select'); start.id = 'download-start'; startLabel.append(start);
   const countLabel = node('label', '', '章节数'), count = node('select'); count.id = 'download-count';
@@ -79,19 +83,21 @@ export function createDownloads({api, imageUrl, imageLoader, onOpen, toast}) {
       refresh();
     } catch (error) {toast(error.message);}
   };
-  function open(selection = null) {
-    context = selection; picker.hidden = !context; start.replaceChildren();
+  function open(selection = null, {restore = false} = {}) {
+    if (!restore) context = selection; picker.hidden = !context; start.replaceChildren();
     summary.textContent = '正在读取下载…';
     if (context) {
       bookName.textContent = context.book.title;
       for (const [index, chapter] of context.chapters.entries()) {const option = node('option', '', chapter.name); option.value = index; start.append(option);}
       start.value = String(Math.max(0, context.chapters.findIndex(chapter => chapter.url === context.chapter?.url))); count.value = '1';
     }
-    if (!dialog.open) dialog.showModal(); close.focus(); refresh(); showStorage();
+    if (!dialog.open) {if (!restore) onShow(); dialog.showModal();} close.focus(); refresh(); showStorage();
   }
+  dialog.addEventListener('cancel', event => {event.preventDefault(); requestClose();});
+  dialog.addEventListener('keydown', event => {if (event.key === 'Escape' && !event.isComposing) {event.preventDefault(); event.stopPropagation(); requestClose();}});
   dialog.addEventListener('close', () => {refreshId++;});
   window.addEventListener('pagehide', () => manager.pauseAll());
-  return {open, store,
+  return {open, close: () => dialog.close(), store,
     async localDetail(book, chapterUrl) {
       if (!chapterUrl) return null;
       const record = await store.getChapter(book, {url: chapterUrl}).catch(() => null);

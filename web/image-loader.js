@@ -27,11 +27,11 @@ export function createImageLoader({fetchImage = fetchReaderImage, limit = 4, bac
   }
   function pump() {
     while (active < limit) {
-      const job = [...jobs.values()].filter(item => !item.running && item.users.size && (item.priority < 2 || background < backgroundLimit))
+      const job = [...jobs.values()].filter(item => !item.running && item.users.size && (item.priority === 0 || background < backgroundLimit))
         .sort((a, b) => a.priority - b.priority || a.order - b.order)[0];
       if (!job) break;
       job.running = true; active++;
-      const isBackground = job.priority >= 2;
+      const isBackground = job.priority > 0;
       if (isBackground) background++;
       let timedOut = false;
       const timer = setTimeout(() => {timedOut = true; job.controller.abort();}, timeoutMs);

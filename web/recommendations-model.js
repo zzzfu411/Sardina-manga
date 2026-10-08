@@ -1,7 +1,8 @@
-import {sameWork, sourceEntryKey, workIdentity} from './book-identity.js';
+import {groupWorks, sourceEntryKey, workIdentity} from './book-identity.js';
 import {createRecommendationMetadata} from './recommendations-metadata.js';
 import {createRecommendationFeedback} from './recommendations-feedback.js';
 import {buildRecommendationProfile, originReason, rankRecommendations} from './recommendations-ranking.js';
+import {searchTitleKey} from './search-results-model.js';
 
 export const RECOMMENDATION_BATCH_SIZE = 12;
 export const RECOMMENDATION_POOL_LIMIT = 200;
@@ -18,7 +19,16 @@ export function recommendationUrl(value) {
   } catch {return '';}
 }
 export const recommendationReason = originReason;
-export const isRecommendationOnShelf = (book, shelf = []) => shelf.some(saved => sameWork(book, saved));
+export function isRecommendationOnShelf(book, shelf = []) {
+  if (!shelf.length) return false;
+  const key = sourceEntryKey(book), saved = new Set(shelf.map(sourceEntryKey));
+  if (saved.has(key)) return true;
+  const title = searchTitleKey(book.title), candidates = shelf.filter(item => searchTitleKey(item.title) === title);
+  if (!candidates.length) return false;
+  const group = groupWorks([book, ...candidates])
+    .find(candidate => candidate.books.some(item => sourceEntryKey(item) === key));
+  return Boolean(group?.books.some(item => saved.has(sourceEntryKey(item))));
+}
 
 export function normalizeRecommendations(payload) {
   if (!payload || !Array.isArray(payload.items)) throw new Error('暂时无法读取推荐，请重试');
@@ -33,14 +43,7 @@ export function normalizeRecommendations(payload) {
     else entries.set(key, {...previous, ...book, author: book.author || previous.author,
       description: text(book.description) || text(previous.description)});
   }
-  const candidates = [], identities = new Map();
-  for (const book of entries.values()) {
-    // Unknown authors retain the source entry identity. Known works can share a
-    // card while keeping every source variant available for cover recovery.
-    const key = workIdentity(book), previous = identities.get(key);
-    if (previous && sameWork(previous.book, book)) previous.variants.push(book);
-    else {const candidate = {key, book, variants: [book]}; candidates.push(candidate); identities.set(key, candidate);}
-  }
+  const candidates = groupWorks([...entries.values()]).map(({key, books}) => ({key, book: books[0], variants: books}));
   const origins = [], originKeys = new Set();
   for (const origin of Array.isArray(payload.origins) ? payload.origins : []) {
     if (!validId(origin?.siteId) || !text(origin.siteName) || !validKind(origin.kind)) continue;
@@ -66,12 +69,18 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     try {books = getShelf();} catch {books = [];}
     if (!Array.isArray(books)) books = [];
     if (shelfCache?.books === books) return shelfCache;
-    const keys = new Set();
-    for (const book of books) if (book && typeof book === 'object') {keys.add(sourceEntryKey(book)); keys.add(workIdentity(book));}
-    shelfCache = {books, keys, profile: buildRecommendationProfile(books)};
+    const keys = new Set(), titles = new Map();
+    for (const book of books) if (book && typeof book === 'object') {
+      keys.add(sourceEntryKey(book)); keys.add(workIdentity(book));
+      const title = searchTitleKey(book.title);
+      if (!titles.has(title)) titles.set(title, []);
+      titles.get(title).push(book);
+    }
+    shelfCache = {books, keys, titles, profile: buildRecommendationProfile(books)};
     return shelfCache;
   }
-  const onShelf = book => shelfData().keys.has(sourceEntryKey(book)) || shelfData().keys.has(workIdentity(book));
+  const onShelf = book => shelfData().keys.has(sourceEntryKey(book)) || shelfData().keys.has(workIdentity(book)) ||
+    isRecommendationOnShelf(book, shelfData().titles.get(searchTitleKey(book.title)) || []);
   const wasServed = candidate => served.has(candidate.key) || candidate.variants.some(book => served.has(sourceEntryKey(book)));
   function available(input = pool, unseenOnly = true) {
     return input.flatMap(candidate => {
@@ -98,7 +107,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
         failed.size && !available(pool, false).length ? 'covers' : 'pool'};
   }
   const notify = () => onChange(snapshot());
-  function cancel() {enrichment?.abort(); enrichment = null; generation++; request?.abort(); request = null;}
+  function cancel() {enrichment?.abort(); enrichment = null; metadataTried.clear(); generation++; request?.abort(); request = null;}
   function makeCard(candidate, id, replacements = 0, retry = 0) {
     served.add(candidate.key);
     for (const book of candidate.variants) served.add(sourceEntryKey(book));
@@ -182,20 +191,41 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
   }
   function rememberMetadata(book, value) {
     metadata.remember(book, value);
-    const apply = candidate => ({...candidate, book: metadata.apply(candidate.book), variants: candidate.variants.map(item => metadata.apply(item))});
-    pool = pool.map(apply); state = {...state, cards: state.cards.map(apply)};
+    pool = normalizeRecommendations({items: pool.flatMap(candidate => candidate.variants.map(item => metadata.apply(item)))}).candidates;
+    feedback.rememberBook?.(metadata.apply(book));
+    const owners = new Map(pool.flatMap(candidate => candidate.variants.map(item => [sourceEntryKey(item), candidate])));
+    const previous = state.cards, seen = new Set(), cards = [];
+    for (const card of previous) {
+      const candidate = owners.get(sourceEntryKey(card.book));
+      if (!candidate || seen.has(candidate.key) || candidate.variants.some(item => onShelf(item) || feedback.isDismissed(item))) continue;
+      seen.add(candidate.key); served.add(candidate.key);
+      for (const item of candidate.variants) served.add(sourceEntryKey(item));
+      cards.push({...card, ...candidate, book: candidate.variants.find(item => sourceEntryKey(item) === sourceEntryKey(card.book)) || candidate.book});
+    }
+    state = {...state, cards};
+    const ids = previous.filter(card => !cards.some(item => item.id === card.id)).map(card => card.id);
+    state.cards.push(...select(previous.length - cards.length, seen).map(candidate => makeCard(candidate, ids.shift())));
     if (state.visible) {updateReasons(); notify();}
   }
   async function enrich() {
     if (!state.visible) return;
     enrichment?.abort(); const controller = new AbortController(); enrichment = controller;
-    const selected = state.cards.filter(card => card.book.metadataAvailable === true && !metadata.has(card.book) && !metadataTried.has(sourceEntryKey(card.book))).slice(0, 2);
-    await Promise.all(selected.map(async ({book}) => {
-      metadataTried.add(sourceEntryKey(book));
-      try {
-        const data = await api('/api/book-metadata', {siteId: book.siteId, detailUrl: book.detailUrl}, controller.signal);
-        if (!controller.signal.aborted) rememberMetadata(book, data);
-      } catch { /* Optional enrichment never delays the first cards or reading. */ }
+    const missing = book => Number(!text(book.author)) * 2 + Number(!text(book.description)) + Number(!book.tags?.length && !book.genres?.length);
+    const selected = state.cards.map(card => card.book).filter(book => book.metadataAvailable === true && missing(book) && !metadata.has(book) && !metadataTried.has(sourceEntryKey(book)))
+      .sort((a, b) => missing(b) - missing(a));
+    let cursor = 0;
+    // Two requests at a time, only for this visible batch. Finish its missing
+    // metadata without keeping the whole recommendation pool busy in background.
+    await Promise.all(Array.from({length: Math.min(2, selected.length)}, async () => {
+      while (cursor < selected.length && !controller.signal.aborted) {
+        const book = selected[cursor++], key = sourceEntryKey(book);
+        if (!state.cards.some(card => card.variants.some(item => sourceEntryKey(item) === key))) continue;
+        metadataTried.add(key);
+        try {
+          const data = await api('/api/book-metadata', {siteId: book.siteId, detailUrl: book.detailUrl}, controller.signal);
+          if (!controller.signal.aborted) rememberMetadata(book, data);
+        } catch { /* Optional enrichment never delays the first cards or reading. */ }
+      }
     }));
     if (enrichment === controller) enrichment = null;
   }
@@ -209,6 +239,8 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
   });
   return {
     rememberMetadata,
+    exportPreferences: () => feedback.exportPreferences(),
+    importPreferences: value => feedback.importPreferences(value),
     recordRead: (book, progress) => feedback.recordRead(book, progress),
     recordFailure: (book, detail) => feedback.recordFailure(book, detail),
     recordRecovery: (book, detail) => feedback.recordRecovery(book, detail),
@@ -220,7 +252,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
       if (loaded) {
         if (now() - loadedAt >= RECOMMENDATION_SOFT_TTL) return load('soft');
         if (state.phase === 'idle') state = {...state, phase: 'ready'};
-        updateReasons(); notify(); return;
+        updateReasons(); notify(); void enrich(); return;
       }
       return load();
     },

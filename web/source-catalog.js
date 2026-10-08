@@ -18,7 +18,7 @@ const node = (tag, className, text) => {
   return element;
 };
 
-export function createSourceCatalog({root, api, onPreferencesChange = () => {}}) {
+export function createSourceCatalog({root, api, onPreferencesChange = () => {}, onShow = () => {}, onRequestClose = null}) {
   const query = root.querySelector('[data-catalog-query]');
   const filter = root.querySelector('[data-catalog-filter]');
   const summary = root.querySelector('[data-catalog-summary]');
@@ -103,8 +103,9 @@ export function createSourceCatalog({root, api, onPreferencesChange = () => {}})
     generation++; request?.abort(); request = null;
     if (root.open) root.close();
   }
-  async function open() {
-    if (!root.open) root.showModal();
+  const requestClose = () => onRequestClose ? onRequestClose() : close();
+  async function open({restore = false} = {}) {
+    if (!root.open) {if (!restore) onShow(); root.showModal();}
     preferences = loadSourcePreferences();
     if (data) {renderActive(); render(); query.focus();}
     request?.abort();
@@ -128,18 +129,18 @@ export function createSourceCatalog({root, api, onPreferencesChange = () => {}})
   }
   query.addEventListener('input', render);
   filter.addEventListener('change', render);
-  root.querySelector('[data-catalog-close]').addEventListener('click', close);
-  root.addEventListener('cancel', event => {event.preventDefault(); close();});
+  root.querySelector('[data-catalog-close]').addEventListener('click', requestClose);
+  root.addEventListener('cancel', event => {event.preventDefault(); requestClose();});
   root.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !event.isComposing) {
       // Search inputs otherwise consume the first Escape to clear their text.
-      event.preventDefault(); event.stopPropagation(); close();
+      event.preventDefault(); event.stopPropagation(); requestClose();
     }
   });
   root.addEventListener('click', event => {
     if (event.target !== root) return;
     const bounds = root.getBoundingClientRect();
-    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) requestClose();
   });
   return {open, close};
 }

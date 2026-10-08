@@ -306,6 +306,7 @@ def _zaimanhua(page):
             raise DiscoveryError('再漫画更新作品编号无效') from exc
         rows.append(_row('zaimanhua', value.get('title'), detail, value.get('cover'), latest=value.get('last_update_chapter_name'),
                          author=value.get('authors'), status=value.get('status'), update=_millis_date(value.get('last_updatetime'))))
+        rows[-1]['tags'] = [tag for tag in re.split(r'[,，/、\s]+', text(value.get('types'))) if tag][:20]
     return _finish('zaimanhua', 'latest', '', page, rows, 'https://manhua.zaimanhua.com/update', '最近更新', more=len(rows) == 20 and page < _MAX_PAGE,
                    note='已显示前 1000 页。' if page == _MAX_PAGE else '', allow_empty=page > 1)
 
@@ -332,6 +333,7 @@ def _zai_popular(period, page):
         rows.append(_row('zaimanhua', value.get('title'), detail, value.get('cover'),
                          latest=value.get('last_update_chapter_name'), author=value.get('authors'), status=value.get('status'),
                          rank=(page - 1) * 20 + len(rows) + 1))
+        rows[-1]['tags'] = [tag for tag in re.split(r'[,，/、\s]+', text(value.get('types'))) if tag][:20]
     return _finish('zaimanhua', 'popular', period, page, rows, 'https://manhua.zaimanhua.com/rank', dict(_PERIODS)[period],
                    more=page * 20 < data['totalNum'] and page < _MAX_PAGE, allow_empty=page > 1 and page * 20 > data['totalNum'])
 

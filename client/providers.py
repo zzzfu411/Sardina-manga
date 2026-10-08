@@ -205,7 +205,7 @@ def copy_chapters_all(slug):
     return rows, detail.get("comic", {})
 
 
-METADATA_SITES = frozenset({*dm.SITES, "hipmh", "komiic", "baozimh", "manhuagui"})
+METADATA_SITES = frozenset({*dm.SITES, "hipmh", "komiic", "baozimh", "manhuagui", "mangacopy", "zaimanhua"})
 
 
 def metadata(site, url):
@@ -215,6 +215,10 @@ def metadata(site, url):
         raise ValueError("此源暂不支持轻量作品资料")
     if site == "hipmh":
         value = hipmh_metadata.metadata(hip_manga_id(url))
+    elif site == 'mangacopy':
+        value = mangacopy_web.metadata(url)
+    elif site == 'zaimanhua':
+        value = apk_dmzj.metadata(site, url)
     elif site == "komiic":
         comic_id = komiic._id(urlparse(url).path.rstrip("/").rsplit("/", 1)[-1])
         data = komiic._query("query comicMetadata($comicId: ID!) { comicById(comicId: $comicId) { id title description authors { name } } }", {"comicId": comic_id})

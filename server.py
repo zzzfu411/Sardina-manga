@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 from collections import OrderedDict
 from concurrent.futures import Future, ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -21,9 +22,34 @@ from client.native_sources import _ssl_context
 from client.source_coverage import compare_sources
 from client.source_catalog import catalog as source_catalog
 from client.source_health import SourceHealth
-from client.request_budget import ImageBudget, ImageCapacityError
+from client.request_budget import RequestBudget, ImageBudget, ImageCapacityError
 
 ROOT = Path(__file__).resolve().parent
+STATIC_FILES = {"/": "index.html", "/favicon.ico": "brand/sardina-097-c.png", "/brand": "brand-preview.html"}
+for _name in (
+    "app.js", "style.css", "logo.svg", "sardina.css", "search-model.js", "search-view.js", "search.css",
+    "reader.js", "reader-model.js", "reader-transport.js", "reader.css", "reader-gestures.js",
+    "source-catalog.js", "source-catalog.css", "source-preferences.js", "library-model.js", "library.css",
+    "library-updates.js", "library-store.js", "library-auto-updates.js", "book-identity.js", "discovery.js",
+    "discovery-model.js", "discovery-covers.js", "discovery.css", "recommendations.js", "recommendations-model.js",
+    "recommendations-feedback.js", "recommendations.css", "recommendations-ranking.js", "recommendations-metadata.js",
+    "cover-wall.js", "cover-wall.css", "home.css", "route-history.js", "page-window.js", "cover-pause.js",
+    "search-results-model.js", "search-characters.js", "image-loader.js", "download-store.js", "download-model.js",
+    "downloads.js", "downloads.css", "offline.js", "sw.js", "brand/sardina-070.png", "brand/sardina-097.png",
+    "brand/sardina-097-a.png", "brand/sardina-097-b.png", "brand/sardina-097-c.png",
+):
+    STATIC_FILES["/" + _name] = _name
+
+
+def offline_manifest():
+    assets = [path for path, name in STATIC_FILES.items()
+              if path != '/sw.js' and (path == '/' or name.endswith(('.js', '.css')) or path == '/brand/sardina-097-c.png')]
+    digest = hashlib.sha256()
+    for path in [*assets, '/sw.js']:
+        digest.update(path.encode())
+        digest.update((ROOT / 'web' / STATIC_FILES[path]).read_bytes())
+    return {'version': digest.hexdigest()[:16], 'assets': [*assets, '/api/sites']}
+
 IMAGE_DOMAINS = ("bzcdn.net", "baozimh.com", "bgm.tv", "hamreus.com", "cdndm5.com", "mangabz.com", "tuku.cc", "s3imgs.top", "mangafunb.fun", "komiic.com", "shimolife.com", "ecombdimg.com", "mangacopy.com", "manhuagui.com", "mhgui.com") + providers.EXTRA_IMAGE_DOMAINS + comicbox_images.IMAGE_DOMAINS + discovery.image_domains()
 
 
@@ -149,19 +175,20 @@ class Application:
         self.cover_slots = threading.BoundedSemaphore(4)
         self.book_metadata_cache = Cache(limit=200)
         self.book_metadata_slots = threading.BoundedSemaphore(2)
-        self.metadata_slots = threading.BoundedSemaphore(8)
+        self.metadata_slots = RequestBudget(limit=8, foreground_reserved=2)
         self.image_slots = ImageBudget(limit=8, foreground_reserved=2)
         self.image_cache = Cache(limit=96, max_bytes=32 * 1024 * 1024)
         self.health = SourceHealth()
         self.upstream = MangaYun(timeout=45)
 
-    def source_request(self, site, capability, load):
-        if not self.metadata_slots.acquire(timeout=5):
+    def source_request(self, site, capability, load, *, foreground=False, key=None):
+        ticket = self.metadata_slots.acquire(key if key is not None else object(), foreground=foreground, timeout=5)
+        if ticket is None:
             raise RuntimeError("漫画源请求较多，请稍后重试")
         try:
             return self.health.observe(site, capability, load)
         finally:
-            self.metadata_slots.release()
+            self.metadata_slots.release(ticket)
 
     def image(self, site, url, *, refresh=False, purpose='cover'):
         if purpose not in {'reader', 'prefetch', 'download', 'cover'}:
@@ -302,6 +329,12 @@ class Application:
         if site not in {source["siteId"] for source in self.sites()}:
             raise ValueError("当前模式未接入该漫画源")
         url = body.get("detailUrl" if path.endswith("details") else "chapterUrl", "")
+        purpose = body.get('purpose', 'reader')
+        if purpose not in {'reader', 'background', 'prefetch', 'download'}:
+            raise ValueError('请求类型无效')
+        foreground = purpose == 'reader'
+        request_key = (path, site, url)
+        on_wait = (lambda: self.metadata_slots.promote(request_key)) if foreground else None
         if not (path.endswith("chapter-images") and self.mode == "mangayun" and site == "hipmh"
                 and re.fullmatch(r"[A-Za-z0-9_-]{8,250}", url)):
             providers.validate_url(site,url)
@@ -309,7 +342,9 @@ class Application:
             refresh = body.get("refresh", False)
             if type(refresh) is not bool:
                 raise ValueError("刷新参数无效")
-            return self.cache.get((path,site,url),300,lambda:self.source_request(site, 'details', lambda: providers.details(site,url) if self.mode=="native" else self.upstream.details(site,url)),refresh=refresh)
+            return self.cache.get(request_key, 300,
+                lambda: self.source_request(site, 'details', lambda: providers.details(site,url) if self.mode=="native" else self.upstream.details(site,url), foreground=foreground, key=request_key),
+                refresh=refresh, on_wait=on_wait)
         refresh = body.get("refresh", False)
         if type(refresh) is not bool:
             raise ValueError("刷新参数无效")
@@ -327,7 +362,9 @@ class Application:
                 except ValueError:
                     raise RuntimeError("这个源返回的章节图片地址无效，请重试或切换漫画源") from None
             return images
-        images = self.cache.get((path,site,url),60,lambda:self.source_request(site, 'chapter', load_images),refresh=refresh)
+        images = self.cache.get(request_key, 60,
+            lambda: self.source_request(site, 'chapter', load_images, foreground=foreground, key=request_key),
+            refresh=refresh, on_wait=on_wait)
         return {"images":images}
 
 
@@ -386,6 +423,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send(200,{"data":{"mode":self.server.app.mode,"sync":False,"disabledSources":[],"sourceCoverage":compare_sources(self.server.app.sites())}})
             elif p.path == "/api/sites":
                 self.send(200,{"data":self.server.app.sites()})
+            elif p.path == '/api/offline-manifest':
+                self.send(200, {'data': offline_manifest()})
+            elif p.path == '/sw.js':
+                manifest = offline_manifest()
+                source = (ROOT / 'web' / 'sw.js').read_text().replace('__SARDINA_MANIFEST__', json.dumps(manifest))
+                self.send(200, source.encode(), 'text/javascript; charset=utf-8')
             elif p.path == "/api/source-catalog":
                 data = source_catalog(self.server.app.sites(), mode=self.server.app.mode, discovery_sources=self.server.app.discovery_sources())
                 health = self.server.app.health.snapshot()
@@ -417,22 +460,7 @@ class Handler(BaseHTTPRequestHandler):
             elif p.path.startswith("/api/"):
                 self.send(404,{"error":"接口不存在"})
             else:
-                files = {"/":"index.html","/app.js":"app.js","/style.css":"style.css","/logo.svg":"logo.svg","/favicon.ico":"brand/sardina-097-c.png", "/brand":"brand-preview.html"}
-                for name in ("sardina.css", "brand/sardina-070.png", "brand/sardina-097.png", "brand/sardina-097-a.png", "brand/sardina-097-b.png", "brand/sardina-097-c.png"):
-                    files["/" + name] = name
-                for name in ("search-model.js", "search-view.js", "search.css", "reader.js", "reader-model.js", "reader-transport.js", "reader.css", "source-catalog.js", "source-catalog.css", "source-preferences.js", "library-model.js", "library.css", "library-updates.js", "library-store.js", "library-auto-updates.js", "book-identity.js", "discovery.js", "discovery-model.js", "discovery-covers.js", "discovery.css", "recommendations.js", "recommendations-model.js", "recommendations-feedback.js", "recommendations.css", "cover-wall.js", "cover-wall.css", "home.css"):
-                    files["/" + name] = name
-                files["/recommendations-ranking.js"] = "recommendations-ranking.js"
-                files["/route-history.js"] = "route-history.js"
-                files["/page-window.js"] = "page-window.js"
-                files["/reader-gestures.js"] = "reader-gestures.js"
-                files["/cover-pause.js"] = "cover-pause.js"
-                files["/recommendations-metadata.js"] = "recommendations-metadata.js"
-                files["/search-results-model.js"] = "search-results-model.js"
-                files["/search-characters.js"] = "search-characters.js"
-                for name in ("image-loader.js", "download-store.js", "download-model.js", "downloads.js", "downloads.css"):
-                    files["/" + name] = name
-                file = files.get(p.path)
+                file = STATIC_FILES.get(p.path)
                 if not file and (p.path in ("/discover", "/discover/popular", "/discover/latest") or p.path.startswith("/s/") or p.path.startswith("/m/") or p.path.startswith("/read/")):
                     file = "index.html"
                 if not file:

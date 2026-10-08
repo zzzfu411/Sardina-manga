@@ -30,7 +30,7 @@ export function createDetailLoader(api, {limit = 2, cacheSize = 96, ttl = 300000
       task.started = true; running.add(task);
       Promise.resolve().then(() => {
         if (task.controller.signal.aborted) throw abortError();
-        return api('/api/details', {siteId: task.book.siteId, detailUrl: task.book.detailUrl}, task.controller.signal);
+        return api('/api/details', {siteId: task.book.siteId, detailUrl: task.book.detailUrl, purpose: 'background'}, task.controller.signal);
       })
         .then(value => {
           if (task.controller.signal.aborted) return settle(task, abortError());

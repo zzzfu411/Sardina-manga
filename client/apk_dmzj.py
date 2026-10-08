@@ -164,6 +164,21 @@ def search(site, keyword):
     return rows
 
 
+def metadata(site, url):
+    mid, = _url_ids(site, url)
+    data = _book_data(_get_json("/comic/detail/" + mid, {"_v": API_VERSION}, platform="pc"))
+    if _id(data.get("id")) != mid:
+        raise RuntimeError("再漫画返回的作品编号不匹配")
+    return _metadata(data)
+
+
+def _metadata(data):
+    return {"title": _text(data.get("title")), "author": _tags(data.get("authors")),
+            "description": _text(data.get("description")), "coverUrl": _image_url(data.get("cover")),
+            "status": _tags(data.get("status")),
+            "tags": [value.strip() for value in _tags(data.get("types")).split('/') if value.strip()][:20]}
+
+
 def details(site, url):
     mid, = _url_ids(site, url)
     data = _book_data(_get_json("/comic/detail/" + mid, {"_v": API_VERSION}, platform="pc"))
@@ -195,9 +210,7 @@ def details(site, url):
             seen.add(cid)
             chapter_url = _chapter_url(mid, cid)
             chapters.append({"id": cid, "name": name, "url": chapter_url, "order": len(chapters), "group": _text(group.get("title"))})
-    result = {"title": _text(data.get("title")), "author": _tags(data.get("authors")),
-              "description": _text(data.get("description")), "coverUrl": _image_url(data.get("cover")),
-              "status": _tags(data.get("status")), "chapters": chapters, "sourceUrl": _book_url(mid)}
+    result = {**_metadata(data), "chapters": chapters, "sourceUrl": _book_url(mid)}
     if data.get("canRead") is False:
         result["unavailableReason"] = READING_RESTRICTION
     elif data.get("isHideChapter") == 1 or not chapters:

@@ -19,7 +19,7 @@ function timestamp(value, year = false) {
   }).format(date);
 }
 
-export function createDiscovery({root, api, imageUrl, onOpenBook, embedded = false}) {
+export function createDiscovery({root, api, imageUrl, onOpenBook, onSelectionChange = () => {}, embedded = false}) {
   root.classList.add('discovery'); root.hidden = true;
   const inner = node('div', 'discovery-inner');
   const header = node('header', 'discovery-heading');
@@ -187,7 +187,7 @@ export function createDiscovery({root, api, imageUrl, onOpenBook, embedded = fal
     next.disabled = busy || state.phase !== 'ready' || !data?.hasMore;
     pageNumber.textContent = selection ? `第 ${selection.page} 页` : '';
   }
-  const model = createDiscoveryModel({api, onChange: render});
+  const model = createDiscoveryModel({api, onChange: render, onSelectionChange});
   let pageFocus = null;
   function paginate(direction) {
     pageFocus = root.ownerDocument.activeElement;
@@ -201,5 +201,5 @@ export function createDiscovery({root, api, imageUrl, onOpenBook, embedded = fal
     listLabel.focus({preventScroll: true});
     context.scrollIntoView({block: 'start', behavior: 'auto'});
   }});
-  return {show: options => model.show(options), hide: () => model.hide()};
+  return {show: options => model.show(options), hide: () => model.hide(), getSelection: () => model.getState().selection};
 }

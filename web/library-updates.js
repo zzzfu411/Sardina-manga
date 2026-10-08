@@ -157,7 +157,7 @@ export function createLibraryUpdates({api, getBook, onBookResult = () => {}, onS
       if (!exists(item, book)) return {skipped: true};
       const base = normalizeCatalogState(book.catalogState), startedAt = clock(now());
       try {
-        const detail = await api('/api/details', {siteId: item.siteId, detailUrl: item.detailUrl, refresh: true}, run.controller.signal);
+        const detail = await api('/api/details', {siteId: item.siteId, detailUrl: item.detailUrl, refresh: true, purpose: 'background'}, run.controller.signal);
         if (!isCurrent(run)) return null;
         return {base, startedAt, snapshot: catalogSnapshot(detail), error: ''};
       } catch (error) {

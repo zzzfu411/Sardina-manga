@@ -1,4 +1,4 @@
-"""A bounded FIFO queue with capacity reserved for current reading pages."""
+"""A bounded FIFO queue with capacity reserved for foreground reading."""
 import threading
 import time
 from collections import OrderedDict
@@ -8,7 +8,7 @@ class ImageCapacityError(RuntimeError):
     """Local saturation is not an upstream source-health failure."""
 
 
-class ImageBudget:
+class RequestBudget:
     def __init__(self, limit=8, foreground_reserved=2):
         if not 0 < foreground_reserved < limit:
             raise ValueError('Invalid foreground reservation')
@@ -68,6 +68,9 @@ class ImageBudget:
     def release(self, ticket):
         with self.condition:
             if self.active.pop(ticket['key'], None) is not ticket:
-                raise RuntimeError('Unknown image budget lease')
+                raise RuntimeError('Unknown request budget lease')
             self.background -= not ticket['foreground']
             self._dispatch()
+
+
+ImageBudget = RequestBudget

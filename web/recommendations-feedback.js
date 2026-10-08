@@ -1,4 +1,4 @@
-import {sameWork, sourceEntryKey, workIdentity} from './book-identity.js';
+import {sameWork, sourceEntryKey, workIdentity, workAuthorKey} from './book-identity.js';
 
 export const RECOMMENDATION_FEEDBACK_KEY = 'revyunman.recommendations.v1';
 export const FEEDBACK_LIMITS = Object.freeze({dismissed: 300, exposures: 600, exposureDays: 28});
@@ -62,7 +62,17 @@ function apply(state, operation, now) {
   // Passive events made before a clear belong to the old generation. Explicit
   // preferences are independent: clearing reading feedback keeps that choice.
   if (compare(operation.epoch, state.epoch) !== 0) return state;
-  if (operation.type === 'dismiss' || operation.type === 'undo') {
+  if (operation.type === 'metadata') {
+    state.dismissed = state.dismissed.map(row => sourceEntryKey(row.book) === sourceEntryKey(operation.book) ?
+      {...row, book: {...row.book, ...operation.book}} : row);
+  } else if (operation.type === 'import') {
+    if (compare(operation, state.preferenceStamp) > 0) {
+      state.personalization = operation.personalization; state.preferenceStamp = stamp(operation);
+    }
+    for (const book of operation.books) {
+      state.dismissed = [{book, ...stamp(operation), removed: false}, ...state.dismissed.filter(row => !sameWork(row.book, book))];
+    }
+  } else if (operation.type === 'dismiss' || operation.type === 'undo') {
     const previous = state.dismissed.filter(row => sameWork(row.book, operation.book));
     if (compare(operation, state.dismissalFloor) <= 0 || previous.some(row => compare(row, operation) >= 0)) return state;
     state.dismissed = [{book: operation.book, ...stamp(operation), removed: operation.type === 'undo'},
@@ -147,6 +157,13 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
     exposure: book => exposureIn(state, book, now()),
     dismiss(book) {if (validBook(book)) {sync(); submit('dismiss', {book: minimalBook(book)});}},
     undo(book) {if (validBook(book)) {sync(); submit('undo', {book: minimalBook(book)});}},
+    rememberBook(book) {
+      if (!validBook(book) || !workAuthorKey(book.author)) return;
+      sync();
+      const previous = state.dismissed.find(row => sourceEntryKey(row.book) === sourceEntryKey(book));
+      const next = {...previous?.book, ...Object.fromEntries(Object.entries(minimalBook(book)).filter(([, value]) => value))};
+      if (previous && JSON.stringify(previous.book) !== JSON.stringify(next)) submit('metadata', {book: next});
+    },
     markExposed(book) {
       if (!validBook(book)) return;
       sync(); const previous = exposureIn(state, book, now());
@@ -181,6 +198,16 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
       row.recovered = true; submit('metrics', {metrics: ['openRecoveries']});
     },
     setPersonalization(value) {sync(); submit('preference', {value: value === true});},
+    exportPreferences() {
+      sync();
+      return {version: 1, personalization: state.personalization, dismissed: state.dismissed.filter(row => !row.removed).map(row => ({...row.book}))};
+    },
+    async importPreferences(value) {
+      if (value?.version !== 1 || typeof value.personalization !== 'boolean' || !Array.isArray(value.dismissed) || value.dismissed.some(book => !validBook(book))) throw new Error('推荐偏好格式无效');
+      sync(); submit('import', {personalization: value.personalization, books: value.dismissed.slice(0, FEEDBACK_LIMITS.dismissed).map(minimalBook)});
+      await queue;
+      if (warning) throw new Error(warning);
+    },
     clear() {sync(); openedBooks.clear(); submit('clear');},
     sync() {sync(true);},
     async settled() {await queue;},

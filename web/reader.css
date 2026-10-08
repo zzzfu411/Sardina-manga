@@ -92,6 +92,7 @@ dialog.reader-shell[open] {display: grid; grid-template-rows: minmax(0, 1fr); gr
 .ry-reader-page img {position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0;}
 .ry-reader-page[data-state="loaded"] img {opacity: 1;}
 .reader-shell[data-mode="paged"] .ry-reader-scroll {overflow: auto; scrollbar-gutter: auto;}
+.reader-shell[data-swipe="true"] .ry-reader-scroll {touch-action: pan-y pinch-zoom;}
 .reader-shell[data-mode="paged"] .ry-reader-canvas {display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;}
 .reader-shell[data-mode="paged"] .ry-reader-page {flex: 0 0 auto; max-width: none;}
 .reader-shell[data-mode="paged"] .ry-reader-end {display: none;}

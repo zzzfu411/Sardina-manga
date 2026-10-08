@@ -30,6 +30,8 @@
 
 调用顺序：从 `/api/sites` 取得 `siteId`，搜索结果中取得 `detailUrl`，详情的 `chapters[].url` 用作 `chapterUrl`。地址必须与对应来源匹配。
 
+详情与章节接口可附带 `purpose`，取 `reader`（默认）、`background`、`prefetch` 或 `download`。当前阅读享有保留的请求容量；自动资料补全、预读和下载使用后台额度。
+
 搜索结果中的作品通常包含 `title`、`detailUrl`、`coverUrl`、`author`、`latestChapter`、`siteId`、`siteName`。详情的章节条目包含 `name` 和 `url`，部分源附带分组、语言或序列信息；未提供的资料字段可能为空。
 
 ```bash
@@ -80,7 +82,10 @@ curl http://127.0.0.1:8765/api/discovery \
 | `GET /api/config` | 当前 `mode`、`sync`、`disabledSources` 与 `sourceCoverage` |
 | `GET /api/source-catalog` | 源资料清单、接入状态、已启用源及其能力 |
 | `GET /api/source-health` | 按源、按能力保存的请求观测结果，`scope` 为 `observed-requests` |
+| `GET /api/offline-manifest` | 离线应用资源的内容版本与资源路径；不包含章节图片 |
 
 健康状态来自本机实际请求，不代表所有作品或整个源站的可用率。源资料清单中的待适配条目也不等于已启用源。
 
 书架、阅读设置、推荐反馈与章节下载由浏览器的 localStorage / IndexedDB 管理，不提供服务端增删改接口。
+
+浏览器通过 `/sw.js` 缓存完整应用资源与源列表，供断网重新打开已下载章节使用；需要 HTTPS 或本机地址。搜索、目录和图片请求不会被该缓存长期保存，章节图片仍由下载管理负责。

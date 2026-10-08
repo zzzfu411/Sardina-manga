@@ -19,9 +19,9 @@ test('visible pages precede queued download work and background cannot occupy al
   const loader = createImageLoader({limit: 2, backgroundLimit: 1, fetchImage: url => {starts.push(url); return new Promise(resolve => finishes.set(url, resolve));}});
   const first = loader.load('download-1', {priority: 2}), second = loader.load('download-2', {priority: 2});
   const prefetch = loader.load('prefetch', {priority: 1}), visible = loader.load('visible');
-  await tick(); assert.deepEqual(starts, ['download-1', 'prefetch']);
-  finishes.get('prefetch')(blob()); await prefetch; await tick(); assert.equal(starts.at(-1), 'visible');
+  await tick(); assert.deepEqual(starts, ['download-1', 'visible']);
   finishes.get('visible')(blob()); finishes.get('download-1')(blob()); await Promise.all([visible, first]); await tick();
+  assert.equal(starts.at(-1), 'prefetch'); finishes.get('prefetch')(blob()); await prefetch; await tick();
   assert.equal(starts.at(-1), 'download-2'); finishes.get('download-2')(blob()); await second; await tick();
   assert.equal(loader.stats().active, 0);
 });

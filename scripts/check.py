@@ -99,7 +99,7 @@ def instrument_browser(source, name, output):
     return '''async driverPage => {
   // Each scenario owns its cookies, storage, routes and init scripts. Reusing
   // the CLI's page lets earlier API mocks silently change later checks.
-  const context=await driverPage.context().browser().newContext();
+  const context=await driverPage.context().browser().newContext({serviceWorkers:'block'});
   const page=await context.newPage();
   const directory=__DIRECTORY__, name=__LABEL__;
   const diagnostic={scenario:name,stage:'setup',stages:[],console:[],requestFailures:[],pageErrors:[],pages:[]};

@@ -1,5 +1,8 @@
 export const READING_STATES = {reading: '在读', later: '想读', finished: '已读'};
-import {sourceEntryKey} from './book-identity.js';
+import {groupWorks, sourceEntryKey} from './book-identity.js';
+import {searchTitleKey} from './search-results-model.js';
+import {metadataText} from './search-model.js';
+import {simplifySearchText} from './search-characters.js';
 export const bookKey = sourceEntryKey;
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 const time = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
@@ -7,7 +10,7 @@ const hasProgress = book => typeof book?.chapterUrl === 'string' && book.chapter
 export const readingState = book => Object.hasOwn(READING_STATES, book?.readingState) ? book.readingState : hasProgress(book) ? 'reading' : 'later';
 export const readTime = book => hasProgress(book) ? time(book.readAt) || time(book.openedAt) : 0;
 const progressFields = ['chapterUrl', 'chapterName', 'page', 'pageOffset', 'totalPages', 'readAt'];
-const normalized = value => String(value || '').normalize('NFKC').toLocaleLowerCase();
+const normalized = value => searchTitleKey(String(value || ''));
 const validUrl = value => {try {const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password;} catch {return false;}};
 
 export function normalizeChapterStates(value) {
@@ -70,9 +73,56 @@ export function libraryCounts(books) {
 export function filterLibrary(books, {query = '', state = 'all', sort = 'recent'} = {}) {
   const needle = normalized(query).trim();
   return books.filter(book => (state === 'all' || readingState(book) === state) &&
-    (!needle || [book.title, book.author, book.siteName, book.siteId].some(value => normalized(value).includes(needle))))
+    (!needle || [book, ...(book.variants || [])].some(item => [item.title, ...(item.alternateTitles || []), item.author, item.siteName, item.siteId]
+      .some(value => normalized(value).includes(needle)))))
     .sort(sort === 'title' ? (a, b) => a.title.localeCompare(b.title, 'zh-CN') :
       (a, b) => (readTime(b) || time(b.openedAt)) - (readTime(a) || time(a.openedAt)));
+}
+
+export function groupLibrary(books) {
+  return groupWorks(books).map(group => {
+    const variants = [...group.books].sort((a, b) => (readTime(b) || time(b.openedAt)) - (readTime(a) || time(a.openedAt)));
+    return {key: group.key, book: variants[0], variants};
+  });
+}
+
+export function findRelatedBooks(book, books) {
+  const key = bookKey(book), saved = new Map(books.map(item => [bookKey(item), item]));
+  const related = groupWorks([book, ...books.filter(item => bookKey(item) !== key)]).find(group => group.books.some(item => bookKey(item) === key));
+  return (related?.books || []).map(item => saved.get(bookKey(item))).filter(Boolean);
+}
+
+const chapterText = value => simplifySearchText(metadataText(value).normalize('NFKC')).toLowerCase();
+const chapterName = value => chapterText(value).replace(/^chapter\s*/iu, '第').replace(/(?:章节|话|章|回|集)/gu, '话').replace(/[^\p{L}\p{N}.]/gu, '');
+function chapterNumber(value) {
+  const name = chapterText(value).replace(/^chapter\s*/iu, '第');
+  // Specials and volume editions may reuse the regular chapter numbering.
+  if (/番外|外传|公告|宣传|序章|前传|卷|季|部|上篇|下篇|上半|下半/u.test(name)) return null;
+  const match = name.match(/^(?:第\s*)?([\d零〇一二两三四五六七八九十百千]+(?:\.\d+)?)(?:\s*[话章回集]|\s+|[-_:：]|$)/u);
+  if (!match) return null;
+  if (/^\d/.test(match[1])) return Number.isFinite(Number(match[1])) ? Number(match[1]) : null;
+  const digits = {零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9}, units = {十: 10, 百: 100, 千: 1000};
+  if (![...match[1]].some(char => units[char])) return Number([...match[1]].map(char => digits[char]).join(''));
+  let total = 0, digit = 0;
+  for (const char of match[1]) {if (units[char]) {total += (digit || 1) * units[char]; digit = 0;} else digit = digits[char];}
+  return total + digit;
+}
+
+/** Cross-source page boundaries differ: callers only transfer this chapter index. */
+export function matchChapterProgress(previous, chapters = []) {
+  const unique = predicate => {
+    const matches = chapters.map((chapter, index) => predicate(chapter) ? index : -1).filter(index => index >= 0);
+    return matches.length === 1 ? matches[0] : -1;
+  };
+  let index = previous?.chapterUrl ? unique(chapter => chapter.url === previous.chapterUrl) : -1;
+  if (index >= 0) return {index, kind: 'url'};
+  const name = chapterName(previous?.chapterName);
+  if (!name) return null;
+  index = unique(chapter => chapterName(chapter.name) === name);
+  if (index >= 0) return {index, kind: 'name'};
+  const number = chapterNumber(previous.chapterName);
+  index = number === null ? -1 : unique(chapter => chapterNumber(chapter.name) === number);
+  return index >= 0 ? {index, kind: 'number'} : null;
 }
 
 export function continueBook(books) {

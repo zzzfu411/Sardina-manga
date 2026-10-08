@@ -1,6 +1,6 @@
 // Resolve a single tap only after the short double-tap window. Never consume
 // native pointer events: scrolling, pinch zoom and the long-press menu stay native.
-export function createReaderGestures({onTap, onDoubleTap}) {
+export function createReaderGestures({onTap, onDoubleTap, onSwipe}) {
   const pointers = new Set();
   const delay = 260, movement = 8, hold = 400;
   let candidate = null, pending = null, timer = null;
@@ -25,13 +25,24 @@ export function createReaderGestures({onTap, onDoubleTap}) {
     candidate = {...point, second: !!second};
   }
   function move(point) {
-    if (candidate?.id === point.id && Math.hypot(point.x - candidate.x, point.y - candidate.y) > movement) cancel();
+    if (candidate?.id !== point.id) return;
+    const dx = Math.abs(point.x - candidate.x), dy = Math.abs(point.y - candidate.y);
+    if (Math.hypot(dx, dy) <= movement) return;
+    if (candidate.canSwipe && dx > dy * 1.5) {clearPending(); candidate.swiping = true;}
+    else cancel();
   }
   function up(point) {
     pointers.delete(point.id);
     const start = candidate;
     if (!start || start.id !== point.id) return;
     candidate = null;
+    if (start.swiping) {
+      clearPending();
+      const dx = point.x - start.x, dy = point.y - start.y;
+      if (!pointers.size && point.eligible && point.time - start.time <= 700
+        && Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.5) onSwipe?.(dx < 0 ? 'ArrowRight' : 'ArrowLeft');
+      return;
+    }
     if (pointers.size || !point.eligible || point.time - start.time > hold
       || Math.hypot(point.x - start.x, point.y - start.y) > movement) {clearPending(); return;}
     if (start.second) {

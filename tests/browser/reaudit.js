@@ -114,7 +114,9 @@ async (page, step = () => {}) => {
   // A history card resumes; return to its details to change collection state.
   await page.waitForFunction(()=>document.querySelector('#reader-dialog').open);await page.locator('#reader-back').click();
   await page.getByRole('button',{name:'加入收藏',exact:true}).click();await page.getByRole('button',{name:'取消收藏',exact:true}).click();
-  await page.getByRole('button',{name:'关闭漫画详情',exact:true}).click();await page.locator('.shelf-open').click();
+  await page.getByRole('button',{name:'关闭漫画详情',exact:true}).click();
+  // Closing details restores the shelf from which this book was opened.
+  await page.waitForFunction(()=>document.querySelector('#shelf-dialog').open);
   await page.locator('#shelf-grid .remove-book').click();await page.locator('#shelf-undo').getByRole('button',{name:'撤销',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('#shelf-count').textContent==='1');
   const saved=await page.evaluate(async()=>{const {createLibraryStore}=await import('/library-store.js');return createLibraryStore({storage:localStorage}).books[0];});
