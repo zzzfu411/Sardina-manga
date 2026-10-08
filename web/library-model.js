@@ -1,5 +1,5 @@
 export const READING_STATES = {reading: '在读', later: '想读', finished: '已读'};
-import {createWorkRelations, sourceEntryKey} from './book-identity.js';
+import {createWorkRelations, mergeAuthorCredit, preserveWorkEvidence, sourceEntryKey, workAuthorKey} from './book-identity.js';
 import {searchTitleKey} from './search-results-model.js';
 import {metadataText, normalizeTitle} from './search-model.js';
 import {simplifySearchText} from './search-characters.js';
@@ -35,6 +35,9 @@ export function markChapterRead(book, chapter, read, now = Date.now()) {
 /** A details refresh must not replace the latest position with an old book snapshot. */
 export function rememberBook(previous, book, progress = {}, now = Date.now()) {
   const saved = {...previous, ...book, ...progress, openedAt: now};
+  if (previous?.author || saved.author) saved.author = mergeAuthorCredit(previous?.author, saved.author);
+  const evidence = [...(previous?.identityAuthors || []), ...(book?.identityAuthors || [])];
+  if (evidence.length) saved.identityAuthors = evidence;
   for (const field of progressFields) {
     if (previous?.[field] !== undefined && !Object.hasOwn(progress, field)) saved[field] = previous[field];
   }
@@ -57,7 +60,7 @@ export function rememberBook(previous, book, progress = {}, now = Date.now()) {
     saved.favoriteChangedAt = time(previous.favoriteChangedAt);
   }
   if (Object.hasOwn(progress, 'favorite')) saved.favoriteChangedAt = now;
-  return saved;
+  return preserveWorkEvidence([saved])[0];
 }
 
 export function setReadingState(book, value, now = Date.now()) {
@@ -142,6 +145,7 @@ export function parseShelfBackup(data, knownSiteIds) {
     const clean = {};
     for (const field of fields) if (typeof book[field] === 'string') clean[field] = book[field];
     for (const field of ['alternateTitles', 'tags', 'genres']) if (Array.isArray(book[field])) clean[field] = book[field].filter(value => typeof value === 'string');
+    if (Array.isArray(book.identityAuthors)) clean.identityAuthors = [...new Set(book.identityAuthors.filter(value => typeof value === 'string').map(workAuthorKey).filter(Boolean))].slice(0, 16);
     clean.page = Math.trunc(Math.max(0, Math.min(10000, Number(book.page) || 0)));
     clean.pageOffset = Math.max(0, Math.min(1, Number(book.pageOffset) || 0));
     if (Number.isFinite(Number(book.totalPages)) && Number(book.totalPages) > 0) clean.totalPages = Math.trunc(Math.min(10001, Number(book.totalPages)));
@@ -154,7 +158,7 @@ export function parseShelfBackup(data, knownSiteIds) {
     clean.chapterStates = normalizeChapterStates(book.chapterStates);
     const catalogState = normalizeCatalogState(book.catalogState);
     if (catalogState) clean.catalogState = catalogState;
-    return clean;
+    return preserveWorkEvidence([clean])[0];
   });
 }
 
@@ -176,6 +180,9 @@ export function mergeShelfBackup(current, incoming) {
     if (!old) {merged.set(bookKey(book), book); continue;}
     const newest = time(book.openedAt) > time(old.openedAt) ? book : old;
     const next = {...old, ...newest};
+    if (old.author || book.author) next.author = mergeAuthorCredit((newest === old ? book : old).author, newest.author);
+    const evidence = [...(old.identityAuthors || []), ...(book.identityAuthors || [])];
+    if (evidence.length) next.identityAuthors = evidence;
     const progress = readTime(book) > readTime(old) ? book : old;
     // Transfer the entire progress tuple, including absent fields, as one record.
     for (const field of progressFields) {
@@ -194,6 +201,6 @@ export function mergeShelfBackup(current, incoming) {
     if (catalogState) next.catalogState = catalogState; else delete next.catalogState;
     merged.set(bookKey(book), next);
   }
-  return [...merged.values()].sort((a, b) => time(b.openedAt) - time(a.openedAt));
+  return preserveWorkEvidence([...merged.values()].sort((a, b) => time(b.openedAt) - time(a.openedAt)));
 }
 import {mergeCatalogState, normalizeCatalogState} from './library-updates.js';

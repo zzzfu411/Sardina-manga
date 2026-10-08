@@ -1,3 +1,5 @@
+import {simplifySearchText} from './search-characters.js';
+
 // Deliberately bounded mappings: unfamiliar titles stay separate rather than
 // being merged using a fuzzy match. Relevance and work identity are independent.
 const TRADITIONAL = Object.freeze({
@@ -88,7 +90,18 @@ export function normalizeAuthor(value) {
   return [...new Set(parts)].sort(compareText).join('+');
 }
 
-function authorGroups(known) {
+const corporateCredit = /(?:studios?|工作室|出版社|出版|文化|漫画|动漫|传媒|极直社)$/u;
+export const workAuthorKey = value => normalizeAuthor(simplifySearchText(metadataText(value).normalize('NFKC')))
+  .split('+').filter(name => name && !corporateCredit.test(name)).join('+');
+/** A shorter credit from the same source must not erase known coauthors. */
+export function mergeAuthorCredit(previous, incoming) {
+  const before = text(previous), after = text(incoming);
+  if (!after) return before;
+  const known = workAuthorKey(before).split('+').filter(Boolean), next = workAuthorKey(after).split('+').filter(Boolean);
+  return known.length && next.length < known.length && next.every(name => known.includes(name)) ? before : after;
+}
+
+export function authorGroups(known) {
   const entries = [...known].map(([key, books]) => ({key, books, names: new Set(key.split('+'))})).sort((a, b) => compareText(a.key, b.key));
   const subset = (a, b) => [...a].every(name => b.has(name));
   const anchors = entries.filter(entry => !entries.some(other => entry !== other && subset(entry.names, other.names)));
@@ -122,7 +135,7 @@ export function withAuthorEvidence(groups, evidence) {
     return {...group, results: group.results.map(book => {
       if (!book || typeof book !== 'object') return book;
       const author = evidence.get(bookKey({...book, siteId: text(group.siteId) || text(book.siteId)}));
-      return normalizeAuthor(author) ? {...book, author: text(author)} : book;
+      return normalizeAuthor(author) ? {...book, author: mergeAuthorCredit(book.author, author)} : book;
     })};
   });
 }
@@ -209,9 +222,10 @@ export function buildSearchModel(groups = [], keyword = '', filter = '') {
       else {
         // A duplicated URL often appears once for its cover and once for its
         // title. Keep the richer fields without counting it as another source.
-        for (const field of ['coverUrl', 'author', 'description', 'status', 'latestChapter']) {
+        for (const field of ['coverUrl', 'description', 'status', 'latestChapter']) {
           if (!previous[field] && book[field]) previous[field] = book[field];
         }
+        previous.author = mergeAuthorCredit(previous.author, book.author);
         if (book.matchScore > previous.matchScore) Object.assign(previous, {title: book.title, matchScore: book.matchScore, matchKind: book.matchKind});
       }
     }

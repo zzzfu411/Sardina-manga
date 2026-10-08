@@ -1,4 +1,4 @@
-import {createWorkRelations, sourceEntryKey, workAuthorKey} from './book-identity.js';
+import {createWorkRelations, mergeAuthorCredit, preserveWorkEvidence, sourceEntryKey, workAuthorKey} from './book-identity.js';
 import {createRecommendationMetadata} from './recommendations-metadata.js';
 import {createRecommendationFeedback} from './recommendations-feedback.js';
 import {buildRecommendationProfile, originReason, rankRecommendations} from './recommendations-ranking.js';
@@ -38,9 +38,10 @@ export function normalizeRecommendations(payload, context = []) {
     const book = {...item, detailUrl, coverUrl, title: text(item.title), siteName: text(item.siteName), author: text(item.author)};
     const key = sourceEntryKey(book), previous = entries.get(key);
     if (!previous) entries.set(key, book);
-    else entries.set(key, {...previous, ...book, author: book.author || previous.author,
+    else entries.set(key, {...previous, ...book, author: mergeAuthorCredit(previous.author, book.author),
       description: text(book.description) || text(previous.description)});
   }
+  for (const book of preserveWorkEvidence([...entries.values()], context)) entries.set(sourceEntryKey(book), book);
   const candidates = createWorkRelations([...context, ...entries.values()]).groups.flatMap(({key, books}) => {
     const variants = books.map(book => entries.get(sourceEntryKey(book))).filter(Boolean);
     return variants.length ? [{key, book: variants[0], variants}] : [];
@@ -58,7 +59,7 @@ export function normalizeRecommendations(payload, context = []) {
     warnings: [...new Set((Array.isArray(payload.warnings) ? payload.warnings : []).map(text).filter(Boolean))]};
 }
 
-export function createRecommendationsModel({api, getShelf = () => [], onChange = () => {}, now = Date.now,
+export function createRecommendationsModel({api, getShelf = () => [], onChange = () => {}, onWorkContext = () => {}, now = Date.now,
   feedback = createRecommendationFeedback({now}), metadata = createRecommendationMetadata({now})}) {
   let state = {visible: false, phase: 'idle', cards: [], fetchedAt: '', origins: [], warnings: [], error: ''};
   let pool = [], loaded = false, loadedAt = 0, nextBatch = null, revision = 0, request = null, generation = 0;
@@ -182,7 +183,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
     } finally {if (request === controller) request = null;}
     if (!current()) return;
     if (!successes) {state = {...state, phase: 'error', error: failure}; notify(); return;}
-    pool = stagedPool; nextBatch = stagedNext;
+    pool = stagedPool; nextBatch = stagedNext; onWorkContext(pool.flatMap(candidate => candidate.variants));
     if (mode === 'refresh') fetchedBatches.clear();
     for (const value of received) fetchedBatches.add(value);
     loaded = true; loadedAt = now();
@@ -202,6 +203,7 @@ export function createRecommendationsModel({api, getShelf = () => [], onChange =
   function rememberMetadata(book, value) {
     metadata.remember(book, value);
     pool = normalizeRecommendations({items: pool.flatMap(candidate => candidate.variants.map(item => metadata.apply(item)))}, shelfData().books).candidates;
+    onWorkContext(pool.flatMap(candidate => candidate.variants));
     feedback.rememberBook?.(metadata.apply(book));
     const owners = new Map(pool.flatMap(candidate => candidate.variants.map(item => [sourceEntryKey(item), candidate])));
     const previous = state.cards, seen = new Set(), cards = [];

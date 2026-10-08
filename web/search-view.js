@@ -1,4 +1,4 @@
-import {bookKey, metadataText, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
+import {bookKey, mergeAuthorCredit, metadataText, normalizeAuthor, rekeyWorkStates, withAuthorEvidence} from './search-model.js';
 import {buildSearchResults} from './search-results-model.js';
 
 const abortError = () => new DOMException('请求已取消', 'AbortError');
@@ -94,9 +94,9 @@ const button = (text, className, callback) => {
 };
 const safeText = value => typeof value === 'string' ? value.trim() : '';
 
-export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter, onMetrics}) {
+export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter, onMetrics, onWorkContext}) {
   const loader = createDetailLoader(api), cards = new Map(), authorEvidence = new Map();
-  let keyword = '', model = null, groups = [], filter = '', generation = 0, destroyed = false;
+  let keyword = '', model = null, groups = [], workContext = [], filter = '', generation = 0, destroyed = false;
   let primary, related, others, empty;
   const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
     for (const entry of entries) {
@@ -127,14 +127,17 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
   function enrichedBook(card) {
     const book = selectedBook(card), detail = card.detail;
     if (!detail) return book;
-    return {...book, ...Object.fromEntries(['title', 'coverUrl', 'author', 'description', 'status'].flatMap(field => safeText(detail[field]) ? [[field, detail[field]]] : []))};
+    return {...book, ...Object.fromEntries(['title', 'coverUrl', 'description', 'status'].flatMap(field => safeText(detail[field]) ? [[field, detail[field]]] : [])), author: mergeAuthorCredit(book.author, detail.author)};
   }
   function openBook(card) { onOpenBook(enrichedBook(card), card.detail || undefined); }
   function metrics() {
     return {rawCount: model.rawCount, workCount: model.workCount, relatedCount: model.relatedCount, hiddenCount: model.hiddenCount};
   }
   function rebuildModel() {
-    model = buildSearchResults(withAuthorEvidence(groups, authorEvidence), keyword, filter);
+    const enriched = withAuthorEvidence(groups, authorEvidence);
+    workContext = enriched.flatMap(group => (group.results || []).map(book => ({...book, siteId: group.siteId || book.siteId, siteName: group.siteName || book.siteName})));
+    onWorkContext?.(workContext);
+    model = buildSearchResults(enriched, keyword, filter);
     const remapped = rekeyWorkStates([...model.works, ...model.related, ...model.hidden], cards.values());
     const retained = new Set(remapped.values());
     for (const card of cards.values()) {
@@ -144,8 +147,9 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
   }
   function recordDetailAuthor(book, detail) {
     if (!normalizeAuthor(detail?.author)) return false;
-    authorEvidence.set(bookKey(book), detail.author);
-    return normalizeAuthor(book.author) !== normalizeAuthor(detail.author);
+    const author = mergeAuthorCredit(mergeAuthorCredit(book.author, authorEvidence.get(bookKey(book))), detail.author);
+    authorEvidence.set(bookKey(book), author);
+    return normalizeAuthor(book.author) !== normalizeAuthor(author);
   }
 
   function makeCard(work) {
@@ -366,6 +370,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
   }
   mountRoot();
   return {
+    getWorkContext: () => workContext,
     update(next) {
       if (destroyed) return {rawCount: 0, workCount: 0, relatedCount: 0, hiddenCount: 0};
       if (keyword !== next.keyword) this.reset();
@@ -383,7 +388,7 @@ export function createSearchView({root, api, imageUrl, onOpenBook, onReadChapter
     reset() {
       generation++; loader.cancelAll(); observer?.disconnect();
       for (const card of cards.values()) { card.mounted = false; card.visible = false; stopCard(card); }
-      cards.clear(); authorEvidence.clear(); model = null; keyword = ''; groups = []; filter = ''; mountRoot();
+      cards.clear(); authorEvidence.clear(); model = null; keyword = ''; groups = []; workContext = []; filter = ''; mountRoot();
     },
     destroy() {
       this.reset(); destroyed = true; loader.destroy(); observer?.disconnect(); root.replaceChildren(); root.classList.remove('search-results-list');

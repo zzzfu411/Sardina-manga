@@ -15,7 +15,7 @@ const timeText = value => {
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false}).format(date);
 };
 
-export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf}) {
+export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf, onWorkContext}) {
   root.classList.add('recommendations'); root.hidden = true;
   const toolbar = node('div', 'recommendations-toolbar');
   const settings = node('details', 'recommendations-settings');
@@ -145,7 +145,7 @@ export function createRecommendations({root, api, imageUrl, onOpenBook, getShelf
       renderCard(view, card);
     }
   }
-  const model = createRecommendationsModel({api, getShelf, onChange: render});
+  const model = createRecommendationsModel({api, getShelf, onChange: render, onWorkContext});
   const observer = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
     for (const entry of entries) {
       const id = entry.target.dataset.cardId, view = cards.get(id);

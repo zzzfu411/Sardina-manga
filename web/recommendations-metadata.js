@@ -1,4 +1,4 @@
-import {sourceEntryKey} from './book-identity.js';
+import {mergeAuthorCredit, sourceEntryKey} from './book-identity.js';
 export const METADATA_KEY = 'sardina.recommendations.metadata.v1';
 const TTL = 7 * 86400000;
 export function createRecommendationMetadata({storage, now = Date.now} = {}) {
@@ -16,9 +16,14 @@ export function createRecommendationMetadata({storage, now = Date.now} = {}) {
   }
   return {
     has: book => !!read(book),
-    apply(book) {return {...book, ...clean(read(book)?.value)};},
+    apply(book) {
+      const cached = clean(read(book)?.value);
+      if (cached.author) cached.author = mergeAuthorCredit(book.author, cached.author);
+      return {...book, ...cached};
+    },
     remember(book, value) {
-      const merged = {...clean(read(book)?.value), ...clean(value)};
+      const previous = clean(read(book)?.value), incoming = clean(value), merged = {...previous, ...incoming};
+      if (merged.author) merged.author = mergeAuthorCredit(mergeAuthorCredit(book.author, previous.author), incoming.author);
       if (!Object.keys(merged).length) return;
       rows[sourceEntryKey(book)] = {at: now(), value: merged};
       rows = Object.fromEntries(Object.entries(rows).filter(([, row]) => typeof row?.at === 'number' && row.at <= now() && row.at > now() - TTL).sort((a, b) => b[1].at - a[1].at).slice(0, 200));

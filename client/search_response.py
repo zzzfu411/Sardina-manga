@@ -18,7 +18,7 @@ class SearchResponseError(RuntimeError):
     pass
 
 
-_COUNT = re.compile(r"(?:搜索|搜尋)(?:结果|結果)\s*[（(]\s*(\d+)\s*[)）]|共找到\s*(\d+)\s*[条條]|共有\s*(\d+)\s*[个個](?:结果|結果)")
+_COUNT = re.compile(r"(?:搜索|搜尋)(?:结果|結果)\s*[（(]\s*(\d+)\s*[)）]|共找到\s*(\d+)\s*[条條]|共有\s*(\d+)\s*[个個](?:结果|結果)|共查找到\s*(\d+)\s*部(?:漫画|漫畫)\s*$")
 _EMPTY = re.compile(
     r"^(?:🔍\s*)?(?:(?:很抱歉|抱歉|对不起|對不起)[，,:：]?\s*)?"
     r"(?:没有找到|沒有找到|未找到|未搜索到|没有搜索到|沒有搜尋到|查无|查無)"
@@ -53,7 +53,7 @@ def validate_search_response(site, source, rows):
         scope = root.first(cls="mainSearch")
         heading = scope.first(cls="topBar") if scope else None
     else:  # A GUI empty statement still needs an explicit search-page context.
-        heading = root.first("title") if re.search(r"搜索|搜尋", title) else None
+        heading = (root.first(cls="result-count") or root.first("title")) if re.search(r"搜索|搜尋", title) else None
 
     counts = [int(next(value for value in match.groups() if value is not None)) for match in _COUNT.finditer(text_of(heading))]
     if counts:

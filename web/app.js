@@ -15,6 +15,7 @@ import {pageWindow} from './page-window.js';
 import {createRouteHistory} from './route-history.js';
 import {createCoverPause} from './cover-pause.js';
 import {normalizeReaderPreferences} from './reader-model.js';
+import {mergeAuthorCredit, preserveWorkEvidence} from './book-identity.js';
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 const button = (text, cls, fn) => { const b = el('button', cls, text); b.type = 'button'; b.onclick = fn; return b; };
@@ -23,22 +24,27 @@ const state = {page: 'home', discoverTab: 'recommend', sites: [], groups: [], ke
 const navigation = createRouteHistory({history: window.history, location});
 const currentPath = () => location.pathname + location.search;
 let displayedPath = currentPath();
-let routeRestoreVersion = 0, awaitingReaderRestore = 0;
+let routeRestoreVersion = 0, awaitingReaderRestore = 0, sitesReady;
 let libraryStore;
 try {libraryStore = createLibraryStore({storage: localStorage});}
 catch {libraryStore = {books: [], issues: ['浏览器无法读取记录，请检查存储权限'], async save() {throw new Error('浏览器无法保存记录，请导出书架备份');}, flush() {}, async sync() {return shelf;}, recovery() {return '{}';}};}
 let shelf = libraryStore.books, shelfSaveGeneration = 0;
 let groupedShelfInput = null, groupedShelfContext = [], groupedShelf = [];
 function shelfGroups() {
-  const contextInputs = [...state.groups.map(group => group.results), recommendations.getWorkContext()];
+  const contextInputs = [...state.groups.map(group => group.results), searchView.getWorkContext(), recommendations.getWorkContext()];
   if (groupedShelfInput !== shelf || contextInputs.length !== groupedShelfContext.length || contextInputs.some((rows, index) => rows !== groupedShelfContext[index])) {
     groupedShelf = groupLibrary(shelf, relationContext()); groupedShelfInput = shelf; groupedShelfContext = contextInputs;
   }
   return groupedShelf;
 }
-function relationContext() {return [...shelf, ...state.groups.flatMap(group => group.results || []), ...recommendations.getWorkContext()];}
+function relationContext() {return [...shelf, ...state.groups.flatMap(group => group.results || []), ...searchView.getWorkContext(), ...recommendations.getWorkContext()];}
 function relatedBooks(book, books = shelf) {
   return findRelatedBooks(book, books, relationContext());
+}
+function rememberWorkEvidence(context) {
+  const next = preserveWorkEvidence(shelf, context);
+  if (next === shelf) return;
+  shelf = next; void saveShelf({intent: 'passive'});
 }
 let autoUpdates = readStore('revyunman.autoUpdates.v1', false) === true;
 const storedAttempts = readStore('revyunman.autoUpdateAttempts.v1', {});
@@ -54,6 +60,7 @@ function persist(name, data) { try { localStorage.setItem(name, JSON.stringify(d
 function toast(message) { const t = $('#toast'); const modal = [...document.querySelectorAll('dialog[open]')].at(-1); (modal || document.body).append(t); t.textContent = message; t.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => t.hidden = true, 4000); }
 function shelfChanged() {$('#shelf-count').textContent = shelfGroups().length; renderContinueReading(); renderShelfUpdateControls(); recommendations.shelfChanged?.();}
 function saveShelf(options = {}) {
+  shelf = preserveWorkEvidence(shelf, relationContext());
   const generation = ++shelfSaveGeneration; shelfChanged();
   const failed = error => {toast(`${error.message || '保存失败'}；当前记录仍可导出备份`); return false;};
   try {
@@ -79,7 +86,7 @@ function remember(book, extra = {}, options = {}) {
 function rememberProgress(book, progress, progressContext) {
   if (!progressAllowed(book, progressContext)) return;
   const id = key(book), old = shelf.find(item => key(item) === id);
-  const saved = rememberBook(old, old ? book : {...book, favorite: false}, progress);
+  const saved = preserveWorkEvidence([rememberBook(old, old ? book : {...book, favorite: false}, progress)], relationContext())[0];
   shelf = [saved, ...shelf.filter(item => key(item) !== id)];
   const generation = ++shelfSaveGeneration;
   $('#shelf-count').textContent = shelfGroups().length; renderContinueReading();
@@ -153,7 +160,7 @@ const discovery = createDiscovery({root: $('#discovery'), api, imageUrl, onOpenB
     if (state.page !== 'discover' || state.discoverTab !== selection.kind || !location.pathname.startsWith('/discover') || navigation.overlays().length) return;
     route(discoverPath(selection.kind, selection), replace);
   }});
-const recommendations = createRecommendations({root: $('#recommendations'), api, imageUrl, onOpenBook: book => openBook(book), getShelf: () => shelf});
+const recommendations = createRecommendations({root: $('#recommendations'), api, imageUrl, onOpenBook: book => openBook(book), getShelf: () => shelf, onWorkContext: rememberWorkEvidence});
 const libraryUpdates = createLibraryUpdates({api,
   getBook: id => {const book = shelf.find(book => key(book) === id); return book && progressAllowed(book, updateContexts.get(id)) ? book : null;},
   onBookResult: result => {
@@ -175,7 +182,7 @@ const libraryUpdates = createLibraryUpdates({api,
 const searchView = createSearchView({root: $('#result-grid'), api, imageUrl,
   onOpenBook: (book, detail) => openBook(book, {detail, resumeFrom: state.switchFrom}),
   onReadChapter: (book, chapter, detail) => openBook(book, {chapterUrl: chapter.url, detail}),
-  onMetrics: metrics => updateSearchStatus(metrics)
+  onMetrics: metrics => updateSearchStatus(metrics), onWorkContext: rememberWorkEvidence
 });
 const imageLoader = createImageLoader();
 const downloads = createDownloads({api, imageUrl, imageLoader, toast, onShow: () => navigation.openOverlay('downloads'), onRequestClose: () => closeOverlay('downloads'),
@@ -354,6 +361,12 @@ async function search(keyword, push = true, {resumeFrom = null} = {}) {
   document.title = `${keyword} · 搜索 · Sardina`;
   history = [keyword, ...history.filter(q => q !== keyword)].slice(0, 8); persist('revyunman.searches.v1', history); renderHistory();
   if (push) route('/s/' + encodeURIComponent(keyword)); setPage('search');
+  if (!state.sites.length) {
+    $('#result-grid').replaceChildren(el('p', 'loading', '正在加载漫画源…'));
+    $('#search-status').textContent = '正在加载漫画源…';
+  }
+  await sitesReady;
+  if (controller.signal.aborted || state.search !== controller) return;
   state.groups = sortSources(state.sites, state.sourcePreferences).map(s => ({...s, results: [], loading: true})); renderResults();
   // Reorder once per search; incremental source responses must not disturb focus.
   const tabs = $('#source-tabs');
@@ -408,7 +421,8 @@ async function openBook(book, {resume = false, push = true, chapterUrl = null, d
     if (seq !== state.detailSeq) return;
     const detail = localDetail || !refreshCatalog && prefetchedDetail || await api('/api/details', {siteId: book.siteId, detailUrl: book.detailUrl, ...(refreshCatalog ? {refresh: true} : {})}, controller.signal);
     if (seq !== state.detailSeq) return;
-    for (const field of ['title', 'coverUrl', 'description', 'author', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
+    for (const field of ['title', 'coverUrl', 'description', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
+    if (detail.author) state.book.author = mergeAuthorCredit(state.book.author, detail.author);
     state.book.unavailableReason = detail.unavailableReason || '';
     state.chapters = detail.chapters || [];
     if (!state.chapters.length) recommendations.recordFailure?.(state.book);
@@ -455,7 +469,8 @@ async function refreshBookCatalog({quiet = false} = {}) {
     if (controller.signal.aborted || seq !== state.detailSeq || key(book) !== key(state.book)) return;
     if (!Array.isArray(detail?.chapters) || !detail.chapters.length) throw new Error(detail?.unavailableReason || '暂未获取到新目录，已保留本地目录');
     const previousCount = state.chapters.length;
-    for (const field of ['title', 'coverUrl', 'description', 'author', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
+    for (const field of ['title', 'coverUrl', 'description', 'status', 'tags', 'genres', 'language', 'edition']) if (detail[field]) state.book[field] = detail[field];
+    if (detail.author) state.book.author = mergeAuthorCredit(state.book.author, detail.author);
     state.chapters = detail.chapters; state.book.unavailableReason = detail.unavailableReason || '';
     recommendations.rememberMetadata?.(state.book, detail);
     reader.updateCatalog(state.book, state.chapters);
@@ -654,6 +669,8 @@ async function restoreRoute() {
     if (parts[0] === 's') return await search(decodeURIComponent(parts.slice(1).join('/')), false);
     if (parts[0] === 'discover') return showDiscover(['popular', 'latest'].includes(parts[1]) ? parts[1] : 'recommend', {push: false, scroll: false, selection: discoverySelection()});
     if ((parts[0] === 'm' || parts[0] === 'read') && parts[1]) {
+      await sitesReady;
+      if (version !== routeRestoreVersion || currentPath() !== path) return;
       const [siteId, detailUrl, meta] = decode(parts[1]); if (!state.sites.some(s => s.siteId === siteId)) throw new Error('未接入该漫画源');
       const found = shelf.find(b => key(b) === key({siteId, detailUrl}));
       const book = found ? {...found, detailUrl} : {siteId, detailUrl, title: typeof meta?.title === 'string' ? meta.title : '漫画', coverUrl: typeof meta?.coverUrl === 'string' ? meta.coverUrl : '', siteName: state.sites.find(s => s.siteId === siteId).siteName};
@@ -793,11 +810,17 @@ $('#shelf-file').onchange = async e => {
   } catch (error) {toast('导入失败：' + error.message);} finally {e.target.value = '';}
 };
 async function init() {
+  const initialVersion = routeRestoreVersion;
+  sitesReady = api('/api/sites').then(sites => {state.sites = sites;})
+    .catch(() => {toast('漫画源连接失败，可从书架打开已下载的章节');});
   await saveShelf({intent: 'passive'}); renderHistory();
   if (libraryStore.issues.length) toast(libraryStore.issues.join('；'));
   void api('/api/home-sections').then(home => coverWall.setBooks(home.featured || [])).catch(() => {});
-  try {state.sites = await api('/api/sites');} catch {toast('漫画源连接失败，可从书架打开已下载的章节');}
-  await restoreRoute();
+  await sitesReady;
+  if (initialVersion === routeRestoreVersion) {
+    if (currentPath() === '/') {setPage('home'); syncOverlays();}
+    else await restoreRoute();
+  }
   maybeAutoUpdate();
 }
 init();

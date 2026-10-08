@@ -1,4 +1,5 @@
-import {buildSearchModel, metadataText, normalizeAuthor, normalizeTitle} from './search-model.js';
+import {authorGroups, buildSearchModel, mergeAuthorCredit, metadataText, normalizeTitle, workAuthorKey} from './search-model.js';
+export {mergeAuthorCredit, workAuthorKey} from './search-model.js';
 import {searchTitleKey} from './search-results-model.js';
 import {simplifySearchText} from './search-characters.js';
 
@@ -37,14 +38,37 @@ export function sourceEntryKey(book) {
   return `${site}::${raw}`;
 }
 
-const corporateCredit = /(?:studios?|工作室|出版社|出版|文化|漫画|动漫|传媒|极直社)$/u;
-export const workAuthorKey = value => normalizeAuthor(simplifySearchText(metadataText(value).normalize('NFKC')))
-  .split('+').filter(name => name && !corporateCredit.test(name)).join('+');
 const editionKey = value => normalizeTitle(simplifySearchText(metadataText(value)));
 const languageKey = value => {
   const language = simplifySearchText(metadataText(value)).toLowerCase();
   return /^(?:zh(?:[-_](?:cn|tw|hk|hans|hant))?|中文|(?:简体|繁体)(?:中文)?(?:版)?)$/u.test(language) ? '' : normalizeTitle(language);
 };
+
+/** Keep the competing credits which made a partial author ambiguous, so a
+ * later page or session cannot mistake the smaller visible set for certainty. */
+export function preserveWorkEvidence(books, context = books) {
+  const credits = new Map(), variant = book => JSON.stringify([searchTitleKey(book?.title), editionKey(book?.edition), languageKey(book?.language)]);
+  for (const book of [...context, ...books]) {
+    if (!book || typeof book !== 'object') continue;
+    const id = variant(book), values = credits.get(id) || new Set();
+    for (const value of [book.author, ...(Array.isArray(book.identityAuthors) ? book.identityAuthors.slice(0, 16) : [])]) {
+      const author = workAuthorKey(value); if (author) values.add(author);
+    }
+    credits.set(id, values);
+  }
+  let changed = false;
+  const result = books.map(book => {
+    const author = workAuthorKey(book.author), names = author ? author.split('+') : [];
+    const matches = names.length ? [...credits.get(variant(book))].filter(value => names.every(name => value.split('+').includes(name))) : [];
+    const groups = authorGroups(new Map(matches.map(value => [value, []]))).filter(group => group.anchors.length);
+    const evidence = groups.length > 1 ? groups.flatMap(group => group.anchors.map(anchor => anchor.key)).sort().slice(0, 16) : [];
+    if (JSON.stringify(book.identityAuthors || []) === JSON.stringify(evidence)) return book;
+    changed = true;
+    const saved = {...book}; if (evidence.length) saved.identityAuthors = evidence; else delete saved.identityAuthors;
+    return saved;
+  });
+  return changed ? result : books;
+}
 
 export function workIdentity(book) {
   const title = searchTitleKey(book?.title), author = workAuthorKey(book?.author);
@@ -60,14 +84,14 @@ export function sameWork(left, right, context = []) {
 /** Group using the same credit evidence as search. Unknown authors stay separate;
  * a partial credit shared by conflicting identities never bridges those groups. */
 export function groupWorks(books = []) {
-  const entries = [...new Map(books.map(book => [sourceEntryKey(book), book])).values()];
+  const entries = preserveWorkEvidence([...new Map(books.map(book => [sourceEntryKey(book), book])).values()]);
   const byKey = new Map(entries.map(book => [sourceEntryKey(book), book]));
-  const known = entries.filter(book => workAuthorKey(book.author));
+  const known = entries.filter(book => workAuthorKey(book.author) && !book.identityAuthors?.length);
   const model = buildSearchModel(known.map(book => ({siteId: book.siteId, results: [{...book,
     title: searchTitleKey(book.title), author: workAuthorKey(book.author),
     edition: editionKey(book.edition), language: languageKey(book.language)}]})));
   const groups = model.works.map(group => ({key: group.key, books: group.books.map(book => byKey.get(sourceEntryKey(book)))}));
-  groups.push(...entries.filter(book => !workAuthorKey(book.author)).map(book => ({key: sourceEntryKey(book), books: [book]})));
+  groups.push(...entries.filter(book => !workAuthorKey(book.author) || book.identityAuthors?.length).map(book => ({key: sourceEntryKey(book), books: [book]})));
   const order = new Map(entries.map((book, index) => [sourceEntryKey(book), index]));
   return groups.map(group => ({...group, books: group.books.sort((a, b) => order.get(sourceEntryKey(a)) - order.get(sourceEntryKey(b)))}))
     .sort((a, b) => order.get(sourceEntryKey(a.books[0])) - order.get(sourceEntryKey(b.books[0])));
@@ -81,7 +105,7 @@ export function createWorkRelations(books = []) {
     const key = sourceEntryKey(book), previous = entries.get(key);
     // A sparse feed for a saved URL cannot erase its known identity evidence.
     entries.set(key, previous ? {...previous, ...book,
-      title: text(book.title) || previous.title, author: workAuthorKey(book.author) ? book.author : previous.author,
+      title: text(book.title) || previous.title, author: mergeAuthorCredit(previous.author, book.author),
       edition: text(book.edition) || previous.edition, language: text(book.language) || previous.language} : book);
   }
   const groups = groupWorks([...entries.values()]);

@@ -1,12 +1,16 @@
-import {createWorkRelations, sourceEntryKey, workIdentity, workAuthorKey} from './book-identity.js';
+import {createWorkRelations, mergeAuthorCredit, preserveWorkEvidence, sourceEntryKey, workIdentity, workAuthorKey} from './book-identity.js';
 
 export const RECOMMENDATION_FEEDBACK_KEY = 'revyunman.recommendations.v1';
 export const FEEDBACK_LIMITS = Object.freeze({dismissed: 300, exposures: 600, exposureDays: 28});
 const DAY = 86400000;
 const METRICS = ['impressions', 'opens', 'dismissals', 'readingStarts', 'continuedReads', 'openFailures', 'openRecoveries'];
 const text = value => typeof value === 'string' ? value.trim() : '';
-const minimalBook = book => Object.fromEntries(['siteId', 'detailUrl', 'title', 'author', 'edition', 'language']
-  .map(field => [field, text(book?.[field])]));
+const minimalBook = (book, context = []) => {
+  const saved = Object.fromEntries(['siteId', 'detailUrl', 'title', 'author', 'edition', 'language'].map(field => [field, text(book?.[field])]));
+  const evidence = preserveWorkEvidence([book], context)[0].identityAuthors;
+  if (evidence?.length) saved.identityAuthors = evidence;
+  return saved;
+};
 const validBook = book => book && typeof book === 'object' && text(book.siteId) && text(book.title) && text(book.detailUrl);
 const time = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 const count = value => Number.isSafeInteger(value) && value >= 0 ? Math.min(value, 10000000) : 0;
@@ -62,23 +66,32 @@ function apply(state, operation, now, context = []) {
   // Passive events made before a clear belong to the old generation. Explicit
   // preferences are independent: clearing reading feedback keeps that choice.
   if (compare(operation.epoch, state.epoch) !== 0) return state;
+  const savedBook = (book, incoming = []) => {
+    const previous = state.dismissed.find(row => sourceEntryKey(row.book) === sourceEntryKey(book))?.book;
+    const next = {...previous, ...book, author: mergeAuthorCredit(previous?.author, book.author)};
+    const evidence = [...(previous?.identityAuthors || []), ...(book.identityAuthors || [])];
+    if (evidence.length) next.identityAuthors = evidence;
+    return preserveWorkEvidence([next], [...state.dismissed.map(row => row.book), ...context, ...incoming])[0];
+  };
   if (operation.type === 'metadata') {
+    const book = savedBook(operation.book);
     state.dismissed = state.dismissed.map(row => sourceEntryKey(row.book) === sourceEntryKey(operation.book) ?
-      {...row, book: {...row.book, ...operation.book}} : row);
+      {...row, book} : row);
   } else if (operation.type === 'import') {
     if (compare(operation, state.preferenceStamp) > 0) {
       state.personalization = operation.personalization; state.preferenceStamp = stamp(operation);
     }
-    const relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, ...operation.books]);
-    for (const book of operation.books) {
+    const books = operation.books.map(book => savedBook(book, operation.books));
+    const relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, ...books]);
+    for (const book of books) {
       state.dismissed = [{book, ...stamp(operation), removed: false}, ...state.dismissed.filter(row => !relations.sameWork(row.book, book))];
     }
   } else if (operation.type === 'dismiss' || operation.type === 'undo') {
-    const relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, operation.book]);
-    const previous = state.dismissed.filter(row => relations.sameWork(row.book, operation.book));
+    const book = savedBook(operation.book), relations = createWorkRelations([...state.dismissed.map(row => row.book), ...context, book]);
+    const previous = state.dismissed.filter(row => relations.sameWork(row.book, book));
     if (compare(operation, state.dismissalFloor) <= 0 || previous.some(row => compare(row, operation) >= 0)) return state;
-    state.dismissed = [{book: operation.book, ...stamp(operation), removed: operation.type === 'undo'},
-      ...state.dismissed.filter(row => !relations.sameWork(row.book, operation.book))];
+    state.dismissed = [{book, ...stamp(operation), removed: operation.type === 'undo'},
+      ...state.dismissed.filter(row => !relations.sameWork(row.book, book))];
     if (operation.type === 'dismiss') state.metrics.dismissals = count(state.metrics.dismissals + 1);
   } else if (operation.type === 'exposure') {
     const previous = exposureIn(state, operation.book, operation.at);
@@ -169,14 +182,16 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
       return state.dismissed.some(row => !row.removed && relations.sameWork(row.book, book));
     },
     exposure: book => exposureIn(state, book, now()),
-    dismiss(book) {if (validBook(book)) {sync(); submit('dismiss', {book: minimalBook(book)});}},
-    undo(book) {if (validBook(book)) {sync(); submit('undo', {book: minimalBook(book)});}},
+    dismiss(book) {if (validBook(book)) {sync(); submit('dismiss', {book: minimalBook(book, workContext)});}},
+    undo(book) {if (validBook(book)) {sync(); submit('undo', {book: minimalBook(book, workContext)});}},
     rememberBook(book) {
       if (!validBook(book) || !workAuthorKey(book.author)) return;
       sync();
       const previous = state.dismissed.find(row => sourceEntryKey(row.book) === sourceEntryKey(book));
-      const next = {...previous?.book, ...Object.fromEntries(Object.entries(minimalBook(book)).filter(([, value]) => value))};
-      if (previous && JSON.stringify(previous.book) !== JSON.stringify(next)) submit('metadata', {book: next});
+      const next = {...previous?.book, ...Object.fromEntries(Object.entries(minimalBook(book)).filter(([, value]) => value)),
+        author: mergeAuthorCredit(previous?.book.author, book.author)};
+      const saved = preserveWorkEvidence([next], workContext)[0];
+      if (previous && JSON.stringify(previous.book) !== JSON.stringify(saved)) submit('metadata', {book: saved});
     },
     markExposed(book) {
       if (!validBook(book)) return;
@@ -218,7 +233,7 @@ export function createRecommendationFeedback({storage, now = Date.now, locks = g
     },
     async importPreferences(value) {
       if (value?.version !== 1 || typeof value.personalization !== 'boolean' || !Array.isArray(value.dismissed) || value.dismissed.some(book => !validBook(book))) throw new Error('推荐偏好格式无效');
-      sync(); submit('import', {personalization: value.personalization, books: value.dismissed.slice(0, FEEDBACK_LIMITS.dismissed).map(minimalBook)});
+      sync(); submit('import', {personalization: value.personalization, books: value.dismissed.slice(0, FEEDBACK_LIMITS.dismissed).map(book => minimalBook(book, workContext))});
       await queue;
       if (warning) throw new Error(warning);
     },
